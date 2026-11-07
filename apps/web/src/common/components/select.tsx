@@ -21,6 +21,8 @@ interface ISelectProps
   extends Omit<ReactSelectProps<IOption, false>, "className" | "classNames" | "unstyled"> {
   inputId?: string;
   isInvalid?: boolean;
+  /** Borde de marca cuando tiene algo elegido (p. ej. un filtro puesto). */
+  isHighlighted?: boolean;
 }
 
 /**
@@ -30,24 +32,26 @@ interface ISelectProps
  *
  * El menú se monta en `document.body` para que una modal con scroll no lo recorte.
  */
-export default function Select({ isInvalid, ...props }: ISelectProps) {
-  return <ReactSelect<IOption, false> {...sharedSelectProps(isInvalid)} {...props} />;
+export default function Select({ isInvalid, isHighlighted, ...props }: ISelectProps) {
+  return <ReactSelect<IOption, false> {...sharedSelectProps(isInvalid, isHighlighted)} {...props} />;
 }
 
 interface ICreatableSelectProps
   extends Omit<CreatableProps<IOption, false, GroupBase<IOption>>, "className" | "classNames" | "unstyled"> {
   inputId?: string;
   isInvalid?: boolean;
+  /** Borde de marca cuando tiene algo elegido (p. ej. un filtro puesto). */
+  isHighlighted?: boolean;
 }
 
 /**
  * `Select` que además deja **crear** lo que no está: al escribir un nombre nuevo aparece
  * «Crear «…»» (p. ej. un proveedor desde el formulario de la cuenta, sin salir de él).
  */
-export function CreatableSelect({ isInvalid, ...props }: ICreatableSelectProps) {
+export function CreatableSelect({ isInvalid, isHighlighted, ...props }: ICreatableSelectProps) {
   return (
     <CreatableReactSelect<IOption, false, GroupBase<IOption>>
-      {...sharedSelectProps(isInvalid)}
+      {...sharedSelectProps(isInvalid, isHighlighted)}
       formatCreateLabel={(input) => `Crear «${input.trim()}»`}
       {...props}
     />
@@ -55,7 +59,7 @@ export function CreatableSelect({ isInvalid, ...props }: ICreatableSelectProps) 
 }
 
 /* Lo que comparten `Select` y `CreatableSelect`: el mismo aspecto y los mismos textos. */
-const sharedSelectProps = (isInvalid: boolean | undefined) =>
+const sharedSelectProps = (isInvalid: boolean | undefined, isHighlighted: boolean | undefined) =>
   ({
     unstyled: true,
     menuPortalTarget: typeof document === "undefined" ? undefined : document.body,
@@ -93,7 +97,9 @@ const sharedSelectProps = (isInvalid: boolean | undefined) =>
             ? "border-destructive ring-4 ring-destructive/20"
             : isFocused
               ? "border-ring ring-4 ring-ring/30"
-              : "border-input",
+              : isHighlighted
+                ? "border-primary"
+                : "border-input",
         ),
       valueContainer: () => "gap-1",
       placeholder: () => "font-normal text-muted-foreground",

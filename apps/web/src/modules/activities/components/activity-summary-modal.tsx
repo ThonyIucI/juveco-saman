@@ -9,7 +9,7 @@ import { useEffect } from "react";
 import Modal from "@/common/components/modal";
 import { useGetActivitySummary } from "@/modules/activities/hooks/use-get-activity-summary";
 
-import { COLLECTION_BADGE } from "./activity-item-card";
+import { COLLECTION_BADGE } from "./collection-badge";
 
 const SKELETON_TILES = 4;
 
@@ -51,7 +51,6 @@ export default function ActivitySummaryModal({ open, activity, onClose }: IActiv
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Tile label={`${capitalize(labels.plural)} vendidas`} value={String(summary.itemCount)} />
-            <Tile label="Total a recaudar" value={formatSoles(summary.expected)} />
             <Tile
               label="Recaudado"
               value={formatSoles(summary.collected)}
@@ -63,6 +62,7 @@ export default function ActivitySummaryModal({ open, activity, onClose }: IActiv
                 </>
               }
             />
+            <Tile label="Total a recaudar" value={formatSoles(summary.expected)} />
             <Tile label="Por cobrar" value={formatSoles(summary.pending)} />
           </div>
 

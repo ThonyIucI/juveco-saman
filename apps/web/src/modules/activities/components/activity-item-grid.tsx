@@ -10,8 +10,8 @@ const SKELETON_COUNT = 8;
 const STAGGER_SECONDS = 0.03;
 const MAX_STAGGERED = 12;
 
-/* Cards también en escritorio (acordado 2026-11-07): sin tabla. */
-const GRID_CLASS = "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+/* Solo en celular: en escritorio va `ActivityItemTable` (Thony, 2026-11-07). */
+const GRID_CLASS = "grid gap-3 sm:grid-cols-2 md:hidden";
 
 interface IActivityItemGridProps {
   items: IActivityItemResource[];

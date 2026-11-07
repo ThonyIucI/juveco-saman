@@ -19,6 +19,8 @@ export default function FilterButton({ activeCount, onClick }: IFilterButtonProp
       isBordered
       label={activeCount > 0 ? `Filtros (${activeCount} puestos)` : "Filtros"}
       onClick={onClick}
+      /* Con filtros puestos, borde de marca como los selects con filtro (Thony, 2026-11-07). */
+      className={activeCount > 0 ? "border-primary text-primary" : undefined}
     >
       <SlidersHorizontal className="size-5" />
       {activeCount > 0 && (

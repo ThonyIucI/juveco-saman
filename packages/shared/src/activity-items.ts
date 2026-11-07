@@ -48,5 +48,13 @@ export interface IActivityItemInput {
   note: string | null;
 }
 
-/** Para comparar series: «a-0125 » y «A-0125» son la misma. */
-export const normalizeItemSerial = (serial: string): string => serial.trim().toUpperCase();
+/**
+ * Para comparar series: «a-0125 » y «A-0125» son la misma, y los ceros a la izquierda no
+ * cuentan: «0100» y «100» son la misma cartilla (Thony, 2026-11-07). Se guarda como se
+ * escribió; esto solo es para comparar.
+ */
+export const normalizeItemSerial = (serial: string): string =>
+  serial
+    .trim()
+    .toUpperCase()
+    .replace(/\d+/g, (digits) => digits.replace(/^0+(?=\d)/, ""));

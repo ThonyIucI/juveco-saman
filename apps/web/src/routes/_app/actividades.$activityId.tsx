@@ -11,6 +11,7 @@ import { type ChangeEvent, useEffect, useState } from "react";
 
 import ConfirmModal from "@/common/components/confirm-modal";
 import EmptyState from "@/common/components/empty-state";
+import FilterButton from "@/common/components/filter-button";
 import FloatingActionButton from "@/common/components/floating-action-button";
 import PageHeader from "@/common/components/page-header";
 import type { IRowAction } from "@/common/components/row-actions";
@@ -20,17 +21,27 @@ import { useBoolean } from "@/common/hooks/use-boolean";
 import { formatShortDate } from "@/common/utils/format-date";
 import ActivityItemDetailPanel from "@/modules/activities/components/activity-item-detail-panel";
 import ActivityItemFormModal from "@/modules/activities/components/activity-item-form-modal";
+import {
+  ActivityItemFilterFields,
+  ActivityItemFiltersModal,
+} from "@/modules/activities/components/activity-item-filters";
 import ActivityItemGrid from "@/modules/activities/components/activity-item-grid";
+import ActivityItemTable from "@/modules/activities/components/activity-item-table";
 import ActivitySummaryModal from "@/modules/activities/components/activity-summary-modal";
 import ItemPaymentFormModal from "@/modules/activities/components/item-payment-form-modal";
 import { useDeleteActivityItem } from "@/modules/activities/hooks/use-delete-activity-item";
 import { useGetActivity } from "@/modules/activities/hooks/use-get-activity";
 import { useListActivityItems } from "@/modules/activities/hooks/use-list-activity-items";
 import {
+  EMPTY_ITEM_FILTERS,
+  type IActivityItemFilters,
   collectionOf,
   compareBySerial,
+  countActiveFilters,
   countSerials,
   matchesActivityItemSearch,
+  matchesItemFilters,
+  sellersOf,
 } from "@/modules/activities/utils/activity-items";
 import { useListUsers } from "@/modules/users/hooks/use-list-users";
 
@@ -54,10 +65,12 @@ function ActivityPage() {
   const DeleteActivityItem = useDeleteActivityItem();
   const showForm = useBoolean();
   const showSummary = useBoolean();
+  const showFilters = useBoolean();
 
   const [editTarget, setEditTarget] = useState<IActivityItemResource | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<IActivityItemResource | null>(null);
   const [term, setTerm] = useState("");
+  const [filters, setFilters] = useState<IActivityItemFilters>(EMPTY_ITEM_FILTERS);
   /* Por id y no el objeto: así el detalle y el pago ven el ítem al día tras cada cambio. */
   const [detailId, setDetailId] = useState<string | null>(null);
   const [payId, setPayId] = useState<string | null>(null);
@@ -88,10 +101,11 @@ function ActivityPage() {
 
   const serialCounts = countSerials(items);
   const normalizedTerm = term.trim().toLowerCase();
+  const activeFilterCount = countActiveFilters(filters);
   const visible = items
     .filter((item) => !normalizedTerm || matchesActivityItemSearch(item, normalizedTerm))
+    .filter((item) => matchesItemFilters(item, filters))
     .sort(compareBySerial);
-
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => setTerm(event.target.value);
 
   const openCreate = () => {
@@ -155,13 +169,14 @@ function ActivityPage() {
           action={
             <div className="flex items-center gap-3">
               {/* En celular, el resumen es el botón flotante. */}
-              <Button type="button" variant="outline" className="hidden md:inline-flex" onClick={showSummary.on}>
+              {/* `lg`: el mismo alto que el buscador (h-13), para que la fila se vea pareja. */}
+              <Button type="button" size="lg" variant="outline" className="hidden md:inline-flex" onClick={showSummary.on}>
                 <ChartColumn />
                 Resumen
               </Button>
               {/* En escritorio el buscador va junto al botón para ahorrar una fila. */}
               {items.length > 0 && <div className="hidden w-72 md:block">{searchInput}</div>}
-              <Button type="button" onClick={openCreate}>
+              <Button type="button" size="lg" onClick={openCreate}>
                 <Plus />
                 Agregar
               </Button>
@@ -175,8 +190,22 @@ function ActivityPage() {
         </div>
       )}
 
-      {/* En celular no entra junto al botón: queda en su barra fija. */}
-      {items.length > 0 && <StickyToolbar className="md:hidden">{searchInput}</StickyToolbar>}
+      {/* Escritorio: los filtros directos, en su propia fila debajo del encabezado (acordado 2026-11-07). */}
+      {items.length > 0 && (
+        <div className="hidden max-w-4xl md:block">
+          <ActivityItemFilterFields filters={filters} sellers={sellersOf(items)} onChange={setFilters} isRow />
+        </div>
+      )}
+
+      {/* Celular: el buscador en su barra fija y, a su derecha, el botón que abre los filtros. */}
+      {items.length > 0 && (
+        <StickyToolbar className="md:hidden">
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">{searchInput}</div>
+            <FilterButton activeCount={activeFilterCount} onClick={showFilters.on} />
+          </div>
+        </StickyToolbar>
+      )}
 
       {!isLoading && items.length === 0 && (
         <EmptyState
@@ -192,17 +221,36 @@ function ActivityPage() {
       )}
 
       {!isLoading && items.length > 0 && visible.length === 0 && (
-        <EmptyState icon={Search} title={`Sin resultados para "${term.trim()}"`} />
+        <EmptyState
+          icon={Search}
+          title={normalizedTerm ? `Sin resultados para "${term.trim()}"` : "Ninguna coincide con los filtros"}
+          action={
+            activeFilterCount > 0 && (
+              <Button type="button" variant="link" onClick={() => setFilters(EMPTY_ITEM_FILTERS)}>
+                Quitar filtros
+              </Button>
+            )
+          }
+        />
       )}
 
       {(isLoading || visible.length > 0) && (
-        <ActivityItemGrid
-          items={visible}
-          isLoading={isLoading}
-          serialCounts={serialCounts}
-          buildActions={buildActions}
-          onOpen={(item) => setDetailId(item.id)}
-        />
+        <>
+          <ActivityItemTable
+            items={visible}
+            isLoading={isLoading}
+            serialCounts={serialCounts}
+            buildActions={buildActions}
+            onOpen={(item) => setDetailId(item.id)}
+          />
+          <ActivityItemGrid
+            items={visible}
+            isLoading={isLoading}
+            serialCounts={serialCounts}
+            buildActions={buildActions}
+            onOpen={(item) => setDetailId(item.id)}
+          />
+        </>
       )}
 
       {activity && <FloatingActionButton label="Resumen" icon={ChartColumn} onClick={showSummary.on} />}
@@ -219,6 +267,15 @@ function ActivityPage() {
           onClose={showForm.off}
         />
       )}
+
+      <ActivityItemFiltersModal
+        open={showFilters.active}
+        filters={filters}
+        sellers={sellersOf(items)}
+        resultCount={visible.length}
+        onChange={setFilters}
+        onClose={showFilters.off}
+      />
 
       <ActivityItemDetailPanel
         item={detailItem}

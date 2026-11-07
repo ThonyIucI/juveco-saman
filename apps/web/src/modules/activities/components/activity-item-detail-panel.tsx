@@ -1,4 +1,3 @@
-import { Badge } from "@juveco/ui/components/badge";
 import { Button } from "@juveco/ui/components/button";
 import { IconButton } from "@juveco/ui/components/icon-button";
 import { Skeleton } from "@juveco/ui/components/skeleton";
@@ -36,7 +35,7 @@ import { useDeleteItemPayment } from "@/modules/activities/hooks/use-delete-item
 import { useListItemPayments } from "@/modules/activities/hooks/use-list-item-payments";
 import { collectionOf } from "@/modules/activities/utils/activity-items";
 
-import { COLLECTION_BADGE } from "./activity-item-card";
+import CollectionBadge from "./collection-badge";
 
 const METHOD_ICON: Record<TPaymentMethod, LucideIcon> = {
   [EPaymentMethod.YAPE]: Smartphone,
@@ -165,7 +164,7 @@ export default function ActivityItemDetailPanel({
               <p className="text-sm text-muted-foreground">
                 Pagado: <span className="font-semibold text-foreground tabular-nums">{formatSoles(current.paidAmount)}</span>
               </p>
-              <PendingBadge item={current} />
+              <CollectionBadge item={current} label="Por cobrar" />
             </div>
 
             {isLoadingPayments && (
@@ -225,17 +224,5 @@ export default function ActivityItemDetailPanel({
         onCancel={() => setDeleteTarget(null)}
       />
     </>
-  );
-}
-
-/** «Por cobrar» con el mismo color que en la card. */
-function PendingBadge({ item }: { item: IActivityItemResource }) {
-  const collection = collectionOf(item);
-  const { color, icon: Icon } = COLLECTION_BADGE[collection.status];
-  return (
-    <Badge color={color} className="rounded-md tabular-nums">
-      <Icon aria-hidden />
-      Por cobrar {formatSoles(collection.pending)}
-    </Badge>
   );
 }
