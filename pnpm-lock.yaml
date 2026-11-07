@@ -360,7 +360,7 @@ importers:
         version: 1.7.1(@cloudflare/workers-types@5.20260908.1)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260908.1)(kysely@0.29.5))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.11(@types/node@26.5.0)(vite@8.2.2(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0)))
       drizzle-orm:
         specifier: ^0.45.2
-        version: 0.45.2
+        version: 0.45.2(@cloudflare/workers-types@5.20260908.1)(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(kysely@0.29.5)
       zod:
         specifier: 'catalog:'
         version: 4.5.4
