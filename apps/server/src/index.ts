@@ -13,6 +13,7 @@ import { translateAuthMessage, translateAuthResponse } from "./lib/auth-errors";
 import { AppError } from "./lib/errors";
 import { fail } from "./lib/response";
 import { activityRoutes } from "./routes/activities";
+import { activityFinanceRoutes } from "./routes/activity-finances";
 import { healthRoutes } from "./routes/health";
 import { internalRoutes } from "./routes/internal";
 import { meRoutes } from "./routes/me";
@@ -60,6 +61,7 @@ app
   .route("/", meRoutes)
   .route("/", userRoutes)
   .route("/", activityRoutes)
+  .route("/", activityFinanceRoutes)
   .route("/", internalRoutes);
 
 app.notFound((context) => fail(context, "Recurso no encontrado.", 404));

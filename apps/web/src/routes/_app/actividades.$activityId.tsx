@@ -5,7 +5,7 @@ import { cn } from "@juveco/ui/lib/utils";
 import { activityItemLabels } from "@juveco/shared/activities";
 import type { IActivityItemResource } from "@juveco/shared/activity-items";
 import { formatSoles } from "@juveco/shared/money";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChartColumn, HandCoins, Pencil, Plus, RefreshCw, Search, Ticket, Trash2 } from "lucide-react";
 import { type ChangeEvent, useEffect, useState } from "react";
 
@@ -27,7 +27,6 @@ import {
 } from "@/modules/activities/components/activity-item-filters";
 import ActivityItemGrid from "@/modules/activities/components/activity-item-grid";
 import ActivityItemTable from "@/modules/activities/components/activity-item-table";
-import ActivitySummaryModal from "@/modules/activities/components/activity-summary-modal";
 import ItemPaymentFormModal from "@/modules/activities/components/item-payment-form-modal";
 import { useDeleteActivityItem } from "@/modules/activities/hooks/use-delete-activity-item";
 import { useGetActivity } from "@/modules/activities/hooks/use-get-activity";
@@ -64,7 +63,7 @@ function ActivityPage() {
   const ListUsers = useListUsers();
   const DeleteActivityItem = useDeleteActivityItem();
   const showForm = useBoolean();
-  const showSummary = useBoolean();
+  const navigate = useNavigate();
   const showFilters = useBoolean();
 
   const [editTarget, setEditTarget] = useState<IActivityItemResource | undefined>();
@@ -106,6 +105,9 @@ function ActivityPage() {
     .filter((item) => !normalizedTerm || matchesActivityItemSearch(item, normalizedTerm))
     .filter((item) => matchesItemFilters(item, filters))
     .sort(compareBySerial);
+  /* KPIs, balance, premios y gastos van en su propia página (acordado 2026-11-07). */
+  const openSummary = () => navigate({ to: "/actividades/$activityId/resumen", params: { activityId } });
+
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => setTerm(event.target.value);
 
   const openCreate = () => {
@@ -170,7 +172,7 @@ function ActivityPage() {
             <div className="flex items-center gap-3">
               {/* En celular, el resumen es el botón flotante. */}
               {/* `lg`: el mismo alto que el buscador (h-13), para que la fila se vea pareja. */}
-              <Button type="button" size="lg" variant="outline" className="hidden md:inline-flex" onClick={showSummary.on}>
+              <Button type="button" size="lg" variant="outline" className="hidden md:inline-flex" onClick={openSummary}>
                 <ChartColumn />
                 Resumen
               </Button>
@@ -253,7 +255,7 @@ function ActivityPage() {
         </>
       )}
 
-      {activity && <FloatingActionButton label="Resumen" icon={ChartColumn} onClick={showSummary.on} />}
+      {activity && <FloatingActionButton label="Resumen" icon={ChartColumn} onClick={openSummary} />}
 
       {activity && (
         <ActivityItemFormModal
@@ -292,7 +294,6 @@ function ActivityPage() {
         onClose={() => setPayId(null)}
       />
 
-      {activity && <ActivitySummaryModal open={showSummary.active} activity={activity} onClose={showSummary.off} />}
 
       <ConfirmModal
         open={deleteTarget !== null}

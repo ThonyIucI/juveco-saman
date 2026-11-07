@@ -57,7 +57,8 @@ const serialSchema = z
   .min(1, ACTIVITY_ITEM_SERIAL_REQUIRED_MESSAGE)
   .max(ACTIVITY_ITEM_SERIAL_MAX_LENGTH, ACTIVITY_ITEM_SERIAL_LENGTH_MESSAGE);
 
-const priceSchema = z
+/* Soles positivos con dos decimales: precios, pagos, costos y gastos. */
+export const priceSchema = z
   .number(INVALID_SOLES_MESSAGE)
   .positive(INVALID_SOLES_MESSAGE)
   .refine(hasAtMostTwoDecimals, INVALID_SOLES_MESSAGE)
@@ -86,7 +87,7 @@ const createPaymentSchema = z.object({
   method: z.enum(PAYMENT_METHODS, PAYMENT_METHOD_REQUIRED_MESSAGE),
 });
 
-type TDb = ReturnType<typeof createDb>;
+export type TDb = ReturnType<typeof createDb>;
 type TActivityRow = typeof activities.$inferSelect;
 type TUserRow = typeof users.$inferSelect;
 
@@ -139,7 +140,7 @@ const selectItems = (db: TDb) =>
     .innerJoin(buyers, eq(buyers.id, activityItems.buyerId))
     .innerJoin(sellers, eq(sellers.id, activityItems.sellerId));
 
-const findActivity = async (db: TDb, id: string) => {
+export const findActivity = async (db: TDb, id: string) => {
   const row = await db.select().from(activities).where(eq(activities.id, id)).get();
   if (!row) {
     throw notFound(ACTIVITY_NOT_FOUND);

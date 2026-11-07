@@ -3,6 +3,7 @@ import type { IUserResource } from "@juveco/shared/users";
 import { fullName } from "@juveco/shared/people";
 
 import InitialsAvatar, { avatarColorOf } from "@/common/components/initials-avatar";
+import NeighborhoodBadge from "@/common/components/neighborhood-badge";
 import RowActions, { type IRowAction } from "@/common/components/row-actions";
 import WhatsAppButton from "@/common/components/whatsapp-button";
 import { formatMonthYear } from "@/common/utils/format-date";
@@ -67,9 +68,8 @@ export default function UserCard({ user, actions, onOpen }: IUserCardProps) {
         </div>
         <div className="min-w-0 space-y-1">
           <p className="text-muted-foreground">Barrio</p>
-          <p className={user.neighborhood ? "truncate text-foreground" : "text-muted-foreground"}>
-            {user.neighborhood?.name ?? "Sin barrio"}
-          </p>
+          {/* En su color, como en las cartillas (Thony, 2026-11-07); sin barrio, vacío. */}
+          {user.neighborhood && <NeighborhoodBadge neighborhood={user.neighborhood} />}
         </div>
       </div>
     </article>

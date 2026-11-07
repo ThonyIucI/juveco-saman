@@ -48,11 +48,14 @@ Ver los pasos en [tecnico/despliegue.md](tecnico/despliegue.md).
 - Pantalla: cards también en escritorio, como la de reportes de ventas de id-pos: header gris con serie, comprador, acceso directo al pago (mientras falte cobrar) y `⋯`; cuerpo con el barrio y «Por cobrar» (verde S/ 0.00 si pagó, amarillo si pagó una parte, rojo si no pagó). Tocar la card abre el detalle en panel lateral. Buscador y botón de sincronizar junto al título. El comprador se elige con `UserSearch` y se puede crear ahí mismo.
 - Escritorio: tabla (serie, comprador, barrio, vendedor, precio, por cobrar, acciones) y los filtros directos en una fila bajo el encabezado. Celular: cards (serie a 18 px, barrio al lado del nombre, vendedor y por cobrar en el cuerpo) y botón de filtros a la derecha del buscador que abre una modal. Filtros: estado de pago, vendedor y barrio.
 - Pagos (tabla `activity_item_payments`): monto y método (Yape o efectivo); cobra el admin de la sesión y la fecha es la del registro. Un pago no puede pasar de lo que falta cobrar. La deuda no se guarda: es el precio menos la suma de los pagos. Un pago mal puesto se elimina desde el detalle. Un ítem con pagos no se elimina, y su precio no baja de lo pagado.
-- KPIs en la modal «Resumen» (botón junto al buscador en escritorio, botón flotante en celular): vendidas, total a recaudar, recaudado (Yape y efectivo), por cobrar y cuántos pagaron todo, una parte o nada. API: `GET /activities/:id/summary`.
+- Página de resumen (`/actividades/:id/resumen`), desde el botón «Resumen» de las cartillas (flotante en celular): KPIs (vendidas, recaudado por Yape y efectivo, total a recaudar, por cobrar, cómo van los pagos), balance, premios y gastos. API: `GET /activities/:id/summary` y `GET /activities/:id/balance`.
+- Premios (`activity_prizes`): nombre, **Donado** (con donante, una persona; un negocio va en la nota) o **Comprado** (con costo), y nota. A una persona que donó un premio no se la puede eliminar.
+- Gastos (`activity_expenses`): concepto, monto y nota (impresión de cartillas, alquileres…). Lo gastado en premios comprados no se repite acá.
+- Balance: ingresos − premios comprados − gastos = ganancia, con lo ya cobrado («Actual») y si todos pagan. Los donados no restan, solo se cuentan.
 
 ## Pendiente (en este orden; cada parte se prueba antes de seguir)
 
-1. **Premios**: salen del dinero del bingo.
+1. **Ganadores** de los premios (más adelante).
 2. **Contenido de Juveco**: proyectos, quiénes somos y demás secciones públicas.
 
 ## Decisiones abiertas

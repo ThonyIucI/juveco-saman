@@ -1,7 +1,5 @@
 import { Button } from "@juveco/ui/components/button";
-import { Input } from "@juveco/ui/components/input";
 import { Label } from "@juveco/ui/components/label";
-import { cn } from "@juveco/ui/lib/utils";
 import {
   EPaymentMethod,
   type IPaymentChange,
@@ -21,6 +19,8 @@ import z from "zod";
 
 import FieldError from "@/common/components/field-error";
 import Modal from "@/common/components/modal";
+import OptionCards, { type IOptionCard } from "@/common/components/option-cards";
+import SolesInput from "@/common/components/soles-input";
 import { useCreateItemPayment } from "@/modules/activities/hooks/use-create-item-payment";
 import { collectionOf } from "@/modules/activities/utils/activity-items";
 
@@ -30,6 +30,12 @@ const METHOD_ICON: Record<TPaymentMethod, LucideIcon> = {
   [EPaymentMethod.YAPE]: Smartphone,
   [EPaymentMethod.CASH]: Banknote,
 };
+
+const METHOD_OPTIONS: IOptionCard<TPaymentMethod>[] = PAYMENT_METHODS.map((method) => ({
+  value: method,
+  label: paymentMethodLabels[method],
+  icon: METHOD_ICON[method],
+}));
 
 /* El tope es lo que falta cobrar de este ítem (acordado 2026-11-07). */
 const buildSchema = (pending: number) =>
@@ -128,26 +134,14 @@ export default function ItemPaymentFormModal({ item, onSaved, onClose }: IItemPa
           {(field) => (
             <div className="space-y-2">
               <Label htmlFor={field.name}>Monto</Label>
-              <div className="relative">
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-y-0 left-4 flex items-center font-medium text-muted-foreground"
-                >
-                  S/
-                </span>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  inputMode="decimal"
-                  autoComplete="off"
-                  placeholder="Ingresa el monto"
-                  aria-invalid={field.state.meta.errors.length > 0}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  className="pl-11 tabular-nums"
-                />
-              </div>
+              <SolesInput
+                id={field.name}
+                placeholder="Ingresa el monto"
+                isInvalid={field.state.meta.errors.length > 0}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={field.handleChange}
+              />
               <FieldError errors={field.state.meta.errors} />
             </div>
           )}
@@ -157,30 +151,12 @@ export default function ItemPaymentFormModal({ item, onSaved, onClose }: IItemPa
           {(field) => (
             <div className="space-y-2">
               <Label id="payment-method-label">Cómo pagó</Label>
-              <div role="radiogroup" aria-labelledby="payment-method-label" className="grid grid-cols-2 gap-2">
-                {PAYMENT_METHODS.map((method) => {
-                  const Icon = METHOD_ICON[method];
-                  const isSelected = field.state.value === method;
-                  return (
-                    <button
-                      key={method}
-                      type="button"
-                      role="radio"
-                      aria-checked={isSelected}
-                      onClick={() => field.handleChange(method)}
-                      className={cn(
-                        "flex h-13 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 text-sm font-semibold transition-colors outline-none focus-visible:ring-4 focus-visible:ring-ring/30",
-                        isSelected
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-input bg-field text-foreground hover:bg-muted",
-                      )}
-                    >
-                      <Icon aria-hidden className="size-5" />
-                      {paymentMethodLabels[method]}
-                    </button>
-                  );
-                })}
-              </div>
+              <OptionCards
+                labelledBy="payment-method-label"
+                options={METHOD_OPTIONS}
+                value={field.state.value}
+                onChange={field.handleChange}
+              />
               <FieldError errors={field.state.meta.errors} />
             </div>
           )}

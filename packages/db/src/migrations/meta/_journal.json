@@ -43,6 +43,13 @@
       "when": 1794072200372,
       "tag": "0005_seed_clientes_bingo",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794074245244,
+      "tag": "0006_silky_avengers",
+      "breakpoints": true
     }
   ]
 }

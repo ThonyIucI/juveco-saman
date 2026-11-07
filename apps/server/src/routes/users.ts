@@ -2,6 +2,7 @@ import type { TAuth } from "@juveco/auth";
 import { createDb } from "@juveco/db";
 import { authUsers } from "@juveco/db/schema/auth";
 import { activityItems } from "@juveco/db/schema/activity-items";
+import { activityPrizes } from "@juveco/db/schema/activity-prizes";
 import { users } from "@juveco/db/schema/users";
 import { neighborhoodOf } from "@juveco/shared/neighborhoods";
 import { fullName } from "@juveco/shared/people";
@@ -243,6 +244,14 @@ export const userRoutes = new Hono<TAppEnv>()
       .get();
     if (boughtItem) {
       throw conflict(`«${fullName(current.user)}» compró en una actividad: primero cambia el comprador o elimina esa venta.`);
+    }
+    const donatedPrize = await db
+      .select({ id: activityPrizes.id })
+      .from(activityPrizes)
+      .where(eq(activityPrizes.donorId, id))
+      .get();
+    if (donatedPrize) {
+      throw conflict(`«${fullName(current.user)}» donó un premio: primero cambia el donante o elimina ese premio.`);
     }
     await db.delete(users).where(eq(users.id, id));
 
