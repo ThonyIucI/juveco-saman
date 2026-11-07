@@ -31,7 +31,7 @@ function LoginPage() {
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <img src="/logo.png" alt="Logo de Juveco Samán" className="size-28 drop-shadow-xl" />
           <div>
-            <h1 className="font-heading text-3xl font-extrabold tracking-tight text-foreground">Juveco Samán</h1>
+            <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground">Juveco Samán</h1>
             <p className="mt-1 text-muted-foreground">Junta Vecinal Comunal Samán</p>
           </div>
         </div>

@@ -1,43 +1,20 @@
 import { Badge } from "@juveco/ui/components/badge";
-import { Skeleton } from "@juveco/ui/components/skeleton";
-import { cn } from "@juveco/ui/lib/utils";
 import { type IActivityResource, activityTypeLabels } from "@juveco/shared/activities";
-import { formatSoles } from "@juveco/shared/money";
 import { CalendarDays } from "lucide-react";
-import { useEffect } from "react";
 
-import { formatShortDate, todayIso } from "@/common/utils/format-date";
-import { useGetActivityBalance } from "@/modules/activities/hooks/use-get-activity-balance";
+import { formatShortDate } from "@/common/utils/format-date";
 
 interface IActivityOverviewCardProps {
   activity: IActivityResource;
   onOpen: () => void;
 }
 
-/** Ya pasó el día del evento: se puede mostrar cómo quedó. */
-export const isActivityFinished = (activity: IActivityResource): boolean => activity.eventDate < todayIso();
-
 /**
- * Una actividad en el inicio (acordado 2026-11-07): nombre y tipo arriba; abajo, la ganancia
- * neta si ya se realizó o «Por realizar el: fecha» si todavía no. Toda la card abre la
- * actividad.
+ * Una actividad en el inicio: nombre y tipo arriba; abajo, la fecha. Toda la card abre la
+ * actividad. La ganancia neta se suma después (Thony, 2026-11-07: por ahora solo nombre, tipo
+ * y fecha).
  */
 export default function ActivityOverviewCard({ activity, onOpen }: IActivityOverviewCardProps) {
-  const isFinished = isActivityFinished(activity);
-  const GetActivityBalance = useGetActivityBalance();
-  const { balance } = GetActivityBalance;
-
-  /* El balance solo hace falta si ya se realizó. */
-  useEffect(() => {
-    if (!isFinished) {
-      return;
-    }
-    const controller = new AbortController();
-    GetActivityBalance.handler(activity.id, controller.signal);
-    return () => controller.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activity.id, isFinished]);
-
   return (
     <article
       role="button"
@@ -60,33 +37,10 @@ export default function ActivityOverviewCard({ activity, onOpen }: IActivityOver
       </div>
 
       <div className="p-3">
-        {isFinished ? (
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">Ganancia neta</p>
-            {balance ? (
-              <p
-                className={cn(
-                  "font-heading text-xl font-bold tabular-nums",
-                  balance.currentProfit < 0 ? "text-destructive" : "text-foreground",
-                )}
-              >
-                {balance.currentProfit < 0
-                  ? `− ${formatSoles(Math.abs(balance.currentProfit))}`
-                  : formatSoles(balance.currentProfit)}
-              </p>
-            ) : (
-              <Skeleton className="h-7 w-28 rounded-md" />
-            )}
-          </div>
-        ) : (
-          <p className="flex items-center gap-2 text-sm text-foreground">
-            <CalendarDays aria-hidden className="size-4 text-muted-foreground" />
-            <span>
-              <span className="text-muted-foreground">Por realizar el:</span>{" "}
-              <span className="font-semibold">{formatShortDate(activity.eventDate)}</span>
-            </span>
-          </p>
-        )}
+        <p className="flex items-center gap-2 text-sm text-foreground">
+          <CalendarDays aria-hidden className="size-4 text-muted-foreground" />
+          <span className="font-semibold">{formatShortDate(activity.eventDate)}</span>
+        </p>
       </div>
     </article>
   );

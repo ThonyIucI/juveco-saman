@@ -36,15 +36,16 @@ function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { activities } = ListActivities;
-  const isLoadingActivities = ListActivities.loading && activities.length === 0;
+  /* `null` hasta que llega la primera respuesta. */
+  const activities = ListActivities.activities ?? [];
+  const isLoadingActivities = ListActivities.activities === null;
   const isLoadingTeam = ListUsers.loading && ListUsers.users.length === 0;
   const teamCount = ListUsers.users.filter((person) => TEAM_ROLES.has(person.role)).length;
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold text-foreground md:text-3xl">Hola, {user.name}</h1>
+        <h1 className="font-heading text-xl font-bold text-foreground">Hola, {user.name}</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">{userRoleLabels[user.role]}</p>
       </div>
 

@@ -18,7 +18,7 @@ export default function PageHeader({ title, titleAction, subtitle, isLoadingSubt
     <div className="flex items-center justify-between gap-4">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <h1 className="font-heading text-2xl font-bold text-foreground md:text-3xl">{title}</h1>
+          <h1 className="font-heading text-xl font-bold text-foreground">{title}</h1>
           {titleAction}
         </div>
         {isLoadingSubtitle ? (

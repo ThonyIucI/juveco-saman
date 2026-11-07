@@ -34,7 +34,7 @@ function ActivitiesPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4 px-4 py-6">
-      <h1 className="font-heading text-2xl font-bold text-foreground md:text-3xl">Actividades</h1>
+      <h1 className="font-heading text-xl font-bold text-foreground">Actividades</h1>
       {hasNoActivities ? (
         <EmptyState icon={PartyPopper} title="Todavía no hay actividades" />
       ) : (
