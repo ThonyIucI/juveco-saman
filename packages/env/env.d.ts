@@ -9,7 +9,7 @@ export interface CloudflareEnv {
   BETTER_AUTH_SECRET: string;
   /** URL pública de la API, p. ej. https://juveco-api.gaiamundo.com */
   BETTER_AUTH_URL: string;
-  /** Origen permitido para CORS y cookies, p. ej. https://juveco.gaiamundo.com */
+  /** Origen permitido para CORS y cookies, p. ej. https://juveco-saman.gaiamundo.com */
   CORS_ORIGIN: string;
   /** Token para el endpoint interno de seed del superadmin */
   SEED_TOKEN: string;

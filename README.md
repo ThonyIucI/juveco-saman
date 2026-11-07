@@ -9,7 +9,7 @@ Misma base y flujo de deploy que `yiya-accounts` y `electrolitos`: monorepo pnpm
 
 | Pieza | Local | Producción |
 |---|---|---|
-| Web | http://localhost:3012 | https://juveco.gaiamundo.com |
+| Web | http://localhost:3012 | https://juveco-saman.gaiamundo.com |
 | API | http://localhost:3013 | https://juveco-api.gaiamundo.com |
 | Base D1 | `apps/server/.wrangler/` | `juveco-db` |
 
