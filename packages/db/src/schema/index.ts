@@ -1,4 +1,5 @@
 export * from "./activities";
+export * from "./activity-item-payments";
 export * from "./activity-items";
 export * from "./auth";
 export * from "./neighborhoods";

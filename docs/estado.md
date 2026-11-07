@@ -45,14 +45,14 @@ Ver los pasos en [tecnico/despliegue.md](tecnico/despliegue.md).
 - El barrio se muestra en un badge con su color (paleta de segmentos de id-pos): Nueva Esperanza verde, El Patio ladrillo, Ramón Castilla dorado, María Auxiliadora celeste, Santa Rosa rosado.
 - Serie repetida en el mismo bingo: se deja guardar y se avisa en el formulario y en la card.
 - Cualquier admin vende, edita y elimina. A una persona con cartillas no se la puede eliminar.
-- Pantalla: cards también en escritorio, como la de reportes de ventas de id-pos: header gris con serie, comprador y `⋯`; cuerpo con el barrio y «Por cobrar» (verde S/ 0.00 si pagó, amarillo si pagó una parte, rojo si no pagó). Mientras no haya pagos, todo sale en rojo. Buscador y botón de sincronizar junto al título; cuántas se vendieron va en los KPIs, no en el subtítulo. El comprador se elige con `UserSearch` y se puede crear ahí mismo.
+- Pantalla: cards también en escritorio, como la de reportes de ventas de id-pos: header gris con serie, comprador, acceso directo al pago (mientras falte cobrar) y `⋯`; cuerpo con el barrio y «Por cobrar» (verde S/ 0.00 si pagó, amarillo si pagó una parte, rojo si no pagó). Tocar la card abre el detalle en panel lateral. Buscador y botón de sincronizar junto al título. El comprador se elige con `UserSearch` y se puede crear ahí mismo.
+- Pagos (tabla `activity_item_payments`): monto y método (Yape o efectivo); cobra el admin de la sesión y la fecha es la del registro. Un pago no puede pasar de lo que falta cobrar. La deuda no se guarda: es el precio menos la suma de los pagos. Un pago mal puesto se elimina desde el detalle. Un ítem con pagos no se elimina, y su precio no baja de lo pagado.
+- KPIs en la modal «Resumen» (botón junto al buscador en escritorio, botón flotante en celular): vendidas, total a recaudar, recaudado (Yape y efectivo), por cobrar y cuántos pagaron todo, una parte o nada. API: `GET /activities/:id/summary`.
 
 ## Pendiente (en este orden; cada parte se prueba antes de seguir)
 
-1. **Detalle de la cartilla** y cómo se muestran los pagos en la card.
-2. **Pagos**: Yape o efectivo, pagos parciales. La deuda se calcula a partir de los pagos.
-3. **Premios y KPIs**: los premios salen del dinero del bingo. Panel con lo recaudado, lo que se debe y lo que falta por cobrar.
-4. **Contenido de Juveco**: proyectos, quiénes somos y demás secciones públicas.
+1. **Premios**: salen del dinero del bingo.
+2. **Contenido de Juveco**: proyectos, quiénes somos y demás secciones públicas.
 
 ## Decisiones abiertas
 

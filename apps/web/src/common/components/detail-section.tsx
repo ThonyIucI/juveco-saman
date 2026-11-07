@@ -11,16 +11,29 @@ interface IDetailSectionProps {
   action?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** Borde gris y radio chico en vez de sombra, como las cards de actividades (Thony, 2026-11-07). */
+  isBordered?: boolean;
 }
 
 /**
  * Card con título de un detalle («Cuenta», «Nota»…), como las de id-pos: el encabezado va
  * sobre un fondo más oscuro que el cuerpo.
  */
-export function DetailSection({ title, action, children, className }: IDetailSectionProps) {
+export function DetailSection({ title, action, children, className, isBordered = false }: IDetailSectionProps) {
   return (
-    <section className={cn("overflow-hidden rounded-2xl bg-card shadow-card", className)}>
-      <div className="flex min-h-12 items-center justify-between gap-2 bg-muted px-4 py-1.5">
+    <section
+      className={cn(
+        "overflow-hidden bg-card",
+        isBordered ? "rounded-sm border border-border" : "rounded-2xl shadow-card",
+        className,
+      )}
+    >
+      <div
+        className={cn(
+          "flex min-h-12 items-center justify-between gap-2 bg-muted px-4 py-1.5",
+          isBordered && "border-b border-border",
+        )}
+      >
         <h3 className="font-heading text-sm font-bold text-foreground">{title}</h3>
         {action}
       </div>

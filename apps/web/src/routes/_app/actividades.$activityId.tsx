@@ -6,23 +6,28 @@ import { activityItemLabels } from "@juveco/shared/activities";
 import type { IActivityItemResource } from "@juveco/shared/activity-items";
 import { formatSoles } from "@juveco/shared/money";
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Plus, RefreshCw, Search, Ticket, Trash2 } from "lucide-react";
+import { ChartColumn, HandCoins, Pencil, Plus, RefreshCw, Search, Ticket, Trash2 } from "lucide-react";
 import { type ChangeEvent, useEffect, useState } from "react";
 
 import ConfirmModal from "@/common/components/confirm-modal";
 import EmptyState from "@/common/components/empty-state";
+import FloatingActionButton from "@/common/components/floating-action-button";
 import PageHeader from "@/common/components/page-header";
 import type { IRowAction } from "@/common/components/row-actions";
 import SearchInput from "@/common/components/search-input";
 import StickyToolbar from "@/common/components/sticky-toolbar";
 import { useBoolean } from "@/common/hooks/use-boolean";
 import { formatShortDate } from "@/common/utils/format-date";
+import ActivityItemDetailPanel from "@/modules/activities/components/activity-item-detail-panel";
 import ActivityItemFormModal from "@/modules/activities/components/activity-item-form-modal";
 import ActivityItemGrid from "@/modules/activities/components/activity-item-grid";
+import ActivitySummaryModal from "@/modules/activities/components/activity-summary-modal";
+import ItemPaymentFormModal from "@/modules/activities/components/item-payment-form-modal";
 import { useDeleteActivityItem } from "@/modules/activities/hooks/use-delete-activity-item";
 import { useGetActivity } from "@/modules/activities/hooks/use-get-activity";
 import { useListActivityItems } from "@/modules/activities/hooks/use-list-activity-items";
 import {
+  collectionOf,
   compareBySerial,
   countSerials,
   matchesActivityItemSearch,
@@ -48,10 +53,14 @@ function ActivityPage() {
   const ListUsers = useListUsers();
   const DeleteActivityItem = useDeleteActivityItem();
   const showForm = useBoolean();
+  const showSummary = useBoolean();
 
   const [editTarget, setEditTarget] = useState<IActivityItemResource | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<IActivityItemResource | null>(null);
   const [term, setTerm] = useState("");
+  /* Por id y no el objeto: así el detalle y el pago ven el ítem al día tras cada cambio. */
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [payId, setPayId] = useState<string | null>(null);
 
   /* Las personas también: el comprador se elige de ahí y su barrio pudo cambiar. */
   const loadAll = (signal?: AbortSignal) =>
@@ -73,6 +82,9 @@ function ActivityPage() {
   const itemLabel = activity ? activityItemLabels[activity.type] : FALLBACK_ITEM_LABEL;
   const isLoading = ListActivityItems.loading && items.length === 0;
   const isSyncing = GetActivity.loading || ListActivityItems.loading || ListUsers.loading;
+
+  const detailItem = items.find((item) => item.id === detailId) ?? null;
+  const payItem = items.find((item) => item.id === payId) ?? null;
 
   const serialCounts = countSerials(items);
   const normalizedTerm = term.trim().toLowerCase();
@@ -103,7 +115,11 @@ function ActivityPage() {
     setDeleteTarget(null);
   };
 
+  /* El acceso directo al pago va suelto junto al `⋯`, solo mientras falte cobrar (acordado 2026-11-07). */
   const buildActions = (item: IActivityItemResource): IRowAction[] => [
+    ...(collectionOf(item).pending > 0
+      ? [{ icon: HandCoins, label: "Registrar pago", inline: true, onClick: () => setPayId(item.id) }]
+      : []),
     { icon: Pencil, label: "Editar", onClick: () => openEdit(item) },
     { icon: Trash2, label: "Eliminar", variant: "destructive", onClick: () => setDeleteTarget(item) },
   ];
@@ -123,7 +139,7 @@ function ActivityPage() {
   );
 
   const syncButton = (
-    <IconButton label="Sincronizar" tone="muted" isBordered onClick={() => loadAll()}>
+    <IconButton label="Sincronizar" tone="muted" onClick={() => loadAll()}>
       <RefreshCw className={cn(isSyncing && "animate-spin motion-reduce:animate-none")} />
     </IconButton>
   );
@@ -138,6 +154,11 @@ function ActivityPage() {
           isLoadingSubtitle={isLoading}
           action={
             <div className="flex items-center gap-3">
+              {/* En celular, el resumen es el botón flotante. */}
+              <Button type="button" variant="outline" className="hidden md:inline-flex" onClick={showSummary.on}>
+                <ChartColumn />
+                Resumen
+              </Button>
               {/* En escritorio el buscador va junto al botón para ahorrar una fila. */}
               {items.length > 0 && <div className="hidden w-72 md:block">{searchInput}</div>}
               <Button type="button" onClick={openCreate}>
@@ -180,8 +201,11 @@ function ActivityPage() {
           isLoading={isLoading}
           serialCounts={serialCounts}
           buildActions={buildActions}
+          onOpen={(item) => setDetailId(item.id)}
         />
       )}
+
+      {activity && <FloatingActionButton label="Resumen" icon={ChartColumn} onClick={showSummary.on} />}
 
       {activity && (
         <ActivityItemFormModal
@@ -195,6 +219,23 @@ function ActivityPage() {
           onClose={showForm.off}
         />
       )}
+
+      <ActivityItemDetailPanel
+        item={detailItem}
+        backLabel={activity?.name ?? "Volver"}
+        buildActions={buildActions}
+        onPay={(item) => setPayId(item.id)}
+        onItemChanged={ListActivityItems.onUpsert}
+        onClose={() => setDetailId(null)}
+      />
+
+      <ItemPaymentFormModal
+        item={payItem}
+        onSaved={(change) => ListActivityItems.onUpsert(change.item)}
+        onClose={() => setPayId(null)}
+      />
+
+      {activity && <ActivitySummaryModal open={showSummary.active} activity={activity} onClose={showSummary.off} />}
 
       <ConfirmModal
         open={deleteTarget !== null}

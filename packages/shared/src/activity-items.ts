@@ -30,6 +30,8 @@ export interface IActivityItemResource {
   serial: string;
   /** En soles con dos decimales (ver `money.ts`). */
   price: number;
+  /** La suma de sus pagos; lo que falta cobrar es `price - paidAmount`. */
+  paidAmount: number;
   buyer: IActivityItemBuyer;
   /** El administrador que lo vendió: el que lo registró. */
   seller: IActivityItemPerson;

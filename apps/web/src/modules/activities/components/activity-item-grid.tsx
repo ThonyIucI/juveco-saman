@@ -19,9 +19,10 @@ interface IActivityItemGridProps {
   /** Cuántos hay con cada serie en **toda** la actividad, no solo en lo filtrado. */
   serialCounts: Map<string, number>;
   buildActions: (item: IActivityItemResource) => IRowAction[];
+  onOpen: (item: IActivityItemResource) => void;
 }
 
-export default function ActivityItemGrid({ items, isLoading, serialCounts, buildActions }: IActivityItemGridProps) {
+export default function ActivityItemGrid({ items, isLoading, serialCounts, buildActions, onOpen }: IActivityItemGridProps) {
   const prefersReducedMotion = useReducedMotion();
 
   if (isLoading) {
@@ -55,7 +56,12 @@ export default function ActivityItemGrid({ items, isLoading, serialCounts, build
                 delay: prefersReducedMotion ? 0 : Math.min(index, MAX_STAGGERED) * STAGGER_SECONDS,
               }}
             >
-              <ActivityItemCard item={item} isSerialRepeated={serialCount > 1} actions={buildActions(item)} />
+              <ActivityItemCard
+                item={item}
+                isSerialRepeated={serialCount > 1}
+                actions={buildActions(item)}
+                onOpen={() => onOpen(item)}
+              />
             </motion.li>
           );
         })}

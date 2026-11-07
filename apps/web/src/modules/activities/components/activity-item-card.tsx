@@ -15,10 +15,12 @@ interface IActivityItemCardProps {
   /** Hay otro ítem con la misma serie en esta actividad. */
   isSerialRepeated: boolean;
   actions: IRowAction[];
+  /** Abre el detalle con sus pagos. */
+  onOpen: () => void;
 }
 
 /* Como el «A cobrar» de la card de reportes de ventas de id-pos (acordado 2026-11-07). */
-const COLLECTION_BADGE: Record<TCollectionStatus, { color: ComponentProps<typeof Badge>["color"]; icon: LucideIcon }> = {
+export const COLLECTION_BADGE: Record<TCollectionStatus, { color: ComponentProps<typeof Badge>["color"]; icon: LucideIcon }> = {
   PAID: { color: "success", icon: CircleCheck },
   PARTIAL: { color: "yellow", icon: Clock },
   UNPAID: { color: "destructive", icon: CircleX },
@@ -31,13 +33,26 @@ const COLLECTION_BADGE: Record<TCollectionStatus, { color: ComponentProps<typeof
  * - Cuerpo: el barrio y, a la derecha, «Por cobrar»: verde en S/ 0.00 si pagó todo,
  *   amarillo si pagó una parte y rojo si no pagó nada.
  */
-export default function ActivityItemCard({ item, isSerialRepeated, actions }: IActivityItemCardProps) {
+export default function ActivityItemCard({ item, isSerialRepeated, actions, onOpen }: IActivityItemCardProps) {
   const collection = collectionOf(item);
   const { color, icon: CollectionIcon } = COLLECTION_BADGE[collection.status];
 
   return (
     /* Borde gris y radio chico como el DetailCard de reportes de id-pos; sin sombra (Thony, 2026-11-07). */
-    <article className="overflow-hidden rounded-sm border border-border bg-card">
+    /* Toda la card abre el detalle; `⋯` y el acceso al pago frenan el clic (RowActions). */
+    <article
+      role="button"
+      tabIndex={0}
+      aria-label={`Ver la serie ${item.serial} de ${fullName(item.buyer)}`}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+      className="cursor-pointer overflow-hidden rounded-sm border border-border bg-card transition-colors outline-none hover:border-primary/40 focus-visible:ring-4 focus-visible:ring-ring/30"
+    >
       <div className="flex items-start gap-2 border-b border-border bg-muted p-3">
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1.5 font-mono text-sm font-semibold text-primary tabular-nums">

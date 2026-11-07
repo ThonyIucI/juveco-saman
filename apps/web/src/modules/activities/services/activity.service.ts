@@ -1,4 +1,10 @@
 import type { IActivityResource } from "@juveco/shared/activities";
+import type {
+  IActivityItemPaymentInput,
+  IActivityItemPaymentResource,
+  IActivitySummary,
+  IPaymentChange,
+} from "@juveco/shared/activity-item-payments";
 import type { IActivityItemInput, IActivityItemResource } from "@juveco/shared/activity-items";
 
 import { apiRequest } from "@/lib/api";
@@ -34,3 +40,26 @@ export const updateActivityItemRequest = ({ activityId, itemId, payload }: IUpda
 
 export const deleteActivityItemRequest = (activityId: string, itemId: string) =>
   apiRequest<{ id: string }>(`/activities/${activityId}/items/${itemId}`, { method: "DELETE" });
+
+const paymentsPath = (activityId: string, itemId: string) =>
+  `/activities/${activityId}/items/${itemId}/payments`;
+
+/** Los pagos de un ítem, del primero al último. */
+export const listItemPaymentsRequest = (activityId: string, itemId: string, signal?: AbortSignal) =>
+  apiRequest<IActivityItemPaymentResource[]>(paymentsPath(activityId, itemId), { signal });
+
+/** Quien cobra es el administrador de la sesión. Devuelve el pago y el ítem con lo pagado al día. */
+export const createItemPaymentRequest = (activityId: string, itemId: string, payload: IActivityItemPaymentInput) =>
+  apiRequest<IPaymentChange<IActivityItemResource>>(paymentsPath(activityId, itemId), {
+    method: "POST",
+    body: payload,
+  });
+
+export const deleteItemPaymentRequest = (activityId: string, itemId: string, paymentId: string) =>
+  apiRequest<IPaymentChange<IActivityItemResource>>(`${paymentsPath(activityId, itemId)}/${paymentId}`, {
+    method: "DELETE",
+  });
+
+/** Los números de los KPIs: vendidos, recaudado (por Yape y efectivo) y por cobrar. */
+export const getActivitySummaryRequest = (activityId: string, signal?: AbortSignal) =>
+  apiRequest<IActivitySummary>(`/activities/${activityId}/summary`, { signal });

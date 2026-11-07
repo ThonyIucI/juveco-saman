@@ -43,15 +43,9 @@ export interface IItemCollection {
   status: TCollectionStatus;
 }
 
-/**
- * Lo pagado de un ítem. PENDIENTE: todavía no hay pagos, así que todo está por cobrar;
- * cuando entren, se suma acá y la card no cambia.
- */
-export const paidAmountOf = (_item: IActivityItemResource): number => 0;
-
 /** Lo que falta cobrar y su estado: 0 si pagó todo, el precio entero si no pagó nada. */
 export const collectionOf = (item: IActivityItemResource): IItemCollection => {
-  const paid = paidAmountOf(item);
+  const paid = item.paidAmount;
   const pending = Math.max(roundSoles(item.price - paid), 0);
   const status: TCollectionStatus = pending === 0 ? "PAID" : paid > 0 ? "PARTIAL" : "UNPAID";
   return { pending, status };
