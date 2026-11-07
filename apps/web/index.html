@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      interactive-widget=resizes-content: en Chrome/Brave Android el teclado encoge el layout
+      en vez de solo el visual viewport. Sin esto el navegador desplaza la página para mostrar
+      el campo enfocado y la hoja inferior queda despegada, flotando sobre el teclado.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content"
+    />
+    <title>Juveco Samán</title>
+
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="theme-color" content="#1C3D96" />
+
+    <!-- Tipografías: Plus Jakarta Sans (todo) e IBM Plex Mono (series y montos) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap"
+    />
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

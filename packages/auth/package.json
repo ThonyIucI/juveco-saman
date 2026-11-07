@@ -1,0 +1,25 @@
+{
+  "name": "@juveco/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@juveco/db": "workspace:*",
+    "@juveco/env": "workspace:*",
+    "@juveco/shared": "workspace:*",
+    "better-auth": "catalog:",
+    "drizzle-orm": "^0.45.2",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@juveco/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

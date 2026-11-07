@@ -1,0 +1,44 @@
+// Configuración del Worker de la API. Docs: https://developers.cloudflare.com/workers/wrangler/configuration/
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "juveco-api",
+	// Misma cuenta de Cloudflare que electrolitos y yiya (la de gaiamundo.com).
+	"account_id": "bf8727310476f9ee0c3f768920d7194a",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-08-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"observability": {
+		"enabled": true
+	},
+	"preview_urls": false,
+	"dev": {
+		"port": 3013
+	},
+	// `wrangler deploy` conecta el subdominio y crea el DNS + certificado solo. Ver docs/tecnico/despliegue.md.
+	"routes": [
+		{
+			"pattern": "juveco-api.gaiamundo.com",
+			"custom_domain": true
+		}
+	],
+	// Variables NO secretas de producción. En local las pisa `.dev.vars`.
+	"vars": {
+		"BETTER_AUTH_URL": "https://juveco-api.gaiamundo.com",
+		// Orígenes permitidos, separados por coma. Se incluye pages.dev porque Cloudflare
+		// Pages publica ahí antes de que el dominio propio quede conectado. Si al crear el
+		// proyecto Pages te asigna otro subdominio (`juveco-saman-xxx.pages.dev`), cámbialo acá.
+		"CORS_ORIGIN": "https://juveco.gaiamundo.com,https://juveco-saman.pages.dev"
+	},
+	// Secrets (BETTER_AUTH_SECRET, SEED_TOKEN) se cargan con `wrangler secret put <NOMBRE>`.
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "juveco-db",
+			// Sale de `wrangler d1 create juveco-db` (ver docs/tecnico/despliegue.md, primera vez).
+			"database_id": "PEGAR_AQUI_EL_DATABASE_ID",
+			"migrations_dir": "../../packages/db/src/migrations"
+		}
+	]
+}

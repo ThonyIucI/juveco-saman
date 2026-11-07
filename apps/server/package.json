@@ -1,0 +1,36 @@
+{
+  "name": "server",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "sh ../../scripts/free-port.sh 3013 && wrangler dev --ip 0.0.0.0 --port 3013",
+    "deploy:worker": "wrangler deploy",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:migrate:local": "wrangler d1 migrations apply juveco-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply juveco-db --remote",
+    "db:backup": "wrangler d1 export juveco-db --remote --output backup.sql"
+  },
+  "dependencies": {
+    "@juveco/auth": "workspace:*",
+    "@juveco/db": "workspace:*",
+    "@juveco/env": "workspace:*",
+    "@juveco/shared": "workspace:*",
+    "@hono/zod-validator": "^0.7.6",
+    "better-auth": "catalog:",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.32",
+    "uuid": "^14.0.2",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@cloudflare/workers-types": "catalog:",
+    "@juveco/config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.129.1"
+  }
+}

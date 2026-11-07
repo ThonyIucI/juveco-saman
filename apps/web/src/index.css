@@ -1,0 +1,62 @@
+@import "@juveco/ui/globals.css";
+
+/* Todo lo clickeable lleva la manita en escritorio (regla de diseño, ver docs/diseno/principios.md). */
+@layer base {
+  button,
+  [role="button"],
+  [role="switch"],
+  [role="menuitem"],
+  [role="option"],
+  [role="tab"],
+  summary,
+  select,
+  label[for],
+  a[href] {
+    cursor: pointer;
+  }
+}
+
+/* Scrollbar global (la del saas): oculta por defecto, aparece fina al pasar el mouse por
+   cualquier elemento con scroll — menú lateral, contenido, modales. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*:hover {
+  scrollbar-color: oklch(0 0 0 / 18%) transparent;
+}
+.dark *:hover {
+  scrollbar-color: oklch(1 0 0 / 16%) transparent;
+}
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+*:hover::-webkit-scrollbar-thumb {
+  background: oklch(0 0 0 / 18%);
+}
+.dark *:hover::-webkit-scrollbar-thumb {
+  background: oklch(1 0 0 / 16%);
+}
+*:hover::-webkit-scrollbar-thumb:hover {
+  background: oklch(0 0 0 / 32%);
+}
+.dark *:hover::-webkit-scrollbar-thumb:hover {
+  background: oklch(1 0 0 / 28%);
+}
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}

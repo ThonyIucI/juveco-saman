@@ -1,0 +1,19 @@
+{
+  "name": "@juveco/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@juveco/config": "workspace:*",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "libphonenumber-js": "^1.13.15"
+  }
+}

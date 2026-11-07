@@ -1,0 +1,11 @@
+{
+  "extends": "@juveco/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "types": ["node", "@cloudflare/workers-types", "@cloudflare/vitest-pool-workers/types"]
+  },
+  "include": ["src", "test", "vitest.config.ts", "../../packages/env/env.d.ts"]
+}

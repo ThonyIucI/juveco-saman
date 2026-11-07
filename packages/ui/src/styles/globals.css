@@ -1,0 +1,311 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@source "../../../apps/**/*.{ts,tsx}";
+@source "../**/*.{ts,tsx}";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Identidad de Juveco Samán (2026-11-07), sacada del logo: el medallón de manos de colores
+  que forman una estrella, el aro dorado y la cinta azul rey con el nombre.
+
+  - Cinta (azul rey, más profundo y frío que el #0066F5 de Yiya): acciones y marca.
+  - Oro (el aro del medallón): lo que se celebra — premios y lo recaudado.
+  - Manos (seis colores del arcoíris): solo como dato (Yape, efectivo, estados de pago,
+    gráficos) y en la franja arcoíris de la cabecera. Nunca de fondo de una pantalla entera.
+  - Tinta: azul noche para el texto, nunca negro puro.
+
+  El modo oscuro sale del diseño de Stitch de Thony (2026-11-07): azul noche casi negro, cards
+  un punto más claras con borde fino y el azul de la cinta encendido en los botones.
+
+  Los valores viven SOLO aquí: los componentes usan bg-primary, text-gold, etc. Nunca un hex
+  en un componente.
+*/
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.24 0.08 266); /* tinta #14214A */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.08 266);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.08 266);
+
+  /* Cinta azul rey #1C3D96 */
+  --primary: oklch(0.38 0.15 264);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0.02 264);
+  --secondary-foreground: oklch(0.38 0.15 264);
+
+  --muted: oklch(0.965 0.008 264);
+  --muted-foreground: oklch(0.5 0.04 266);
+  --canvas: oklch(0.975 0.006 264);
+  /* Fondo de los campos de texto. */
+  --field: oklch(1 0 0);
+  --accent: oklch(0.95 0.02 264);
+  --accent-foreground: oklch(0.24 0.08 266);
+
+  /* Oro del aro #C99A2E. `gold-ink` es el oro para texto sobre blanco (AA). */
+  --gold: oklch(0.72 0.13 80);
+  --gold-foreground: oklch(0.25 0.05 75);
+  --gold-ink: oklch(0.52 0.11 75);
+
+  /* Estados: verdes y rojos de las manos, oscurecidos lo justo para AA como texto. */
+  --success: oklch(0.52 0.14 145);
+  --success-foreground: oklch(1 0 0);
+  --orange: oklch(0.56 0.16 50);
+  --orange-foreground: oklch(1 0 0);
+  --yellow: oklch(0.55 0.12 85);
+  --yellow-foreground: oklch(1 0 0);
+  --info: oklch(0.5 0.16 258);
+  --info-foreground: oklch(1 0 0);
+  --destructive: oklch(0.56 0.21 27);
+  --destructive-foreground: oklch(1 0 0);
+  --destructive-on-muted: oklch(0.5 0.2 27);
+
+  /* Métodos de pago: Yape va con la mano magenta, efectivo con la verde. */
+  --yape: oklch(0.55 0.2 350);
+  --yape-foreground: oklch(1 0 0);
+  --cash: oklch(0.52 0.14 145);
+  --cash-foreground: oklch(1 0 0);
+
+  /*
+    Las seis manos, en su color del logo. Son identidad: no cambian en oscuro y siempre van
+    con texto o ícono, nunca color a secas.
+  */
+  --hand-red: oklch(0.6 0.21 27);
+  --hand-orange: oklch(0.73 0.17 58);
+  --hand-yellow: oklch(0.85 0.16 92);
+  --hand-green: oklch(0.63 0.17 142);
+  --hand-magenta: oklch(0.6 0.22 350);
+  --hand-blue: oklch(0.55 0.17 258);
+
+  --chart-1: var(--primary);
+  --chart-2: var(--hand-green);
+  --chart-3: var(--gold);
+  --chart-4: var(--hand-magenta);
+  --chart-5: var(--hand-orange);
+
+  --border: oklch(0.91 0.015 264);
+  --input: oklch(0.88 0.02 264);
+  --ring: oklch(0.38 0.15 264);
+
+  --radius: 0.875rem;
+
+  /* Halo detrás del logo en el login. */
+  --glow: oklch(0.38 0.15 264 / 0.08);
+
+  --shadow-sticker: 0 2px 0 oklch(0.24 0.08 266 / 0.14);
+  --shadow-sticker-md: 0 6px 16px oklch(0.24 0.08 266 / 0.14);
+  --shadow-card: 0 1px 2px oklch(0.24 0.08 266 / 0.06), 0 4px 12px oklch(0.24 0.08 266 / 0.06);
+  --shadow-elevated: 0 4px 12px oklch(0.24 0.08 266 / 0.1);
+  --shadow-sheet: 0 12px 32px oklch(0.24 0.08 266 / 0.16);
+  --shadow-edge-bottom: 0 6px 10px -6px oklch(0.24 0.08 266 / 0.18);
+  --shadow-edge-top: 0 -6px 10px -6px oklch(0.24 0.08 266 / 0.18);
+
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.24 0.08 266);
+  --sidebar-primary: oklch(0.38 0.15 264);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.95 0.02 264);
+  --sidebar-accent-foreground: oklch(0.24 0.08 266);
+  --sidebar-border: oklch(0.91 0.015 264);
+  --sidebar-ring: oklch(0.38 0.15 264);
+}
+
+.dark {
+  /* Diseño de Stitch: página #0B1120, fondo hundido #080D19, cards #111726. */
+  --background: #0b1120;
+  --foreground: #f1f5f9;
+  --card: #111726;
+  --card-foreground: #f1f5f9;
+  --popover: #111726;
+  --popover-foreground: #f1f5f9;
+
+  /* Botón principal: blue-700 con texto blanco, como el «Iniciar sesión» de Stitch. */
+  --primary: #1d4ed8;
+  --primary-foreground: #ffffff;
+  --secondary: #1a2234;
+  --secondary-foreground: #cbd5e1;
+
+  --muted: #172133;
+  --muted-foreground: #94a3b8;
+  --canvas: #080d19;
+  --field: #172133;
+  --accent: #1a253a;
+  --accent-foreground: #f1f5f9;
+
+  --gold: oklch(0.82 0.13 85);
+  --gold-foreground: oklch(0.25 0.05 75);
+  --gold-ink: oklch(0.84 0.12 85);
+
+  --success: oklch(0.8 0.16 148);
+  --success-foreground: oklch(0.22 0.05 150);
+  --orange: oklch(0.8 0.13 60);
+  --orange-foreground: oklch(0.25 0.06 50);
+  --yellow: oklch(0.88 0.15 95);
+  --yellow-foreground: oklch(0.27 0.06 90);
+  --info: #60a5fa;
+  --info-foreground: #0b1120;
+  --destructive: oklch(0.75 0.15 20);
+  --destructive-foreground: oklch(0.19 0.06 17);
+  --destructive-on-muted: oklch(0.77 0.14 20);
+
+  --yape: oklch(0.76 0.15 350);
+  --yape-foreground: oklch(0.22 0.07 350);
+  --cash: oklch(0.8 0.16 148);
+  --cash-foreground: oklch(0.22 0.05 150);
+
+  --border: #232f48;
+  --input: #27354d;
+  --ring: #3b82f6;
+
+  --shadow-sticker: 0 2px 0 oklch(0 0 0 / 0.45);
+  --shadow-sticker-md: 0 6px 18px oklch(0 0 0 / 0.5);
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.35), 0 8px 24px -12px oklch(0 0 0 / 0.6);
+  --shadow-elevated: 0 4px 12px oklch(0 0 0 / 0.45);
+  /* La sombra de la card del login en Stitch: profunda y con un halo azul. */
+  --shadow-sheet: 0 20px 45px -15px rgb(0 0 0 / 0.7), 0 0 30px rgb(30 58 138 / 0.15);
+  --shadow-edge-bottom: 0 6px 10px -6px oklch(0 0 0 / 0.6);
+  --shadow-edge-top: 0 -6px 10px -6px oklch(0 0 0 / 0.6);
+
+  --glow: rgb(29 78 216 / 0.15);
+
+  --sidebar: #0b1120;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1a253a;
+  --sidebar-accent-foreground: #f1f5f9;
+  --sidebar-border: #232f48;
+  --sidebar-ring: #3b82f6;
+}
+
+@theme inline {
+  /*
+    Plus Jakarta Sans (la del diseño de Stitch, del estilo de la Cereal de Airbnb) para todo,
+    títulos con más peso. IBM Plex Mono para series y montos: los números se alinean en
+    columnas y una serie se lee dígito a dígito.
+  */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-canvas: var(--canvas);
+  --color-field: var(--field);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-gold-ink: var(--gold-ink);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-orange: var(--orange);
+  --color-orange-foreground: var(--orange-foreground);
+  --color-yellow: var(--yellow);
+  --color-yellow-foreground: var(--yellow-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-on-muted: var(--destructive-on-muted);
+  --color-yape: var(--yape);
+  --color-yape-foreground: var(--yape-foreground);
+  --color-cash: var(--cash);
+  --color-cash-foreground: var(--cash-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-hand-red: var(--hand-red);
+  --color-hand-orange: var(--hand-orange);
+  --color-hand-yellow: var(--hand-yellow);
+  --color-hand-green: var(--hand-green);
+  --color-hand-magenta: var(--hand-magenta);
+  --color-hand-blue: var(--hand-blue);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --shadow-sticker: var(--shadow-sticker);
+  --shadow-sticker-md: var(--shadow-sticker-md);
+  --shadow-card: var(--shadow-card);
+  --shadow-elevated: var(--shadow-elevated);
+  --shadow-sheet: var(--shadow-sheet);
+  --shadow-edge-bottom: var(--shadow-edge-bottom);
+  --shadow-edge-top: var(--shadow-edge-top);
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 16px);
+  --radius-4xl: calc(var(--radius) + 24px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    /* Body 14 px y nunca peso 300: se lee en un celular barato y a contraluz. */
+    @apply bg-background font-sans text-sm font-medium text-foreground antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-heading font-bold tracking-tight;
+  }
+}
+
+@layer utilities {
+  /*
+    Firma visual: la franja de las seis manos del logo, en segmentos duros (sin degradé),
+    como el aro del medallón. Va una sola vez por pantalla: bajo la cabecera y en el login.
+  */
+  .rainbow-band {
+    background: linear-gradient(
+      90deg,
+      var(--hand-red) 0 16.66%,
+      var(--hand-orange) 16.66% 33.33%,
+      var(--hand-yellow) 33.33% 50%,
+      var(--hand-green) 50% 66.66%,
+      var(--hand-magenta) 66.66% 83.33%,
+      var(--hand-blue) 83.33% 100%
+    );
+  }
+
+  /* Halo del login (diseño de Stitch): una luz del azul de la cinta detrás del logo. */
+  .login-glow {
+    background: radial-gradient(circle at 50% 30%, var(--glow) 0%, transparent 65%);
+  }
+}
