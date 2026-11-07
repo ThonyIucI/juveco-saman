@@ -11,7 +11,7 @@ import { cva, type VariantProps } from "class-variance-authority";
   - `isFilled`: fondo suave del color del tono (p. ej. «enviar» en verde).
 */
 const iconButtonCva = cva(
-  "relative inline-flex shrink-0 items-center justify-center border border-transparent bg-clip-padding transition-all outline-none select-none focus-visible:ring-4 focus-visible:ring-ring/40 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "relative inline-flex shrink-0 cursor-pointer items-center disabled:cursor-not-allowed justify-center border border-transparent bg-clip-padding transition-all outline-none select-none focus-visible:ring-4 focus-visible:ring-ring/40 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       tone: {

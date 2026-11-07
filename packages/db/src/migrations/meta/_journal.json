@@ -15,6 +15,20 @@
       "when": 1794048933040,
       "tag": "0001_seed_neighborhoods",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794064127785,
+      "tag": "0002_late_senator_kelly",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794064138556,
+      "tag": "0003_seed_bingo_ii",
+      "breakpoints": true
     }
   ]
 }

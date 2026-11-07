@@ -56,7 +56,8 @@ export type TPersonFormValues = z.input<typeof personFormSchema>;
 /** Lo que llega ya escrito al crear desde un buscador («Crear «Ana»»). */
 export interface IPersonInitialValues {
   firstName?: string;
-  phoneNumber?: string;
+  /** Ya separado en prefijo y número: «+51 987…» no puede quedar como «51987…». */
+  phone?: IPhone;
 }
 
 export const buildPersonDefaults = (
@@ -66,9 +67,7 @@ export const buildPersonDefaults = (
   firstName: user?.firstName ?? initialValues?.firstName ?? "",
   lastName: user?.lastName ?? "",
   neighborhoodId: user?.neighborhood?.id ?? "",
-  phone:
-    user?.phone ??
-    (initialValues?.phoneNumber ? { ...EMPTY_PHONE, number: initialValues.phoneNumber } : EMPTY_PHONE),
+  phone: user?.phone ?? initialValues?.phone ?? EMPTY_PHONE,
   whatsappUsername: user?.whatsappUsername ?? "",
   note: user?.note ?? "",
 });

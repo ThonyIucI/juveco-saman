@@ -37,9 +37,19 @@ Ver los pasos en [tecnico/despliegue.md](tecnico/despliegue.md).
 - El front mostraba `Failed to fetch` al cargar la sesión: la API solo permitía el origen `juveco.gaiamundo.com`. Se corrigió `CORS_ORIGIN` a `juveco-saman.gaiamundo.com`; **falta redesplegar la API** (`pnpm deploy:server`) y confirmar que el login carga.
 - Falta crear el superadmin en producción con el seed y, después, quitar el secret `SEED_TOKEN`.
 
+## En curso: Bingo II - 2026 (evento el 21 nov 2026)
+
+- Tabla `activities` (nombre, tipo `BINGO`, fecha, precio por defecto). «Bingo II - 2026» la crea una migración de seed; no hay pantalla para crear actividades.
+- `/actividades` lleva directo a la única actividad. Cuando haya otra, ahí va el listado en cards.
+- Tabla `activity_items` (genérica: en un bingo, las cartillas; cómo se llama sale de `activityItemLabels`): una fila por ítem con serie, comprador, vendedor (el admin de la sesión), precio y nota. El precio se copia de la actividad y se cambia por ítem. API: `/activities/:id/items`.
+- El barrio se muestra en un badge con su color (paleta de segmentos de id-pos): Nueva Esperanza verde, El Patio ladrillo, Ramón Castilla dorado, María Auxiliadora celeste, Santa Rosa rosado.
+- Serie repetida en el mismo bingo: se deja guardar y se avisa en el formulario y en la card.
+- Cualquier admin vende, edita y elimina. A una persona con cartillas no se la puede eliminar.
+- Pantalla: cards también en escritorio, como la de reportes de ventas de id-pos: header gris con serie, comprador y `⋯`; cuerpo con el barrio y «Por cobrar» (verde S/ 0.00 si pagó, amarillo si pagó una parte, rojo si no pagó). Mientras no haya pagos, todo sale en rojo. Buscador y botón de sincronizar junto al título; cuántas se vendieron va en los KPIs, no en el subtítulo. El comprador se elige con `UserSearch` y se puede crear ahí mismo.
+
 ## Pendiente (en este orden; cada parte se prueba antes de seguir)
 
-1. **Bingos**: serie, comprador (un usuario), administrador que vendió, precio por defecto S/ 10 que se puede cambiar el día del evento. Avisar de series repetidas.
+1. **Detalle de la cartilla** y cómo se muestran los pagos en la card.
 2. **Pagos**: Yape o efectivo, pagos parciales. La deuda se calcula a partir de los pagos.
 3. **Premios y KPIs**: los premios salen del dinero del bingo. Panel con lo recaudado, lo que se debe y lo que falta por cobrar.
 4. **Contenido de Juveco**: proyectos, quiénes somos y demás secciones públicas.

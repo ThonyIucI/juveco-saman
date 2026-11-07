@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 
 interface IPageHeaderProps {
   title: string;
+  /** Pegado al título (p. ej. el botón de sincronizar). */
+  titleAction?: ReactNode;
   /** Contadores del listado («3 negocios · 2 activos»). */
   subtitle?: string;
   isLoadingSubtitle?: boolean;
@@ -11,11 +13,14 @@ interface IPageHeaderProps {
 }
 
 /** Encabezado estándar de un módulo: título, contadores y la acción principal. */
-export default function PageHeader({ title, subtitle, isLoadingSubtitle, action }: IPageHeaderProps) {
+export default function PageHeader({ title, titleAction, subtitle, isLoadingSubtitle, action }: IPageHeaderProps) {
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="min-w-0">
-        <h1 className="font-heading text-2xl font-bold text-foreground md:text-3xl">{title}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="font-heading text-2xl font-bold text-foreground md:text-3xl">{title}</h1>
+          {titleAction}
+        </div>
         {isLoadingSubtitle ? (
           <Skeleton className="mt-1.5 h-4 w-32 rounded-md" />
         ) : (

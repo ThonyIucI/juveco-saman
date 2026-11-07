@@ -3,6 +3,7 @@ import { cn } from "@juveco/ui/lib/utils";
 import { X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { EASE_DRAWER, EASE_OUT } from "@/common/constants/motion";
 import { useMediaQuery } from "@/common/hooks/use-media-query";
@@ -148,7 +149,12 @@ export default function Modal({
 
   const ease = isDesktop ? EASE_OUT : EASE_DRAWER;
 
-  return (
+  /*
+    Se monta en `document.body`: abierta desde otra modal (p. ej. «Nuevo usuario» desde el
+    buscador de comprador), el `transform` de la animación de la de afuera volvía a esta
+    relativa a esa caja y su `overflow-hidden` la cortaba.
+  */
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -229,6 +235,7 @@ export default function Modal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

@@ -1,16 +1,17 @@
 import { IconButton } from "@juveco/ui/components/icon-button";
 import type { IUserResource } from "@juveco/shared/users";
 import { fullName } from "@juveco/shared/people";
+import { DEFAULT_COUNTRY, DEFAULT_COUNTRY_PREFIX, onlyDigits, parseFullPhone } from "@juveco/shared/phones";
 import { Plus, UserRound, X } from "lucide-react";
 import { type KeyboardEvent, useId, useState } from "react";
 
 import InitialsAvatar, { avatarColorOf } from "@/common/components/initials-avatar";
+import NeighborhoodBadge from "@/common/components/neighborhood-badge";
 import SearchInput from "@/common/components/search-input";
 import type { IPersonInitialValues } from "@/common/utils/person-form";
 import { looksLikePhone, matchesUserSearch } from "@/modules/users/utils/user-search";
 
 import UserFormModal from "./user-form-modal";
-import UserWhatsAppValue from "./user-whatsapp-value";
 
 /* Más resultados no ayudan: si no está entre los primeros, se escribe más. */
 const MAX_RESULTS = 6;
@@ -55,7 +56,8 @@ export default function UserSearch({
         <InitialsAvatar name={fullName(value)} color={avatarColorOf(fullName(value))} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-heading font-semibold text-foreground">{fullName(value)}</p>
-          <UserWhatsAppValue user={value} />
+          {/* El barrio, no el número (Thony, 2026-11-07); sin barrio no se pone nada. */}
+          {value.neighborhood && <NeighborhoodBadge neighborhood={value.neighborhood} />}
         </div>
         <IconButton label="Cambiar de usuario" onClick={() => onChange(null)}>
           <X />
@@ -78,7 +80,17 @@ export default function UserSearch({
 
   const openCreate = () => {
     const typed = term.trim();
-    setCreateValues(looksLikePhone(typed) ? { phoneNumber: typed.replace(/\D/g, "") } : { firstName: typed });
+    if (!looksLikePhone(typed)) {
+      setCreateValues({ firstName: typed });
+    } else {
+      /* «+51 987 654 321» se separa en prefijo y número, como al pegarlo en el campo. */
+      const parsed = parseFullPhone(typed, DEFAULT_COUNTRY);
+      setCreateValues({
+        phone: parsed
+          ? { countryPrefix: parsed.countryPrefix, number: parsed.number }
+          : { countryPrefix: DEFAULT_COUNTRY_PREFIX, number: onlyDigits(typed) },
+      });
+    }
     setIsOpen(false);
   };
 

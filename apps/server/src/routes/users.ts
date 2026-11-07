@@ -1,6 +1,7 @@
 import type { TAuth } from "@juveco/auth";
 import { createDb } from "@juveco/db";
 import { authUsers } from "@juveco/db/schema/auth";
+import { activityItems } from "@juveco/db/schema/activity-items";
 import { users } from "@juveco/db/schema/users";
 import { neighborhoodOf } from "@juveco/shared/neighborhoods";
 import { fullName } from "@juveco/shared/people";
@@ -233,6 +234,15 @@ export const userRoutes = new Hono<TAppEnv>()
     const current = await findUser(db, id);
     if (current.user.role !== EUserRole.USER) {
       throw forbidden("No se puede eliminar a un administrador.");
+    }
+    /* Sin esto, la llave foránea de lo vendido responde un 500 sin explicación. */
+    const boughtItem = await db
+      .select({ id: activityItems.id })
+      .from(activityItems)
+      .where(eq(activityItems.buyerId, id))
+      .get();
+    if (boughtItem) {
+      throw conflict(`«${fullName(current.user)}» compró en una actividad: primero cambia el comprador o elimina esa venta.`);
     }
     await db.delete(users).where(eq(users.id, id));
 

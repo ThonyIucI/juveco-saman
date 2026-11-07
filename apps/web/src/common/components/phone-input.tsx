@@ -10,7 +10,7 @@ import {
 import { cn } from "@juveco/ui/lib/utils";
 import type { CountryCode } from "libphonenumber-js";
 import { ChevronDown } from "lucide-react";
-import { type ClipboardEvent, useEffect, useState } from "react";
+import { type ChangeEvent, type ClipboardEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import ReactSelect, { components, type DropdownIndicatorProps } from "react-select";
 
 import { COUNTRY_OPTIONS, type ICountryOption, matchesCountry } from "@/common/utils/countries";
@@ -31,6 +31,23 @@ interface IPhoneInputProps {
 }
 
 const PHONE_PLACEHOLDER = "Ingresa el número";
+
+/** Posición en el texto formateado justo después de `digitCount` dígitos («987 6|54» → 5). */
+const caretAfterDigits = (formattedText: string, digitCount: number): number => {
+  if (digitCount <= 0) {
+    return 0;
+  }
+  let seen = 0;
+  for (let index = 0; index < formattedText.length; index += 1) {
+    if (/\d/.test(formattedText.charAt(index))) {
+      seen += 1;
+      if (seen === digitCount) {
+        return index + 1;
+      }
+    }
+  }
+  return formattedText.length;
+};
 
 function Chevron(props: DropdownIndicatorProps<ICountryOption, false>) {
   return (
@@ -74,16 +91,47 @@ export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, dis
   const maxDigits = PHONE_MAX_DIGITS - value.countryPrefix.length;
 
   const formatted = formatNationalPhone(value.number, country);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  /* Dígitos que van antes del cursor tras la última tecla; `null` si no hay que moverlo. */
+  const pendingCaretRef = useRef<number | null>(null);
 
-  const handleNumberChange = (typed: string) => {
+  /*
+    El campo se reescribe con el formato en cada tecla y el navegador manda el cursor al
+    final. Se guarda cuántos dígitos quedan antes del cursor y, ya formateado, se vuelve a
+    poner ahí (sin esto, borrar en medio del número saltaba al final).
+  */
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    const digitsBeforeCaret = pendingCaretRef.current;
+    if (!input || digitsBeforeCaret === null) {
+      return;
+    }
+    pendingCaretRef.current = null;
+    const position = caretAfterDigits(input.value, digitsBeforeCaret);
+    input.setSelectionRange(position, position);
+  });
+
+  const handleNumberChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const typed = event.target.value;
+    const caret = event.target.selectionStart ?? typed.length;
     let digits = onlyDigits(typed);
+    let digitsBeforeCaret = onlyDigits(typed.slice(0, caret)).length;
+
     /*
-      Borrar un carácter del formato (el «)» de «(213)») no cambia los dígitos y el campo
-      volvería a ponerlo: se queda trabado. En ese caso se borra el último dígito.
+      Borrar un carácter del formato (el espacio de «987 654») no cambia los dígitos y el
+      campo volvería a ponerlo: se queda trabado. Se borra la cifra pegada a lo que se borró
+      (la de antes con Retroceso, la de después con Suprimir), no la última.
     */
     if (digits === value.number && typed.length < formatted.length) {
-      digits = digits.slice(0, -1);
+      const isForwardDelete = (event.nativeEvent as InputEvent).inputType === "deleteContentForward";
+      const removeAt = isForwardDelete ? digitsBeforeCaret : digitsBeforeCaret - 1;
+      if (removeAt >= 0) {
+        digits = digits.slice(0, removeAt) + digits.slice(removeAt + 1);
+        digitsBeforeCaret = removeAt;
+      }
     }
+
+    pendingCaretRef.current = Math.min(digitsBeforeCaret, maxDigits);
     onChange({ countryPrefix: value.countryPrefix, number: digits.slice(0, maxDigits) });
   };
 
@@ -176,6 +224,7 @@ export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, dis
       <span aria-hidden className="my-3 w-px shrink-0 bg-border" />
 
       <input
+        ref={inputRef}
         id={id}
         type="tel"
         inputMode="tel"
@@ -186,7 +235,7 @@ export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, dis
         value={formatted}
         onBlur={onBlur}
         onPaste={handlePaste}
-        onChange={(event) => handleNumberChange(event.target.value)}
+        onChange={handleNumberChange}
         className="min-w-0 flex-1 rounded-r-[0.625rem] bg-transparent px-3 text-base md:text-sm font-medium text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground disabled:cursor-not-allowed"
       />
     </div>

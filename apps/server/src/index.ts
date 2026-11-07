@@ -12,6 +12,7 @@ import type { TAppEnv } from "./lib/app-env";
 import { translateAuthMessage, translateAuthResponse } from "./lib/auth-errors";
 import { AppError } from "./lib/errors";
 import { fail } from "./lib/response";
+import { activityRoutes } from "./routes/activities";
 import { healthRoutes } from "./routes/health";
 import { internalRoutes } from "./routes/internal";
 import { meRoutes } from "./routes/me";
@@ -58,6 +59,7 @@ app
   .route("/", healthRoutes)
   .route("/", meRoutes)
   .route("/", userRoutes)
+  .route("/", activityRoutes)
   .route("/", internalRoutes);
 
 app.notFound((context) => fail(context, "Recurso no encontrado.", 404));

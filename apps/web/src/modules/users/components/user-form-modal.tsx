@@ -14,6 +14,7 @@ import z from "zod";
 
 import FieldError from "@/common/components/field-error";
 import Modal from "@/common/components/modal";
+import NeighborhoodBadge from "@/common/components/neighborhood-badge";
 import PhoneInput from "@/common/components/phone-input";
 import SegmentedTabs, { type ISegmentedTabOption } from "@/common/components/segmented-tabs";
 import Select, { type IOption } from "@/common/components/select";
@@ -229,6 +230,10 @@ export default function UserFormModal({
                   isClearable
                   isSearchable={false}
                   isInvalid={field.state.meta.errors.length > 0}
+                  /* Cada barrio en su color, en el menú y en lo elegido. */
+                  formatOptionLabel={(option) => (
+                    <NeighborhoodBadge neighborhood={{ id: option.value, name: option.label }} hasIcon={false} />
+                  )}
                   value={NEIGHBORHOOD_OPTIONS.find((option) => option.value === field.state.value) ?? null}
                   onBlur={field.handleBlur}
                   onChange={(option) => field.handleChange(option?.value ?? "")}
