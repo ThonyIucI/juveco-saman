@@ -17,11 +17,13 @@ import {
   ACTIVITY_ITEM_BUYER_REQUIRED_MESSAGE,
   ACTIVITY_ITEM_SERIAL_LENGTH_MESSAGE,
   ACTIVITY_ITEM_SERIAL_MAX_LENGTH,
+  ACTIVITY_ITEM_SELLER_REQUIRED_MESSAGE,
   ACTIVITY_ITEM_SERIAL_REQUIRED_MESSAGE,
   type IActivityItemResource,
 } from "@juveco/shared/activity-items";
 import { INVALID_SOLES_MESSAGE, formatSoles, hasAtMostTwoDecimals, roundSoles } from "@juveco/shared/money";
 import { neighborhoodOf } from "@juveco/shared/neighborhoods";
+import { EUserRole } from "@juveco/shared/roles";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Hono } from "hono";
@@ -48,6 +50,7 @@ export const ACTIVITY_ROUTES = {
 const ACTIVITY_NOT_FOUND = "No encontramos esa actividad.";
 const ITEM_NOT_FOUND = "No encontramos esa venta.";
 const BUYER_NOT_FOUND = "No encontramos a quien lo compró.";
+const SELLER_NOT_FOUND = "El vendedor tiene que ser un administrador.";
 const NO_CHANGES_MESSAGE = "No hay cambios para guardar.";
 const PAYMENT_NOT_FOUND = "No encontramos ese pago.";
 
@@ -68,10 +71,15 @@ const buyerIdSchema = z
   .string(ACTIVITY_ITEM_BUYER_REQUIRED_MESSAGE)
   .min(1, ACTIVITY_ITEM_BUYER_REQUIRED_MESSAGE);
 
+const sellerIdSchema = z
+  .string(ACTIVITY_ITEM_SELLER_REQUIRED_MESSAGE)
+  .min(1, ACTIVITY_ITEM_SELLER_REQUIRED_MESSAGE);
+
 /* Sin precio, el ítem toma el precio por defecto de la actividad. */
 const createItemSchema = z.object({
   serial: serialSchema,
   buyerId: buyerIdSchema,
+  sellerId: sellerIdSchema.optional(),
   price: priceSchema.optional(),
   note: noteSchema.optional(),
 });
@@ -227,9 +235,18 @@ const assertBuyerExists = async (db: TDb, buyerId: string) => {
   }
 };
 
+/* Vende un administrador o el superadmin (Thony, 2026-11-07): una persona común no. */
+const assertSellerIsAdmin = async (db: TDb, sellerId: string) => {
+  const seller = await db.select({ role: users.role }).from(users).where(eq(users.id, sellerId)).get();
+  if (!seller || (seller.role !== EUserRole.ADMIN && seller.role !== EUserRole.SUPERADMIN)) {
+    throw badRequest(SELLER_NOT_FOUND);
+  }
+};
+
 /**
  * Actividades y lo que se vende en ellas (en un bingo, las cartillas). Cualquier administrador
- * vende, edita y elimina; quien vende es siempre el que tiene la sesión. Una serie repetida no
+ * vende, edita y elimina. El vendedor es quien tiene la sesión, salvo que se elija otro
+ * administrador, al crear o después. Una serie repetida no
  * se frena: el front avisa.
  */
 export const activityRoutes = new Hono<TAppEnv>()
@@ -256,6 +273,9 @@ export const activityRoutes = new Hono<TAppEnv>()
 
     const activity = await findActivity(db, context.req.param("id"));
     await assertBuyerExists(db, body.buyerId);
+    if (body.sellerId !== undefined) {
+      await assertSellerIsAdmin(db, body.sellerId);
+    }
 
     const id = newId();
     await db.insert(activityItems).values({
@@ -263,7 +283,7 @@ export const activityRoutes = new Hono<TAppEnv>()
       activityId: activity.id,
       serial: body.serial,
       buyerId: body.buyerId,
-      sellerId: context.var.user.id,
+      sellerId: body.sellerId ?? context.var.user.id,
       price: body.price ?? activity.defaultPrice,
       note: body.note ?? null,
     });
@@ -287,12 +307,16 @@ export const activityRoutes = new Hono<TAppEnv>()
     if (body.buyerId !== undefined) {
       await assertBuyerExists(db, body.buyerId);
     }
+    if (body.sellerId !== undefined) {
+      await assertSellerIsAdmin(db, body.sellerId);
+    }
 
     await db
       .update(activityItems)
       .set({
         ...(body.serial !== undefined && { serial: body.serial }),
         ...(body.buyerId !== undefined && { buyerId: body.buyerId }),
+        ...(body.sellerId !== undefined && { sellerId: body.sellerId }),
         ...(body.price !== undefined && { price: body.price }),
         ...(body.note !== undefined && { note: body.note }),
       })

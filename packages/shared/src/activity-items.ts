@@ -11,6 +11,7 @@ export const ACTIVITY_ITEM_SERIAL_MAX_LENGTH = 20;
 export const ACTIVITY_ITEM_SERIAL_REQUIRED_MESSAGE = "Escribe la serie.";
 export const ACTIVITY_ITEM_SERIAL_LENGTH_MESSAGE = "La serie va hasta 20 caracteres.";
 export const ACTIVITY_ITEM_BUYER_REQUIRED_MESSAGE = "Elige quién lo compró.";
+export const ACTIVITY_ITEM_SELLER_REQUIRED_MESSAGE = "Elige quién lo vendió.";
 
 /** Una persona del ítem, con lo justo para la card. */
 export interface IActivityItemPerson {
@@ -43,6 +44,8 @@ export interface IActivityItemResource {
 export interface IActivityItemInput {
   serial: string;
   buyerId: string;
+  /** Quien lo vendió: un administrador. Al crear, sin vendedor, es quien tiene la sesión. */
+  sellerId?: string;
   /** Sin precio, toma el precio por defecto de la actividad. */
   price?: number;
   note: string | null;

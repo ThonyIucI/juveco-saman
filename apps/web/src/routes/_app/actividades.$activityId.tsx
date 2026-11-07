@@ -58,6 +58,7 @@ const FALLBACK_ITEM_LABEL = { singular: "venta", plural: "ventas" };
  */
 function ActivityPage() {
   const { activityId } = Route.useParams();
+  const { user } = Route.useRouteContext();
   const GetActivity = useGetActivity();
   const ListActivityItems = useListActivityItems();
   const ListUsers = useListUsers();
@@ -274,6 +275,7 @@ function ActivityPage() {
         <ActivityItemFormModal
           open={showForm.active}
           activity={activity}
+          currentUserId={user.id}
           item={editTarget}
           items={items}
           users={ListUsers.users}
