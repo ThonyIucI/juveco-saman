@@ -41,7 +41,7 @@ export default function ActivityBalance({ balance }: IActivityBalanceProps) {
   const lines: IBalanceLine[] = [
     { label: "Ingresos", current: balance.collected, expected: balance.expected },
     {
-      label: "Premios comprados",
+      label: "Premios",
       current: balance.purchasedPrizes,
       expected: balance.purchasedPrizes,
       isDeduction: true,
@@ -56,7 +56,7 @@ export default function ActivityBalance({ balance }: IActivityBalanceProps) {
           <tr className="text-muted-foreground">
             <th className="pb-2 text-left font-medium" />
             <th className="pb-2 text-right font-medium">Actual</th>
-            <th className="pb-2 text-right font-medium">Si todos pagan</th>
+            <th className="pb-2 text-right font-medium">Esperado</th>
           </tr>
         </thead>
         <tbody>
