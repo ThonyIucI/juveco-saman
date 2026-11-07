@@ -35,7 +35,7 @@ import {
   EMPTY_ITEM_FILTERS,
   type IActivityItemFilters,
   collectionOf,
-  compareBySerial,
+  compareByCollection,
   countActiveFilters,
   countSerials,
   matchesActivityItemSearch,
@@ -104,7 +104,7 @@ function ActivityPage() {
   const visible = items
     .filter((item) => !normalizedTerm || matchesActivityItemSearch(item, normalizedTerm))
     .filter((item) => matchesItemFilters(item, filters))
-    .sort(compareBySerial);
+    .sort(compareByCollection);
   /* KPIs, balance, premios y gastos van en su propia página (acordado 2026-11-07). */
   const openSummary = () => navigate({ to: "/actividades/$activityId/resumen", params: { activityId } });
 
@@ -170,15 +170,28 @@ function ActivityPage() {
           isLoadingSubtitle={isLoading}
           action={
             <div className="flex items-center gap-3">
-              {/* En celular, el resumen es el botón flotante. */}
-              {/* `lg`: el mismo alto que el buscador (h-13), para que la fila se vea pareja. */}
-              <Button type="button" size="lg" variant="outline" className="hidden md:inline-flex" onClick={openSummary}>
+              {/*
+                Resumen en gris, también en celular, donde ocupa el lugar de «Agregar»: agregar
+                pasa al botón flotante «+» y el título gana espacio (Thony, 2026-11-07).
+                `lg`: el mismo alto que el buscador (h-13), para que la fila se vea pareja.
+              */}
+              {/* En celular, solo el ícono (Thony, 2026-11-07). */}
+              <IconButton label="Resumen" size="lg" tone="neutral" isFilled className="md:hidden" onClick={openSummary}>
+                <ChartColumn />
+              </IconButton>
+              <Button
+                type="button"
+                size="lg"
+                variant="ghost"
+                className="hidden bg-muted hover:bg-accent md:inline-flex"
+                onClick={openSummary}
+              >
                 <ChartColumn />
                 Resumen
               </Button>
               {/* En escritorio el buscador va junto al botón para ahorrar una fila. */}
               {items.length > 0 && <div className="hidden w-72 md:block">{searchInput}</div>}
-              <Button type="button" size="lg" onClick={openCreate}>
+              <Button type="button" size="lg" className="hidden md:inline-flex" onClick={openCreate}>
                 <Plus />
                 Agregar
               </Button>
@@ -255,7 +268,7 @@ function ActivityPage() {
         </>
       )}
 
-      {activity && <FloatingActionButton label="Resumen" icon={ChartColumn} onClick={openSummary} />}
+      {activity && <FloatingActionButton label={`Agregar ${itemLabel.singular}`} icon={Plus} onClick={openCreate} />}
 
       {activity && (
         <ActivityItemFormModal

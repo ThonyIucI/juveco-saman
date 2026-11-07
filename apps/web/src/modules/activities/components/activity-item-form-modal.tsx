@@ -149,6 +149,23 @@ export default function ActivityItemFormModal({
         className="space-y-4"
       >
         <div className="grid gap-4 sm:grid-cols-2">
+
+          <form.Field name="buyerId">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor={field.name}>Comprador</Label>
+                <UserSearch
+                  id={field.name}
+                  users={users}
+                  value={users.find((user) => user.id === field.state.value) ?? null}
+                  isInvalid={field.state.meta.errors.length > 0}
+                  onChange={(user) => field.handleChange(user?.id ?? "")}
+                  onCreated={onUserCreated}
+                />
+                <FieldError errors={field.state.meta.errors} />
+              </div>
+            )}
+          </form.Field>
           <form.Field name="serial">
             {(field) => {
               const sameSerial = findSameSerial(items, field.state.value, item?.id);
@@ -209,22 +226,6 @@ export default function ActivityItemFormModal({
           </form.Field>
         </div>
 
-        <form.Field name="buyerId">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor={field.name}>Comprador</Label>
-              <UserSearch
-                id={field.name}
-                users={users}
-                value={users.find((user) => user.id === field.state.value) ?? null}
-                isInvalid={field.state.meta.errors.length > 0}
-                onChange={(user) => field.handleChange(user?.id ?? "")}
-                onCreated={onUserCreated}
-              />
-              <FieldError errors={field.state.meta.errors} />
-            </div>
-          )}
-        </form.Field>
 
         <form.Field name="note">
           {(field) => (

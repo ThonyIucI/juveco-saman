@@ -157,7 +157,7 @@ function ActivitySummaryPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4 px-4 py-6">
-      <div className="space-y-2">
+      <div>
         <Button
           variant="ghost"
           className="-ml-2 gap-1 px-2 font-heading text-sm"

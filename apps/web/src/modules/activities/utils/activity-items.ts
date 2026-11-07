@@ -28,6 +28,14 @@ export const findSameSerial = (
 export const compareBySerial = (first: IActivityItemResource, second: IActivityItemResource): number =>
   first.serial.localeCompare(second.serial, "es", { numeric: true });
 
+/* Primero lo que hay que cobrar (Thony, 2026-11-07). */
+const COLLECTION_ORDER: Record<TCollectionStatus, number> = { UNPAID: 0, PARTIAL: 1, PAID: 2 };
+
+/** Sin pagar, luego pago parcial y al final pagados; dentro de cada grupo, por serie. */
+export const compareByCollection = (first: IActivityItemResource, second: IActivityItemResource): number =>
+  COLLECTION_ORDER[collectionOf(first).status] - COLLECTION_ORDER[collectionOf(second).status] ||
+  compareBySerial(first, second);
+
 /**
  * Busca por serie, comprador o barrio. `term` ya viene sin espacios en los bordes y en
  * minúsculas. La serie se compara sin ceros a la izquierda: «0100» encuentra «100» y al revés.
