@@ -1,4 +1,5 @@
 import type { IPersonInput } from "@juveco/shared/people";
+import type { EUserRole } from "@juveco/shared/roles";
 import type { IUserResource } from "@juveco/shared/users";
 
 import { apiRequest } from "@/lib/api";
@@ -6,15 +7,22 @@ import { apiRequest } from "@/lib/api";
 export type TUpdateUserPayload = Partial<IPersonInput>;
 
 export interface IGrantAccessPayload {
+  /** Hoy solo ADMIN; si no se manda, el server usa ADMIN. */
+  role?: EUserRole.ADMIN;
   email: string;
   password: string;
+}
+
+/** Alta de una persona; con `access` (solo superadmin) nace ya con su login. */
+export interface ICreateUserPayload extends IPersonInput {
+  access?: IGrantAccessPayload;
 }
 
 /** Todas las personas de Juveco. */
 export const listUsersRequest = (signal?: AbortSignal) =>
   apiRequest<IUserResource[]>("/users", { signal });
 
-export const createUserRequest = (payload: IPersonInput) =>
+export const createUserRequest = (payload: ICreateUserPayload) =>
   apiRequest<IUserResource>("/users", { method: "POST", body: payload });
 
 export const updateUserRequest = (id: string, payload: TUpdateUserPayload) =>

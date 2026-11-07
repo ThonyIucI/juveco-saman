@@ -60,6 +60,12 @@ export const translateAuthResponse = async (response: Response): Promise<Respons
   }
 
   const code = await readAuthErrorCode(response);
+
+  /* El mensaje en español esconde la causa: en 5xx se deja el detalle para `wrangler tail`. */
+  if (response.status >= 500) {
+    console.error(`[auth] ${response.status} ${response.url}`, await response.clone().text());
+  }
+
   const headers = new Headers(response.headers);
   headers.delete("content-length");
   headers.set("content-type", "application/json");

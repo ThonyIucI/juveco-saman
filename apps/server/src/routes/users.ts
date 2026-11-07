@@ -1,3 +1,4 @@
+import type { TAuth } from "@juveco/auth";
 import { createDb } from "@juveco/db";
 import { authUsers } from "@juveco/db/schema/auth";
 import { users } from "@juveco/db/schema/users";
@@ -28,20 +29,27 @@ export const USER_ROUTES = {
 const USER_NOT_FOUND = "No encontramos ese usuario.";
 const NO_CHANGES_MESSAGE = "No hay cambios para guardar.";
 
-const createUserSchema = z.object({ firstName: firstNameSchema, ...personExtraFields });
+const grantAccessSchema = z.object({
+  /* Solo se puede dar ADMIN: el superadmin no se asigna desde la app. */
+  role: z.literal(EUserRole.ADMIN).default(EUserRole.ADMIN),
+  email: z.email("Correo inválido.").transform((email) => email.toLowerCase()),
+  password: z
+    .string()
+    .min(USER_MIN_PASSWORD_LENGTH, "La contraseña debe tener al menos 8 caracteres."),
+});
+
+/* `access` es opcional: con él, la persona se crea ya con su login (solo el superadmin). */
+const createUserSchema = z.object({
+  firstName: firstNameSchema,
+  ...personExtraFields,
+  access: grantAccessSchema.optional(),
+});
 
 const updateUserSchema = z
   .object({ firstName: firstNameSchema.optional(), ...personExtraFields })
   .refine((body) => Object.values(body).some((value) => value !== undefined), {
     message: NO_CHANGES_MESSAGE,
   });
-
-const grantAccessSchema = z.object({
-  email: z.email("Correo inválido.").transform((email) => email.toLowerCase()),
-  password: z
-    .string()
-    .min(USER_MIN_PASSWORD_LENGTH, "La contraseña debe tener al menos 8 caracteres."),
-});
 
 type TDb = ReturnType<typeof createDb>;
 type TUserRow = typeof users.$inferSelect;
@@ -94,6 +102,36 @@ const findByUsername = (db: TDb) => async (usernameLower: string) => {
   return toMatch(row);
 };
 
+const assertEmailAvailable = async (db: TDb, email: string) => {
+  const taken = await db
+    .select({ id: authUsers.id })
+    .from(authUsers)
+    .where(eq(authUsers.email, email))
+    .get();
+  if (taken) {
+    throw conflict("Ya hay alguien que entra con ese correo.");
+  }
+};
+
+interface IGrantLoginParams {
+  db: TDb;
+  auth: TAuth;
+  person: TUserRow;
+  access: z.infer<typeof grantAccessSchema>;
+}
+
+/* Crea el login de la persona y la pasa a ADMIN; devuelve la persona ya actualizada. */
+const grantLogin = async ({ db, auth, person, access }: IGrantLoginParams): Promise<TUserRow> => {
+  const { user: login } = await auth.api.signUpEmail({
+    body: { name: fullName(person), email: access.email, password: access.password },
+  });
+  const [, [updated]] = await db.batch([
+    db.update(authUsers).set({ userId: person.id }).where(eq(authUsers.id, login.id)),
+    db.update(users).set({ role: access.role }).where(eq(users.id, person.id)).returning(),
+  ]);
+  return updated!;
+};
+
 /**
  * Usuarios: todas las personas de Juveco. Los administradores los registran y los editan;
  * solo el superadmin da acceso a la app (y así alguien pasa a ser administrador).
@@ -117,13 +155,19 @@ export const userRoutes = new Hono<TAppEnv>()
   })
 
   .post(USER_ROUTES.USERS, requireAuth, validateJson(createUserSchema), async (context) => {
-    const body = context.req.valid("json");
+    const { access, ...body } = context.req.valid("json");
     const phone = body.phone ?? null;
     const whatsappUsername = body.whatsappUsername ?? null;
     const db = createDb();
 
+    if (access && context.var.user.role !== EUserRole.SUPERADMIN) {
+      throw forbidden("Solo el superadmin puede dar acceso a la app.");
+    }
     await assertPhoneAvailable({ phone, findByPhone: findByPhone(db) });
     await assertUsernameAvailable({ username: whatsappUsername, findByUsername: findByUsername(db) });
+    if (access) {
+      await assertEmailAvailable(db, access.email);
+    }
 
     const [created] = await db
       .insert(users)
@@ -138,7 +182,18 @@ export const userRoutes = new Hono<TAppEnv>()
       })
       .returning();
 
-    return ok(context, toUserResource(created!, null), 201);
+    if (!access) {
+      return ok(context, toUserResource(created!, null), 201);
+    }
+
+    /* Sin login la persona no debe quedar a medias: si falla, se deshace el alta. */
+    try {
+      const withAccess = await grantLogin({ db, auth: context.var.auth, person: created!, access });
+      return ok(context, toUserResource(withAccess, access.email), 201);
+    } catch (error) {
+      await db.delete(users).where(eq(users.id, created!.id));
+      throw error;
+    }
   })
 
   .patch(USER_ROUTES.USER, requireAuth, validateJson(updateUserSchema), async (context) => {
@@ -201,23 +256,15 @@ export const userRoutes = new Hono<TAppEnv>()
       if (current.email) {
         throw conflict(`«${fullName(current.user)}» ya tiene acceso.`);
       }
-      const takenEmail = await db
-        .select({ id: authUsers.id })
-        .from(authUsers)
-        .where(eq(authUsers.email, email))
-        .get();
-      if (takenEmail) {
-        throw conflict("Ya hay alguien que entra con ese correo.");
-      }
+      await assertEmailAvailable(db, email);
 
-      const { user: login } = await context.var.auth.api.signUpEmail({
-        body: { name: fullName(current.user), email, password },
+      const updated = await grantLogin({
+        db,
+        auth: context.var.auth,
+        person: current.user,
+        access: { role: EUserRole.ADMIN, email, password },
       });
-      const [, [updated]] = await db.batch([
-        db.update(authUsers).set({ userId: id }).where(eq(authUsers.id, login.id)),
-        db.update(users).set({ role: EUserRole.ADMIN }).where(eq(users.id, id)).returning(),
-      ]);
 
-      return ok(context, toUserResource(updated!, email));
+      return ok(context, toUserResource(updated, email));
     },
   );

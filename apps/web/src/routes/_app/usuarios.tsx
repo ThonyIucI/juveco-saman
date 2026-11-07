@@ -127,6 +127,15 @@ function UsersPage() {
     return isSuperadmin ? [edit, grantAccess, remove] : [edit, remove];
   };
 
+  const searchInput = (
+    <SearchInput
+      placeholder="Buscar usuario…"
+      aria-label="Buscar usuario por nombre, barrio, número, usuario o nota"
+      value={term}
+      onChange={handleSearchChange}
+    />
+  );
+
   const pagination = (
     <ListPagination
       currentPage={pager.currentPage}
@@ -145,24 +154,20 @@ function UsersPage() {
         subtitle={users.length > 0 ? pluralize(users.length, "usuario", "usuarios") : undefined}
         isLoadingSubtitle={isLoading}
         action={
-          <Button type="button" onClick={openCreate}>
-            <Plus />
-            Agregar
-          </Button>
+          <div className="flex items-center gap-3">
+            {/* En escritorio el buscador va junto al botón para ahorrar una fila. */}
+            {users.length > 0 && <div className="hidden w-72 md:block">{searchInput}</div>}
+            <Button type="button" onClick={openCreate}>
+              <Plus />
+              Agregar
+            </Button>
+          </div>
         }
       />
 
+      {/* En celular no entra junto al botón: queda en su barra fija. */}
       {users.length > 0 && (
-        <StickyToolbar>
-          <div className="lg:ml-auto lg:w-72">
-            <SearchInput
-              placeholder="Buscar usuario…"
-              aria-label="Buscar usuario por nombre, barrio, número, usuario o nota"
-              value={term}
-              onChange={handleSearchChange}
-            />
-          </div>
-        </StickyToolbar>
+        <StickyToolbar className="md:hidden">{searchInput}</StickyToolbar>
       )}
 
       {!isLoading && users.length === 0 && (
@@ -220,6 +225,7 @@ function UsersPage() {
       <UserFormModal
         open={showForm.active}
         user={editTarget}
+        canGrantAccess={isSuperadmin}
         onSaved={ListUsers.onUpsert}
         onClose={showForm.off}
       />

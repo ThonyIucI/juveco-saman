@@ -12,6 +12,8 @@ import z from "zod";
 import { authClient } from "@/lib/auth-client";
 
 const MIN_PASSWORD_LENGTH = 8;
+const SIGN_IN_FAILED_MESSAGE = "No se pudo iniciar sesión.";
+const NETWORK_ERROR_MESSAGE = "No pudimos conectar con el servidor. Revisa tu internet e inténtalo de nuevo.";
 
 /** Acceso por correo y contraseña. */
 export default function SignInForm() {
@@ -21,18 +23,25 @@ export default function SignInForm() {
   const form = useForm({
     defaultValues: { email: "", password: "" },
     onSubmit: async ({ value }) => {
-      await authClient.signIn.email(
-        { email: value.email, password: value.password },
-        {
-          onSuccess: () => {
-            navigate({ to: "/dashboard" });
-            toast.success("Sesión iniciada");
+      /* Sin respuesta del servidor (caído, sin internet) better-fetch lanza en vez de llamar a
+         `onError`: sin este catch la persona no vería nada y creería que escribió mal. */
+      try {
+        await authClient.signIn.email(
+          { email: value.email, password: value.password },
+          {
+            onSuccess: () => {
+              navigate({ to: "/dashboard" });
+              toast.success("Sesión iniciada");
+            },
+            onError: (error) => {
+              toast.error(error.error.message || SIGN_IN_FAILED_MESSAGE);
+            },
           },
-          onError: (error) => {
-            toast.error(error.error.message || "No se pudo iniciar sesión.");
-          },
-        },
-      );
+        );
+      } catch (error) {
+        console.error("[sign-in]", error);
+        toast.error(NETWORK_ERROR_MESSAGE);
+      }
     },
     validators: {
       onSubmit: z.object({

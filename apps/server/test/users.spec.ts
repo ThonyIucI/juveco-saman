@@ -186,6 +186,48 @@ describe("/users", () => {
     expect(access.status).toBe(403);
   });
 
+  it("crea una persona con acceso desde el mismo alta", async () => {
+    // Arrange
+    const access = { email: "lucia@test.local", password: "password123" };
+
+    // Act
+    const response = await create({ firstName: "Lucía", access });
+    const body = await response.json<IBody<IUserData>>();
+    const cookie = await signIn(access.email, access.password);
+
+    // Assert
+    expect(response.status).toBe(201);
+    expect(body.data).toMatchObject({ role: "ADMIN", email: access.email });
+    expect(cookie).not.toBe("");
+  });
+
+  it("no deja crear con acceso si el correo ya está en uso, ni deja a la persona a medias", async () => {
+    // Arrange
+    const before = (await list()).length;
+
+    // Act
+    const response = await create({ firstName: "Repetida", access: ADMIN_ACCESS });
+
+    // Assert
+    expect(response.status).toBe(409);
+    expect(await errorOf(response)).toBe("Ya hay alguien que entra con ese correo.");
+    expect(await list()).toHaveLength(before);
+  });
+
+  it("un administrador no puede crear con acceso", async () => {
+    // Arrange
+    const adminCookie = await signIn(ADMIN_ACCESS.email, ADMIN_ACCESS.password);
+
+    // Act
+    const response = await create(
+      { firstName: "Intruso", access: { email: "intruso@test.local", password: "password123" } },
+      adminCookie,
+    );
+
+    // Assert
+    expect(response.status).toBe(403);
+  });
+
   it("elimina un usuario, pero no a un administrador", async () => {
     // Arrange
     const created = await createUser({ firstName: "Para eliminar" });

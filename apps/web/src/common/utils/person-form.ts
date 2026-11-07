@@ -73,6 +73,15 @@ export const buildPersonDefaults = (
   note: user?.note ?? "",
 });
 
+/** Cómo se muestra el WhatsApp en el formulario: un solo campo a la vez. */
+export type TWhatsAppMode = "phone" | "username";
+
+/** Número si lo tiene (o si no tiene ninguno); usuario solo si no hay número. */
+export const initialWhatsAppMode = (values: TPersonFormValues): TWhatsAppMode => {
+  const hasOnlyUsername = values.phone.number === "" && values.whatsappUsername !== "";
+  return hasOnlyUsername ? "username" : "phone";
+};
+
 /** Los textos vacíos viajan como `null`. */
 export const toPersonPayload = (value: TPersonFormValues): IPersonInput => ({
   firstName: value.firstName.trim(),

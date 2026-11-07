@@ -46,10 +46,16 @@ curl -X POST localhost:3013/api/v1/internal/seed-superadmin \
   `packages/shared/src/neighborhoods.ts` (IDs UUID v7 fijos), como las monedas de id-backend.
   Un barrio nuevo va en esas constantes **y** en una migración nueva.
 
+## Documentación
+
+- [Estado y pendientes](docs/estado.md): qué está hecho, qué falta y en qué orden.
+- [Despliegue a Cloudflare](docs/tecnico/despliegue.md): paso a paso y problemas conocidos.
+
 ## Hoja de ruta (por partes, cada una se prueba antes de seguir)
 
-1. **Base, login y usuarios con barrios; dar acceso a administradores** ← acá estamos
-2. Bingos (serie, comprador, administrador que vendió, precio por defecto S/ 10) y series repetidas
-3. Pagos (Yape / efectivo, parciales) y deuda calculada
-4. Premios y panel con KPIs (recaudado, deuda, cobertura de premios, saldo)
-5. Despliegue a Cloudflare
+1. ✅ Base, login y usuarios con barrios; dar acceso a administradores
+2. 🚧 Despliegue a Cloudflare (falta redesplegar la API con el CORS corregido y crear el superadmin)
+3. Bingos (serie, comprador, administrador que vendió, precio por defecto S/ 10) y series repetidas
+4. Pagos (Yape / efectivo, parciales) y deuda calculada
+5. Premios y panel con KPIs (recaudado, deuda, cobertura de premios, saldo)
+6. Secciones de Juveco: proyectos, quiénes somos…

@@ -99,7 +99,7 @@ export default function AccessFormModal({ user, onSaved, onClose }: IAccessFormM
               type="email"
               inputMode="email"
               autoComplete="off"
-              placeholder="Ej. rosa@gmail.com"
+              placeholder="Ingresa el correo"
               value={field.state.value}
               errors={field.state.meta.errors}
               onBlur={field.handleBlur}
@@ -114,7 +114,7 @@ export default function AccessFormModal({ user, onSaved, onClose }: IAccessFormM
               label="Contraseña"
               type="text"
               autoComplete="new-password"
-              placeholder="Mínimo 8 caracteres"
+              placeholder="Ingresa la contraseña"
               value={field.state.value}
               errors={field.state.meta.errors}
               onBlur={field.handleBlur}

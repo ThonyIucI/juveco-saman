@@ -19,7 +19,7 @@ import RoleBadge from "./role-badge";
 import UserWhatsAppValue from "./user-whatsapp-value";
 
 const SKELETON_COUNT = 4;
-const COLUMN_COUNT = 4;
+const COLUMN_COUNT = 5;
 
 interface IUserTableProps {
   users: IUserResource[];
@@ -31,7 +31,7 @@ interface IUserTableProps {
 }
 
 /**
- * Tabla de escritorio. Oculta en celular: allí se usa `UserMobileList`. Usuario ·
+ * Tabla de escritorio. Oculta en celular: allí se usa `UserMobileList`. Usuario · Rol ·
  * Barrio · WhatsApp · acciones con borde. Sin nota. Tocar la fila abre el detalle; copiar,
  * WhatsApp y `⋯` no.
  */
@@ -47,7 +47,8 @@ export default function UserTable({
       <Table>
         <TableHeader>
           <TableRow className="bg-muted hover:bg-muted">
-            <TableHead className="w-[36%]">Usuario</TableHead>
+            <TableHead className="w-[32%]">Usuario</TableHead>
+            <TableHead>Rol</TableHead>
             <TableHead>Barrio</TableHead>
             <TableHead>WhatsApp</TableHead>
             <TableHead />
@@ -76,8 +77,10 @@ export default function UserTable({
                       <span className="truncate font-heading font-semibold text-foreground">
                         {fullName(user)}
                       </span>
-                      <RoleBadge role={user.role} />
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <RoleBadge role={user.role} />
                   </TableCell>
                   <TableCell className={user.neighborhood ? "text-foreground" : "text-muted-foreground"}>
                     {user.neighborhood?.name ?? "Sin barrio"}

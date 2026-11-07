@@ -50,6 +50,49 @@ export const countryOfPhone = (prefix: string, phone = ""): CountryCode => {
   return parsed?.country ?? COUNTRIES_BY_PREFIX[prefix]?.[0] ?? DEFAULT_COUNTRY;
 };
 
+/** Un teléfono ya separado, con el país que le corresponde (para la bandera). */
+export interface IParsedPhone extends IPhone {
+  country: CountryCode;
+}
+
+const INTERNATIONAL_EXIT_CODE = "00";
+
+/**
+ * Lee un número completo pegado y lo separa: «+51 944 745 676», «0051944745676» o
+ * «51944745676» → `{ countryPrefix: "51", number: "944745676", country: "PE" }`.
+ * Si son solo dígitos, se toma como internacional únicamente cuando no sirve como número del
+ * país elegido pero sí con prefijo (así un número nacional normal no se confunde).
+ * Devuelve `null` si no se reconoce: el campo lo trata como texto escrito.
+ */
+export const parseFullPhone = (text: string, currentCountry: CountryCode): IParsedPhone | null => {
+  const trimmed = text.trim();
+  const digits = onlyDigits(trimmed);
+  if (!digits) {
+    return null;
+  }
+
+  const hasPlus = trimmed.startsWith("+");
+  const hasExitCode = trimmed.startsWith(INTERNATIONAL_EXIT_CODE);
+  const asInternational = hasExitCode ? digits.slice(INTERNATIONAL_EXIT_CODE.length) : digits;
+  const parsed = parsePhoneNumberFromString(`+${asInternational}`);
+  if (!parsed?.isValid()) {
+    return null;
+  }
+
+  if (!hasPlus && !hasExitCode) {
+    const asNational = parsePhoneNumberFromString(digits, currentCountry);
+    if (asNational?.isValid()) {
+      return null;
+    }
+  }
+
+  return {
+    countryPrefix: parsed.countryCallingCode,
+    number: parsed.nationalNumber,
+    country: parsed.country ?? countryOfPhone(parsed.countryCallingCode, parsed.nationalNumber),
+  };
+};
+
 /** El número con el formato del país mientras se escribe: «987654321» → «987 654 321». */
 export const formatNationalPhone = (phone: string, country: CountryCode): string =>
   phone ? new AsYouType(country).input(phone) : "";

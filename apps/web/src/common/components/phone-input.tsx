@@ -4,13 +4,13 @@ import {
   countryOfPhone,
   formatNationalPhone,
   onlyDigits,
+  parseFullPhone,
   prefixOfCountry,
 } from "@juveco/shared/phones";
 import { cn } from "@juveco/ui/lib/utils";
-import { type CountryCode, getExampleNumber } from "libphonenumber-js";
-import examples from "libphonenumber-js/mobile/examples";
+import type { CountryCode } from "libphonenumber-js";
 import { ChevronDown } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type ClipboardEvent, useEffect, useState } from "react";
 import ReactSelect, { components, type DropdownIndicatorProps } from "react-select";
 
 import { COUNTRY_OPTIONS, type ICountryOption, matchesCountry } from "@/common/utils/countries";
@@ -30,9 +30,7 @@ interface IPhoneInputProps {
   disabled?: boolean;
 }
 
-/** Un celular de ejemplo del país con su formato («912 345 678»), para el placeholder. */
-const placeholderFor = (country: CountryCode): string =>
-  getExampleNumber(country, examples)?.formatNational() ?? "";
+const PHONE_PLACEHOLDER = "Ingresa el número";
 
 function Chevron(props: DropdownIndicatorProps<ICountryOption, false>) {
   return (
@@ -73,7 +71,6 @@ export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, dis
   }, [value.countryPrefix]);
 
   const selected = COUNTRY_OPTIONS.find((option) => option.value === country) ?? null;
-  const placeholder = useMemo(() => placeholderFor(country), [country]);
   const maxDigits = PHONE_MAX_DIGITS - value.countryPrefix.length;
 
   const formatted = formatNationalPhone(value.number, country);
@@ -88,6 +85,18 @@ export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, dis
       digits = digits.slice(0, -1);
     }
     onChange({ countryPrefix: value.countryPrefix, number: digits.slice(0, maxDigits) });
+  };
+
+  /* Un número completo pegado («+51 944 745 676») cambia el país y deja solo el número. */
+  const handlePaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    const pasted = event.clipboardData.getData("text");
+    const parsed = parseFullPhone(pasted, country);
+    if (!parsed) {
+      return;
+    }
+    event.preventDefault();
+    setCountry(parsed.country);
+    onChange({ countryPrefix: parsed.countryPrefix, number: parsed.number });
   };
 
   const handleCountryChange = (option: ICountryOption | null) => {
@@ -173,9 +182,10 @@ export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, dis
         autoComplete="tel-national"
         disabled={disabled}
         aria-invalid={isInvalid}
-        placeholder={placeholder}
+        placeholder={PHONE_PLACEHOLDER}
         value={formatted}
         onBlur={onBlur}
+        onPaste={handlePaste}
         onChange={(event) => handleNumberChange(event.target.value)}
         className="min-w-0 flex-1 rounded-r-[0.625rem] bg-transparent px-3 text-base md:text-sm font-medium text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground disabled:cursor-not-allowed"
       />
