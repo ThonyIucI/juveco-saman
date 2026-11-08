@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import ConfirmModal from "@/common/components/confirm-modal";
 import { EASE_DRAWER, EASE_OUT } from "@/common/constants/motion";
 import { useMediaQuery } from "@/common/hooks/use-media-query";
 import { useVisualViewport } from "@/common/hooks/use-visual-viewport";
@@ -38,6 +39,11 @@ interface IModalProps {
   /** Botones del pie. Van pegados abajo y no se van con el scroll del cuerpo. */
   footer?: ReactNode;
   width?: TModalWidth;
+  /**
+   * Un formulario con campos editados: cerrar con ✕, Escape o tocando afuera pide confirmar
+   * (regla de formularios). Lo que llega lleno por defecto no cuenta. Guardar cierra directo.
+   */
+  isDirty?: boolean;
   onClose: () => void;
 }
 
@@ -97,6 +103,7 @@ export default function Modal({
   children,
   footer,
   width = "md",
+  isDirty = false,
   onClose,
 }: IModalProps) {
   const isDesktop = useMediaQuery(DESKTOP_QUERY);
@@ -105,9 +112,22 @@ export default function Modal({
   const [isPanelMounted, setIsPanelMounted] = useState(false);
   const { bodyRef, edges, measure } = useScrollEdges(open && isPanelMounted);
 
-  /* Siempre el último `onClose`, sin volver a correr los efectos cada vez que cambia. */
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  const [isDiscardOpen, setIsDiscardOpen] = useState(false);
+
+  /* Con cambios sin guardar, primero se pregunta. */
+  const requestClose = () => {
+    if (isDirty) {
+      setIsDiscardOpen(true);
+      return;
+    }
+    onClose();
+  };
+
+  /* Siempre el último, sin volver a correr los efectos cada vez que cambia. */
+  const requestCloseRef = useRef(requestClose);
+  requestCloseRef.current = requestClose;
+  const isDiscardOpenRef = useRef(isDiscardOpen);
+  isDiscardOpenRef.current = isDiscardOpen;
 
   /*
     Escape cierra, y el fondo se congela: sin esto la página de atrás scrollea sola. Depende
@@ -117,13 +137,20 @@ export default function Modal({
   useEffect(() => {
     if (!open) {
       setIsPanelMounted(false);
+      setIsDiscardOpen(false);
       return;
     }
 
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onCloseRef.current();
+      if (event.key !== "Escape") {
+        return;
       }
+      /* Con la confirmación abierta, Escape es «seguir editando». */
+      if (isDiscardOpenRef.current) {
+        setIsDiscardOpen(false);
+        return;
+      }
+      requestCloseRef.current();
     };
 
     window.addEventListener("keydown", onKey);
@@ -155,6 +182,7 @@ export default function Modal({
     relativa a esa caja y su `overflow-hidden` la cortaba.
   */
   return createPortal(
+    <>
     <AnimatePresence>
       {open && (
         <motion.div
@@ -166,7 +194,7 @@ export default function Modal({
           style={{ top: viewport.offsetTop, height: viewport.height || "100%" }}
           onClick={(event) => {
             if (event.target === event.currentTarget) {
-              onClose();
+              requestClose();
             }
           }}
           initial={{ opacity: 0 }}
@@ -209,7 +237,7 @@ export default function Modal({
                   {subtitle && <p className="truncate text-sm text-muted-foreground">{subtitle}</p>}
                 </div>
                 {/* Con fondo gris, no solo la ✕: la vista lo encuentra rápido (Thony, 2026-11-06). */}
-                <IconButton label="Cerrar" isFilled onClick={onClose}>
+                <IconButton label="Cerrar" isFilled onClick={requestClose}>
                   <X />
                 </IconButton>
               </div>
@@ -235,7 +263,22 @@ export default function Modal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>,
+    </AnimatePresence>
+
+    <ConfirmModal
+      open={isDiscardOpen}
+      title="¿Descartar los cambios?"
+      description="Lo que escribiste no se guardó."
+      confirmLabel="Descartar"
+      cancelLabel="Seguir editando"
+      variant="destructive"
+      onConfirm={() => {
+        setIsDiscardOpen(false);
+        onClose();
+      }}
+      onCancel={() => setIsDiscardOpen(false)}
+    />
+    </>,
     document.body,
   );
 }

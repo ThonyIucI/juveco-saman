@@ -1,11 +1,10 @@
-import { Button } from "@juveco/ui/components/button";
 import { fullName } from "@juveco/shared/people";
 import { USER_MIN_PASSWORD_LENGTH, type IUserResource } from "@juveco/shared/users";
-import { useForm } from "@tanstack/react-form";
-import { Loader2 } from "lucide-react";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useEffect } from "react";
 import z from "zod";
 
+import FormSubmitButtons from "@/common/components/form-submit-buttons";
 import Modal from "@/common/components/modal";
 import TextField from "@/common/components/text-field";
 import { useGrantAccess } from "@/modules/users/hooks/use-grant-access";
@@ -50,6 +49,8 @@ export default function AccessFormModal({ user, onSaved, onClose }: IAccessFormM
     },
   });
 
+  const isDirty = useStore(form.store, (state) => state.isDirty);
+
   useEffect(() => {
     if (user) {
       form.reset(DEFAULTS);
@@ -59,24 +60,17 @@ export default function AccessFormModal({ user, onSaved, onClose }: IAccessFormM
 
   return (
     <Modal
+      isDirty={isDirty}
       open={user !== null}
       title="Dar acceso"
       description={user ? `${fullName(user)} entrará como administrador. Pásale estos datos.` : undefined}
       onClose={onClose}
       footer={
-        <>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <form.Subscribe selector={(state) => state.isSubmitting}>
-            {(isSubmitting) => (
-              <Button type="submit" form={FORM_ID}>
-                {isSubmitting && <Loader2 className="animate-spin motion-reduce:animate-none" />}
-                Dar acceso
-              </Button>
-            )}
-          </form.Subscribe>
-        </>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <FormSubmitButtons formId={FORM_ID} isSubmitting={isSubmitting} label={"Dar acceso"} />
+          )}
+        </form.Subscribe>
       }
     >
       <form

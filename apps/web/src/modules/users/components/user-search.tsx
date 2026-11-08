@@ -86,7 +86,12 @@ export default function UserSearch({
         >
         <InitialsAvatar name={fullName(value)} color={avatarColorOf(fullName(value))} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-heading font-semibold text-foreground">{fullName(value)}</p>
+          {/*
+            Hasta dos líneas (Thony, 2026-11-08): con `truncate` el nombre largo no se cortaba,
+            ensanchaba la columna del formulario y la card se salía. Al partir el texto, la card
+            se queda en el ancho del campo.
+          */}
+          <p className="line-clamp-2 font-heading font-medium wrap-anywhere text-foreground">{fullName(value)}</p>
           {/* El barrio, no el número (Thony, 2026-11-07); sin barrio no se pone nada. */}
           {value.neighborhood && <NeighborhoodBadge neighborhood={value.neighborhood} />}
         </div>

@@ -20,6 +20,7 @@ import {
   ACTIVITY_ITEM_SELLER_REQUIRED_MESSAGE,
   ACTIVITY_ITEM_SERIAL_REQUIRED_MESSAGE,
   type IActivityItemResource,
+  padItemSerial,
 } from "@juveco/shared/activity-items";
 import { INVALID_SOLES_MESSAGE, formatSoles, hasAtMostTwoDecimals, roundSoles } from "@juveco/shared/money";
 import { neighborhoodOf } from "@juveco/shared/neighborhoods";
@@ -58,7 +59,9 @@ const serialSchema = z
   .string(ACTIVITY_ITEM_SERIAL_REQUIRED_MESSAGE)
   .trim()
   .min(1, ACTIVITY_ITEM_SERIAL_REQUIRED_MESSAGE)
-  .max(ACTIVITY_ITEM_SERIAL_MAX_LENGTH, ACTIVITY_ITEM_SERIAL_LENGTH_MESSAGE);
+  .max(ACTIVITY_ITEM_SERIAL_MAX_LENGTH, ACTIVITY_ITEM_SERIAL_LENGTH_MESSAGE)
+  /* «101» se guarda «0101»: lo decide el server, no depende del front. */
+  .transform(padItemSerial);
 
 /* Soles positivos con dos decimales: precios, pagos, costos y gastos. */
 export const priceSchema = z

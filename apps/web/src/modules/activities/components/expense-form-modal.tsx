@@ -1,4 +1,3 @@
-import { Button } from "@juveco/ui/components/button";
 import { Label } from "@juveco/ui/components/label";
 import { Textarea } from "@juveco/ui/components/textarea";
 import {
@@ -10,12 +9,12 @@ import {
 } from "@juveco/shared/activity-expenses";
 import { INVALID_SOLES_MESSAGE, parseSoles, toSolesInput } from "@juveco/shared/money";
 import { PERSON_NOTE_LENGTH_MESSAGE, PERSON_NOTE_MAX_LENGTH } from "@juveco/shared/people";
-import { useForm } from "@tanstack/react-form";
-import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { useForm, useStore } from "@tanstack/react-form";
+import { useEffect, useRef } from "react";
 import z from "zod";
 
 import FieldError from "@/common/components/field-error";
+import FormSubmitButtons from "@/common/components/form-submit-buttons";
 import Modal from "@/common/components/modal";
 import SolesInput from "@/common/components/soles-input";
 import TextField from "@/common/components/text-field";
@@ -63,6 +62,9 @@ export default function ExpenseFormModal({ open, activityId, expense, onSaved, o
   const CreateActivityExpense = useCreateActivityExpense();
   const UpdateActivityExpense = useUpdateActivityExpense();
 
+  /* «Crear y seguir creando»: guarda y deja el formulario abierto, vacío, para el siguiente. */
+  const keepOpenRef = useRef(false);
+
   const form = useForm({
     defaultValues: buildDefaults(expense),
     validators: { onSubmit: formSchema },
@@ -71,12 +73,19 @@ export default function ExpenseFormModal({ open, activityId, expense, onSaved, o
       const saved = expense
         ? await UpdateActivityExpense.handler(expense, payload)
         : await CreateActivityExpense.handler(activityId, payload);
-      if (saved) {
-        onSaved(saved);
-        onClose();
+      if (!saved) {
+        return;
       }
+      onSaved(saved);
+      if (keepOpenRef.current) {
+        form.reset(buildDefaults());
+        return;
+      }
+      onClose();
     },
   });
+
+  const isDirty = useStore(form.store, (state) => state.isDirty);
 
   useEffect(() => {
     if (open) {
@@ -87,24 +96,29 @@ export default function ExpenseFormModal({ open, activityId, expense, onSaved, o
 
   return (
     <Modal
+      isDirty={isDirty}
       open={open}
       title={expense ? "Editar gasto" : "Nuevo gasto"}
       width="lg"
       onClose={onClose}
       footer={
-        <>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <form.Subscribe selector={(state) => state.isSubmitting}>
-            {(isSubmitting) => (
-              <Button type="submit" form={FORM_ID}>
-                {isSubmitting && <Loader2 className="animate-spin motion-reduce:animate-none" />}
-                {expense ? "Guardar cambios" : "Agregar gasto"}
-              </Button>
-            )}
-          </form.Subscribe>
-        </>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <FormSubmitButtons
+              formId={FORM_ID}
+              isSubmitting={isSubmitting}
+              label={expense ? "Guardar cambios" : "Crear"}
+              onSubmitAndContinue={
+                expense
+                  ? undefined
+                  : () => {
+                      keepOpenRef.current = true;
+                      form.handleSubmit();
+                    }
+              }
+            />
+          )}
+        </form.Subscribe>
       }
     >
       <form
@@ -112,6 +126,8 @@ export default function ExpenseFormModal({ open, activityId, expense, onSaved, o
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
+          /* Enter o el botón principal: guarda y cierra. «Crear y seguir creando» no pasa por acá. */
+          keepOpenRef.current = false;
           if (!form.state.isSubmitting) {
             form.handleSubmit();
           }
@@ -167,7 +183,7 @@ export default function ExpenseFormModal({ open, activityId, expense, onSaved, o
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
-                className="min-h-24 rounded-xl border-2 bg-field px-4 py-3 text-base font-medium focus-visible:ring-4 focus-visible:ring-ring/30 md:text-base"
+                className="min-h-24 rounded-lg border border-border bg-field px-4 py-3 text-sm font-medium focus-visible:ring-4 focus-visible:ring-ring/30 md:text-sm"
               />
               <FieldError errors={field.state.meta.errors} />
             </div>

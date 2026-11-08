@@ -1,7 +1,8 @@
 import { Button } from "@juveco/ui/components/button";
+import { cn } from "@juveco/ui/lib/utils";
 import { ChevronLeft } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { EASE_DRAWER } from "@/common/constants/motion";
 import { lockPageScroll } from "@/common/utils/scroll-lock";
@@ -38,6 +39,14 @@ export default function SidePanel({
   const prefersReducedMotion = useReducedMotion();
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  /* La sombra del encabezado solo aparece cuando el contenido ya bajó (Thony, 2026-11-08). */
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setIsScrolled(false);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -92,7 +101,12 @@ export default function SidePanel({
             }}
             transition={{ duration: prefersReducedMotion ? 0 : ENTER_SECONDS, ease: EASE_DRAWER }}
           >
-            <header className="flex shrink-0 items-center justify-between gap-2 bg-card px-2 pt-[max(env(safe-area-inset-top),0.5rem)] pb-2 shadow-edge-bottom">
+            <header
+              className={cn(
+                "relative z-10 flex shrink-0 items-center justify-between gap-2 bg-card px-2 pt-[max(env(safe-area-inset-top),0.5rem)] pb-2 transition-shadow duration-200",
+                isScrolled && "shadow-edge-bottom",
+              )}
+            >
               <Button variant="ghost" className="gap-1 px-2 font-heading text-sm" onClick={onClose}>
                 <ChevronLeft className="size-5" />
                 {backLabel}
@@ -100,7 +114,10 @@ export default function SidePanel({
               {actions && <div className="flex items-center gap-1 pr-1">{actions}</div>}
             </header>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+            <div
+              onScroll={(event) => setIsScrolled(event.currentTarget.scrollTop > 2)}
+              className="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-[max(env(safe-area-inset-bottom),1.5rem)]"
+            >
               {children}
             </div>
           </motion.aside>

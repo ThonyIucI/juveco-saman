@@ -27,6 +27,8 @@ export const authClient = createAuthClient({
     inferAdditionalFields({
       user: {
         role: { type: "string" },
+        /* La persona (`users`) a la que apunta el login: es quien vende, cobra, etc. */
+        userId: { type: "string", required: false },
       },
     }),
   ],

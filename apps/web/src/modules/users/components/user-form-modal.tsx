@@ -1,4 +1,3 @@
-import { Button } from "@juveco/ui/components/button";
 import { Input } from "@juveco/ui/components/input";
 import { Label } from "@juveco/ui/components/label";
 import { Switch } from "@juveco/ui/components/switch";
@@ -7,12 +6,14 @@ import { USER_MIN_PASSWORD_LENGTH, type IUserResource } from "@juveco/shared/use
 import { EUserRole, userRoleLabels } from "@juveco/shared/roles";
 import { NEIGHBORHOODS } from "@juveco/shared/neighborhoods";
 import { PERSON_NAME_MAX_LENGTH, PERSON_NOTE_MAX_LENGTH } from "@juveco/shared/people";
-import { useForm } from "@tanstack/react-form";
-import { AtSign, Loader2, Phone } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useForm, useStore } from "@tanstack/react-form";
+import { useRouteContext } from "@tanstack/react-router";
+import { AtSign, Phone } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import z from "zod";
 
 import FieldError from "@/common/components/field-error";
+import FormSubmitButtons from "@/common/components/form-submit-buttons";
 import Modal from "@/common/components/modal";
 import NeighborhoodBadge from "@/common/components/neighborhood-badge";
 import PhoneInput from "@/common/components/phone-input";
@@ -26,6 +27,8 @@ import {
   buildPersonDefaults,
   initialWhatsAppMode,
   personFormSchema,
+  readLastNeighborhood,
+  rememberNeighborhood,
   toPersonPayload,
 } from "@/common/utils/person-form";
 import { useCreateUser } from "@/modules/users/hooks/use-create-user";
@@ -109,6 +112,22 @@ export default function UserFormModal({
   const CreateUser = useCreateUser();
   const UpdateUser = useUpdateUser();
   const [whatsappMode, setWhatsappMode] = useState<TWhatsAppMode>("phone");
+  /* El administrador con sesión: el último barrio se recuerda por cada uno. */
+  const { user: sessionUser } = useRouteContext({ from: "/_app" });
+  /* «Crear y seguir creando»: guarda y deja el formulario abierto para el siguiente. */
+  const keepOpenRef = useRef(false);
+
+  /* Una persona nueva arranca con el último barrio usado, salvo que llegue otro. */
+  const buildCreateValues = (): IPersonInitialValues => ({
+    neighborhoodId: readLastNeighborhood(sessionUser.personId),
+    ...initialValues,
+  });
+
+  const resetForm = (values?: IPersonInitialValues) => {
+    const defaults = buildPersonDefaults(user, values);
+    form.reset({ ...defaults, ...ACCESS_DEFAULTS });
+    setWhatsappMode(initialWhatsAppMode(defaults));
+  };
 
   const form = useForm({
     defaultValues: { ...buildPersonDefaults(user), ...ACCESS_DEFAULTS },
@@ -123,10 +142,19 @@ export default function UserFormModal({
         ? await UpdateUser.handler(user.id, payload)
         : await CreateUser.handler({ ...payload, access });
 
-      if (saved) {
-        onSaved(saved);
-        onClose();
+      if (!saved) {
+        return;
       }
+      if (!user) {
+        rememberNeighborhood(sessionUser.personId, saved.neighborhood?.id);
+      }
+      onSaved(saved);
+      if (keepOpenRef.current) {
+        /* El siguiente arranca vacío, con el barrio recién usado (no con lo del buscador). */
+        resetForm({ neighborhoodId: readLastNeighborhood(sessionUser.personId) });
+        return;
+      }
+      onClose();
     },
     /* Si el error está en el WhatsApp que no se ve, se cambia a ese para mostrarlo. */
     onSubmitInvalid: ({ formApi }) => {
@@ -140,36 +168,40 @@ export default function UserFormModal({
     },
   });
 
+  const isDirty = useStore(form.store, (state) => state.isDirty);
+
   useEffect(() => {
     if (open) {
-      const defaults = buildPersonDefaults(user, initialValues);
-      form.reset({ ...defaults, ...ACCESS_DEFAULTS });
-      setWhatsappMode(initialWhatsAppMode(defaults));
+      resetForm(user ? undefined : buildCreateValues());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
 
   return (
     <Modal
+      isDirty={isDirty}
       open={open}
       title={isEdit ? "Editar usuario" : "Nuevo usuario"}
       width="lg"
       onClose={onClose}
       footer={
-        <>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-
-          <form.Subscribe selector={(state) => state.isSubmitting}>
-            {(isSubmitting) => (
-              <Button type="submit" form={FORM_ID}>
-                {isSubmitting && <Loader2 className="animate-spin motion-reduce:animate-none" />}
-                {isEdit ? "Guardar cambios" : "Agregar usuario"}
-              </Button>
-            )}
-          </form.Subscribe>
-        </>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <FormSubmitButtons
+              formId={FORM_ID}
+              isSubmitting={isSubmitting}
+              label={isEdit ? "Guardar cambios" : "Crear"}
+              onSubmitAndContinue={
+                isEdit
+                  ? undefined
+                  : () => {
+                      keepOpenRef.current = true;
+                      form.handleSubmit();
+                    }
+              }
+            />
+          )}
+        </form.Subscribe>
       }
     >
       <form
@@ -177,6 +209,8 @@ export default function UserFormModal({
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
+          /* Enter o el botón principal: guarda y cierra. «Crear y seguir creando» no pasa por acá. */
+          keepOpenRef.current = false;
           /* El botón nunca se apaga: un segundo clic mientras guarda no hace nada. */
           if (!form.state.isSubmitting) {
             form.handleSubmit();
@@ -397,7 +431,7 @@ export default function UserFormModal({
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
-                className="min-h-24 rounded-xl border-2 bg-field px-4 py-3 text-base font-medium focus-visible:ring-4 focus-visible:ring-ring/30 md:text-base"
+                className="min-h-24 rounded-lg border border-border bg-field px-4 py-3 text-sm font-medium focus-visible:ring-4 focus-visible:ring-ring/30 md:text-sm"
               />
               <FieldError errors={field.state.meta.errors} />
             </div>

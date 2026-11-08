@@ -53,12 +53,41 @@ export const personFormSchema = z.object({
 
 export type TPersonFormValues = z.input<typeof personFormSchema>;
 
-/** Lo que llega ya escrito al crear desde un buscador («Crear «Ana»»). */
+/** Lo que llega ya escrito al crear desde un buscador («Crear «Ana»»), o el último barrio. */
 export interface IPersonInitialValues {
   firstName?: string;
+  neighborhoodId?: string;
   /** Ya separado en prefijo y número: «+51 987…» no puede quedar como «51987…». */
   phone?: IPhone;
 }
+
+/*
+  El último barrio con que se creó una persona: por lo general se cargan varias seguidas del
+  mismo barrio (Thony, 2026-11-08). En `localStorage` y por administrador: sobrevive a recargar
+  y a cerrar sesión, y quien entra en el mismo navegador no hereda el de otro. Si el
+  navegador lo bloquea, simplemente arranca sin barrio.
+*/
+const LAST_NEIGHBORHOOD_KEY = "juveco:last-neighborhood:";
+
+export const readLastNeighborhood = (personId: string): string => {
+  try {
+    return localStorage.getItem(`${LAST_NEIGHBORHOOD_KEY}${personId}`) ?? "";
+  } catch {
+    return "";
+  }
+};
+
+/** Solo se recuerda un barrio usado: crear a alguien sin barrio no borra el anterior. */
+export const rememberNeighborhood = (personId: string, neighborhoodId: string | null | undefined): void => {
+  if (!neighborhoodId) {
+    return;
+  }
+  try {
+    localStorage.setItem(`${LAST_NEIGHBORHOOD_KEY}${personId}`, neighborhoodId);
+  } catch {
+    /* Sin almacenamiento disponible no se recuerda: no es un error para quien carga. */
+  }
+};
 
 export const buildPersonDefaults = (
   user?: IUserResource,
@@ -66,7 +95,7 @@ export const buildPersonDefaults = (
 ): TPersonFormValues => ({
   firstName: user?.firstName ?? initialValues?.firstName ?? "",
   lastName: user?.lastName ?? "",
-  neighborhoodId: user?.neighborhood?.id ?? "",
+  neighborhoodId: user ? (user.neighborhood?.id ?? "") : (initialValues?.neighborhoodId ?? ""),
   phone: user?.phone ?? initialValues?.phone ?? EMPTY_PHONE,
   whatsappUsername: user?.whatsappUsername ?? "",
   note: user?.note ?? "",

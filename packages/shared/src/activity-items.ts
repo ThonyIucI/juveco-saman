@@ -51,6 +51,21 @@ export interface IActivityItemInput {
   note: string | null;
 }
 
+/** Cifras de una serie numérica: «101» se guarda como «0101» (Thony, 2026-11-08). */
+export const ACTIVITY_ITEM_SERIAL_PAD_LENGTH = 4;
+
+const ONLY_DIGITS = /^\d+$/;
+
+/**
+ * Completa con ceros a la izquierda una serie **solo de números** con menos de 4 cifras:
+ * «7» → «0007», «101» → «0101». Las de 4 o más y las que llevan letras o guiones quedan como
+ * se escribieron. Las ya guardadas no se tocan (sin migración, acordado 2026-11-08).
+ */
+export const padItemSerial = (serial: string): string => {
+  const trimmed = serial.trim();
+  return ONLY_DIGITS.test(trimmed) ? trimmed.padStart(ACTIVITY_ITEM_SERIAL_PAD_LENGTH, "0") : trimmed;
+};
+
 /**
  * Para comparar series: «a-0125 » y «A-0125» son la misma, y los ceros a la izquierda no
  * cuentan: «0100» y «100» son la misma cartilla (Thony, 2026-11-07). Se guarda como se

@@ -24,17 +24,13 @@ export const findSameSerial = (
     : undefined;
 };
 
-/** Por serie, con los números en orden natural («2» antes que «10»). */
+/**
+ * Por serie, con los números en orden natural («2» antes que «10»). Es el orden de la lista
+ * (Thony, 2026-11-08): una card no se mueve al registrar un pago, y las series repetidas
+ * («0100» y «100») quedan una al lado de la otra.
+ */
 export const compareBySerial = (first: IActivityItemResource, second: IActivityItemResource): number =>
-  first.serial.localeCompare(second.serial, "es", { numeric: true });
-
-/* Primero lo que hay que cobrar (Thony, 2026-11-07). */
-const COLLECTION_ORDER: Record<TCollectionStatus, number> = { UNPAID: 0, PARTIAL: 1, PAID: 2 };
-
-/** Sin pagar, luego pago parcial y al final pagados; dentro de cada grupo, por serie. */
-export const compareByCollection = (first: IActivityItemResource, second: IActivityItemResource): number =>
-  COLLECTION_ORDER[collectionOf(first).status] - COLLECTION_ORDER[collectionOf(second).status] ||
-  compareBySerial(first, second);
+  normalizeItemSerial(first.serial).localeCompare(normalizeItemSerial(second.serial), "es", { numeric: true });
 
 /**
  * Busca por serie, comprador o barrio. `term` ya viene sin espacios en los bordes y en

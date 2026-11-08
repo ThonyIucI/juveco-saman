@@ -1,4 +1,3 @@
-import { Button } from "@juveco/ui/components/button";
 import { Label } from "@juveco/ui/components/label";
 import { Textarea } from "@juveco/ui/components/textarea";
 import {
@@ -16,12 +15,13 @@ import {
 import { INVALID_SOLES_MESSAGE, parseSoles, toSolesInput } from "@juveco/shared/money";
 import { PERSON_NOTE_LENGTH_MESSAGE, PERSON_NOTE_MAX_LENGTH } from "@juveco/shared/people";
 import type { IUserResource } from "@juveco/shared/users";
-import { useForm } from "@tanstack/react-form";
-import { Gift, Loader2, ShoppingBag } from "lucide-react";
-import { useEffect } from "react";
+import { useForm, useStore } from "@tanstack/react-form";
+import { Gift, ShoppingBag } from "lucide-react";
+import { useEffect, useRef } from "react";
 import z from "zod";
 
 import FieldError from "@/common/components/field-error";
+import FormSubmitButtons from "@/common/components/form-submit-buttons";
 import Modal from "@/common/components/modal";
 import OptionCards, { type IOptionCard } from "@/common/components/option-cards";
 import SolesInput from "@/common/components/soles-input";
@@ -105,6 +105,9 @@ export default function PrizeFormModal({
   const CreateActivityPrize = useCreateActivityPrize();
   const UpdateActivityPrize = useUpdateActivityPrize();
 
+  /* «Crear y seguir creando»: guarda y deja el formulario abierto, vacío, para el siguiente. */
+  const keepOpenRef = useRef(false);
+
   const form = useForm({
     defaultValues: buildDefaults(prize),
     validators: { onSubmit: formSchema },
@@ -113,12 +116,19 @@ export default function PrizeFormModal({
       const saved = prize
         ? await UpdateActivityPrize.handler(prize, payload)
         : await CreateActivityPrize.handler(activityId, payload);
-      if (saved) {
-        onSaved(saved);
-        onClose();
+      if (!saved) {
+        return;
       }
+      onSaved(saved);
+      if (keepOpenRef.current) {
+        form.reset(buildDefaults());
+        return;
+      }
+      onClose();
     },
   });
+
+  const isDirty = useStore(form.store, (state) => state.isDirty);
 
   useEffect(() => {
     if (open) {
@@ -129,24 +139,29 @@ export default function PrizeFormModal({
 
   return (
     <Modal
+      isDirty={isDirty}
       open={open}
       title={prize ? "Editar premio" : "Nuevo premio"}
       width="lg"
       onClose={onClose}
       footer={
-        <>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <form.Subscribe selector={(state) => state.isSubmitting}>
-            {(isSubmitting) => (
-              <Button type="submit" form={FORM_ID}>
-                {isSubmitting && <Loader2 className="animate-spin motion-reduce:animate-none" />}
-                {prize ? "Guardar cambios" : "Agregar premio"}
-              </Button>
-            )}
-          </form.Subscribe>
-        </>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <FormSubmitButtons
+              formId={FORM_ID}
+              isSubmitting={isSubmitting}
+              label={prize ? "Guardar cambios" : "Crear"}
+              onSubmitAndContinue={
+                prize
+                  ? undefined
+                  : () => {
+                      keepOpenRef.current = true;
+                      form.handleSubmit();
+                    }
+              }
+            />
+          )}
+        </form.Subscribe>
       }
     >
       <form
@@ -154,6 +169,8 @@ export default function PrizeFormModal({
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
+          /* Enter o el botón principal: guarda y cierra. «Crear y seguir creando» no pasa por acá. */
+          keepOpenRef.current = false;
           if (!form.state.isSubmitting) {
             form.handleSubmit();
           }
@@ -246,7 +263,7 @@ export default function PrizeFormModal({
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
-                className="min-h-24 rounded-xl border-2 bg-field px-4 py-3 text-base font-medium focus-visible:ring-4 focus-visible:ring-ring/30 md:text-base"
+                className="min-h-24 rounded-lg border border-border bg-field px-4 py-3 text-sm font-medium focus-visible:ring-4 focus-visible:ring-ring/30 md:text-sm"
               />
               <FieldError errors={field.state.meta.errors} />
             </div>

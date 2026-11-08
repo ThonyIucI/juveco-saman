@@ -55,7 +55,7 @@ export default function ActivityItemCard({ item, isSerialRepeated, actions, onOp
           </p>
           {/* El barrio al lado del nombre (prueba, Thony 2026-11-07); sin barrio, nada. */}
           <div className="flex min-w-0 items-center gap-2">
-            <p className="truncate font-heading text-base font-bold text-foreground">{fullName(item.buyer)}</p>
+            <p className="truncate font-heading text-base font-medium text-foreground">{fullName(item.buyer)}</p>
             {item.buyer.neighborhood && (
               <span className="shrink-0">
                 <NeighborhoodBadge neighborhood={item.buyer.neighborhood} hasIcon={false} />
@@ -69,7 +69,7 @@ export default function ActivityItemCard({ item, isSerialRepeated, actions, onOp
       <div className="grid grid-cols-2 gap-2 p-3">
         <div className="min-w-0 space-y-1">
           <p className="text-sm font-medium text-muted-foreground">Vendedor</p>
-          <p className="truncate text-sm font-semibold text-foreground">{fullName(item.seller)}</p>
+          <p className="truncate text-sm font-normal text-foreground">{fullName(item.seller)}</p>
         </div>
         {/* A la derecha, para no dejar un hueco al costado del monto. */}
         <div className="flex flex-col items-end space-y-1">

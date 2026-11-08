@@ -42,6 +42,10 @@ const METHOD_ICON: Record<TPaymentMethod, LucideIcon> = {
   [EPaymentMethod.CASH]: Banknote,
 };
 
+/* En el detalle, editar y eliminar van directo como íconos, sin menú (Thony, 2026-11-08). */
+const toInlineActions = (actions: IRowAction[]): IRowAction[] =>
+  actions.filter((action) => action.label !== "Registrar pago").map((action) => ({ ...action, inline: true }));
+
 interface IActivityItemDetailPanelProps {
   /** El ítem abierto; `null` cierra el panel. */
   item: IActivityItemResource | null;
@@ -119,7 +123,7 @@ export default function ActivityItemDetailPanel({
       label={current ? `Serie ${current.serial}` : "Detalle"}
       backLabel={backLabel}
       onClose={onClose}
-      actions={current && <RowActions actions={buildActions(current)} isBordered />}
+      actions={current && <RowActions actions={toInlineActions(buildActions(current))} isBordered />}
     >
       {current && collection && (
         <div className="space-y-4">
@@ -127,26 +131,6 @@ export default function ActivityItemDetailPanel({
             <p className="font-mono text-sm font-semibold text-primary tabular-nums">N.º {current.serial}</p>
             <h2 className="truncate font-heading text-xl font-bold text-foreground">{fullName(current.buyer)}</h2>
           </div>
-
-          <DetailSection title="Datos" isBordered>
-            <DetailList>
-              <DetailRow icon={MapPin} label="Barrio">
-                {current.buyer.neighborhood && <NeighborhoodBadge neighborhood={current.buyer.neighborhood} />}
-              </DetailRow>
-              <DetailRow icon={Tag} label="Precio">
-                <span className="tabular-nums">{formatSoles(current.price)}</span>
-              </DetailRow>
-              <DetailRow icon={UserRound} label="Vendió">
-                {fullName(current.seller)}
-              </DetailRow>
-              <DetailRow icon={CalendarDays} label="Fecha">
-                {formatShortDate(current.createdAt)}
-              </DetailRow>
-              <DetailRow icon={MessageSquareText} label="Nota">
-                {current.note}
-              </DetailRow>
-            </DetailList>
-          </DetailSection>
 
           <DetailSection
             title="Pagos"
@@ -207,6 +191,26 @@ export default function ActivityItemDetailPanel({
                 })}
               </ul>
             )}
+          </DetailSection>
+
+          <DetailSection title="Datos" isBordered>
+            <DetailList>
+              <DetailRow icon={MapPin} label="Barrio">
+                {current.buyer.neighborhood && <NeighborhoodBadge neighborhood={current.buyer.neighborhood} />}
+              </DetailRow>
+              <DetailRow icon={Tag} label="Precio">
+                <span className="tabular-nums">{formatSoles(current.price)}</span>
+              </DetailRow>
+              <DetailRow icon={UserRound} label="Vendió">
+                {fullName(current.seller)}
+              </DetailRow>
+              <DetailRow icon={CalendarDays} label="Fecha">
+                {formatShortDate(current.createdAt)}
+              </DetailRow>
+              <DetailRow icon={MessageSquareText} label="Nota">
+                {current.note}
+              </DetailRow>
+            </DetailList>
           </DetailSection>
         </div>
       )}

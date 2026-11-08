@@ -64,6 +64,12 @@ const sharedSelectProps = (isInvalid: boolean | undefined, isHighlighted: boolea
     unstyled: true,
     menuPortalTarget: typeof document === "undefined" ? undefined : document.body,
     menuPlacement: "auto",
+    /*
+      `fixed`: con el fondo congelado por una modal, el menú `absolute` intentaba scrollear la
+      página para mostrarse entero, no podía y quedaba cortado (filtros en celular). Fijo al
+      viewport, se abre hacia donde haya lugar sin tocar el scroll.
+    */
+    menuPosition: "fixed",
     noOptionsMessage: () => "No hay opciones",
     loadingMessage: () => "Cargando…",
     /*
@@ -91,7 +97,7 @@ const sharedSelectProps = (isInvalid: boolean | undefined, isHighlighted: boolea
     classNames: {
       control: ({ isFocused, isDisabled }) =>
         cn(
-          "rounded-xl border-2 bg-field px-4 text-base md:text-sm font-medium transition-colors",
+          "rounded-lg border bg-field px-4 text-sm font-medium transition-colors",
           isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
           isInvalid
             ? "border-destructive ring-4 ring-destructive/20"
@@ -99,7 +105,7 @@ const sharedSelectProps = (isInvalid: boolean | undefined, isHighlighted: boolea
               ? "border-ring ring-4 ring-ring/30"
               : isHighlighted
                 ? "border-primary"
-                : "border-input",
+                : "border-border",
         ),
       valueContainer: () => "gap-1",
       placeholder: () => "font-normal text-muted-foreground",

@@ -158,11 +158,11 @@ export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, dis
   return (
     <div
       className={cn(
-        "flex h-13 w-full items-stretch rounded-xl border-2 bg-field transition-colors",
+        "flex h-13 w-full items-stretch rounded-lg border bg-field transition-colors",
         disabled && "cursor-not-allowed opacity-60",
         isInvalid
           ? "border-destructive ring-4 ring-destructive/20"
-          : "border-input focus-within:border-ring focus-within:ring-4 focus-within:ring-ring/30",
+          : "border-border focus-within:border-ring focus-within:ring-4 focus-within:ring-ring/30",
       )}
     >
       <ReactSelect<ICountryOption, false>
@@ -200,7 +200,7 @@ export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, dis
         }}
         classNames={{
           container: () => "shrink-0",
-          control: () => "h-full cursor-pointer rounded-l-[0.625rem] pr-1 pl-3 text-base md:text-sm hover:bg-muted/60",
+          control: () => "h-full cursor-pointer rounded-l-[0.4375rem] pr-1 pl-3 text-sm hover:bg-muted/60",
           valueContainer: () => "gap-1",
           singleValue: () => "text-foreground",
           input: () => "w-14 text-foreground",
@@ -236,7 +236,7 @@ export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, dis
         onBlur={onBlur}
         onPaste={handlePaste}
         onChange={handleNumberChange}
-        className="min-w-0 flex-1 rounded-r-[0.625rem] bg-transparent px-3 text-base md:text-sm font-medium text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground disabled:cursor-not-allowed"
+        className="min-w-0 flex-1 rounded-r-[0.4375rem] bg-transparent px-3 text-sm font-medium text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground disabled:cursor-not-allowed"
       />
     </div>
   );

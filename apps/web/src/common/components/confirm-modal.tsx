@@ -98,8 +98,8 @@ export default function ConfirmModal({
             transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.28, ease: "easeOut" }}
           >
             {/* Escritorio: una sola tarjeta con los botones en fila. */}
-            <div className="hidden rounded-3xl bg-card p-6 text-foreground shadow-sheet sm:block">
-              <h2 className="font-heading text-base font-bold text-foreground">{title}</h2>
+            <div className="hidden rounded-xl bg-card p-5 text-foreground shadow-sheet sm:block">
+              <h2 className="font-heading text-base font-semibold text-foreground">{title}</h2>
               {description && <p className="mt-2 text-sm text-muted-foreground">{description}</p>}
 
               <div className="mt-5 flex justify-end gap-2">
@@ -117,18 +117,18 @@ export default function ConfirmModal({
 
             {/* Celular: hoja de acción. Cuerpo y botón principal juntos; cancelar aparte. */}
             <div className="flex flex-col gap-2 sm:hidden">
-              <div className="overflow-hidden rounded-3xl bg-card text-foreground shadow-sheet">
-                <div className="px-6 pt-7 pb-5 text-center">
-                  <h2 className="font-heading text-base font-bold text-foreground">{title}</h2>
+              <div className="overflow-hidden rounded-xl bg-card text-foreground shadow-sheet">
+                <div className="px-5 pt-5 pb-4 text-center">
+                  <h2 className="font-heading text-base font-semibold text-foreground">{title}</h2>
                   {description && (
                     <p className="mt-2 text-sm text-muted-foreground">{description}</p>
                   )}
                 </div>
                 <div className="p-3 pt-0">
                   <Button
-                    size="xl"
+                    size="lg"
                     variant={variant}
-                    className="w-full"
+                    className="w-full text-sm"
                     onClick={handleConfirm}
                   >
                     {loading && <Loader2 className="animate-spin motion-reduce:animate-none" />}
@@ -138,11 +138,11 @@ export default function ConfirmModal({
               </div>
 
               {!hideCancel && (
-                <div className="rounded-3xl bg-card p-1.5 shadow-sheet">
+                <div className="rounded-xl bg-card p-1.5 shadow-sheet">
                   <Button
-                    size="xl"
+                    size="lg"
                     variant="ghost"
-                    className="w-full"
+                    className="w-full text-sm"
                     onClick={handleCancel}
                   >
                     {cancelLabel}

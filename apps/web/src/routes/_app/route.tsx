@@ -15,7 +15,8 @@ export const Route = createFileRoute("/_app")({
     }
 
     const role = parseUserRole(session.data.user.role);
-    return { user: { ...session.data.user, role } };
+    /* `user.id` es el del login; la persona (la que vende y cobra) es `userId`. */
+    return { user: { ...session.data.user, role, personId: session.data.user.userId ?? "" } };
   },
 });
 

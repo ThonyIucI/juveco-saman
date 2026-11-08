@@ -6,7 +6,18 @@ import { activityItemLabels } from "@juveco/shared/activities";
 import type { IActivityItemResource } from "@juveco/shared/activity-items";
 import { formatSoles } from "@juveco/shared/money";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChartColumn, HandCoins, Pencil, Plus, RefreshCw, Search, Ticket, Trash2 } from "lucide-react";
+import {
+  ChartColumn,
+  HandCoins,
+  LayoutGrid,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Rows3,
+  Search,
+  Ticket,
+  Trash2,
+} from "lucide-react";
 import { type ChangeEvent, useEffect, useState } from "react";
 
 import ConfirmModal from "@/common/components/confirm-modal";
@@ -25,6 +36,7 @@ import {
   ActivityItemFilterFields,
   ActivityItemFiltersModal,
 } from "@/modules/activities/components/activity-item-filters";
+import ActivityItemCompactList from "@/modules/activities/components/activity-item-compact-list";
 import ActivityItemGrid from "@/modules/activities/components/activity-item-grid";
 import ActivityItemTable from "@/modules/activities/components/activity-item-table";
 import ItemPaymentFormModal from "@/modules/activities/components/item-payment-form-modal";
@@ -35,7 +47,7 @@ import {
   EMPTY_ITEM_FILTERS,
   type IActivityItemFilters,
   collectionOf,
-  compareByCollection,
+  compareBySerial,
   countActiveFilters,
   countSerials,
   matchesActivityItemSearch,
@@ -43,6 +55,25 @@ import {
   sellersOf,
 } from "@/modules/activities/utils/activity-items";
 import { useListUsers } from "@/modules/users/hooks/use-list-users";
+
+/* La vista compacta de celular se recuerda en este navegador (Thony, 2026-11-08). */
+const COMPACT_VIEW_KEY = "juveco:activity-items-compact";
+
+const readCompactView = (): boolean => {
+  try {
+    return localStorage.getItem(COMPACT_VIEW_KEY) === "true";
+  } catch {
+    return false;
+  }
+};
+
+const saveCompactView = (isCompact: boolean): void => {
+  try {
+    localStorage.setItem(COMPACT_VIEW_KEY, String(isCompact));
+  } catch {
+    /* Sin almacenamiento, la vista vale solo mientras dure la página. */
+  }
+};
 
 export const Route = createFileRoute("/_app/actividades/$activityId")({
   component: ActivityPage,
@@ -74,6 +105,13 @@ function ActivityPage() {
   /* Por id y no el objeto: así el detalle y el pago ven el ítem al día tras cada cambio. */
   const [detailId, setDetailId] = useState<string | null>(null);
   const [payId, setPayId] = useState<string | null>(null);
+  const [isCompactView, setIsCompactView] = useState(readCompactView);
+
+  const toggleCompactView = () => {
+    const next = !isCompactView;
+    setIsCompactView(next);
+    saveCompactView(next);
+  };
 
   /* Las personas también: el comprador se elige de ahí y su barrio pudo cambiar. */
   const loadAll = (signal?: AbortSignal) =>
@@ -105,7 +143,7 @@ function ActivityPage() {
   const visible = items
     .filter((item) => !normalizedTerm || matchesActivityItemSearch(item, normalizedTerm))
     .filter((item) => matchesItemFilters(item, filters))
-    .sort(compareByCollection);
+    .sort(compareBySerial);
   /* KPIs, balance, premios y gastos van en su propia página (acordado 2026-11-07). */
   const openSummary = () => navigate({ to: "/actividades/$activityId/resumen", params: { activityId } });
 
@@ -259,23 +297,40 @@ function ActivityPage() {
             buildActions={buildActions}
             onOpen={(item) => setDetailId(item.id)}
           />
-          <ActivityItemGrid
-            items={visible}
-            isLoading={isLoading}
-            serialCounts={serialCounts}
-            buildActions={buildActions}
-            onOpen={(item) => setDetailId(item.id)}
-          />
+          {isCompactView ? (
+            <ActivityItemCompactList
+              items={visible}
+              isLoading={isLoading}
+              serialCounts={serialCounts}
+              onPay={(item) => setPayId(item.id)}
+              onOpen={(item) => setDetailId(item.id)}
+            />
+          ) : (
+            <ActivityItemGrid
+              items={visible}
+              isLoading={isLoading}
+              serialCounts={serialCounts}
+              buildActions={buildActions}
+              onOpen={(item) => setDetailId(item.id)}
+            />
+          )}
         </>
       )}
 
+      {/* Encima del «+», del mismo tamaño y en gris, a 12 px: cambia entre cards y vista compacta. */}
+      <FloatingActionButton
+        label={isCompactView ? "Ver en cards" : "Ver en vista compacta"}
+        icon={isCompactView ? LayoutGrid : Rows3}
+        onClick={toggleCompactView}
+        className="bottom-[calc(9.25rem+env(safe-area-inset-bottom))] border border-border bg-card text-foreground sm:bottom-[5.75rem]"
+      />
       {activity && <FloatingActionButton label={`Agregar ${itemLabel.singular}`} icon={Plus} onClick={openCreate} />}
 
       {activity && (
         <ActivityItemFormModal
           open={showForm.active}
           activity={activity}
-          currentUserId={user.id}
+          currentUserId={user.personId}
           item={editTarget}
           items={items}
           users={ListUsers.users}

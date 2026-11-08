@@ -1,4 +1,3 @@
-import { Button } from "@juveco/ui/components/button";
 import { Label } from "@juveco/ui/components/label";
 import {
   EPaymentMethod,
@@ -12,12 +11,13 @@ import {
 import type { IActivityItemResource } from "@juveco/shared/activity-items";
 import { INVALID_SOLES_MESSAGE, formatSoles, parseSoles, toSolesInput } from "@juveco/shared/money";
 import { fullName } from "@juveco/shared/people";
-import { useForm } from "@tanstack/react-form";
-import { Banknote, Loader2, type LucideIcon, Smartphone } from "lucide-react";
+import { useForm, useStore } from "@tanstack/react-form";
+import { Banknote, type LucideIcon, Smartphone } from "lucide-react";
 import { useEffect } from "react";
 import z from "zod";
 
 import FieldError from "@/common/components/field-error";
+import FormSubmitButtons from "@/common/components/form-submit-buttons";
 import Modal from "@/common/components/modal";
 import OptionCards, { type IOptionCard } from "@/common/components/option-cards";
 import SolesInput from "@/common/components/soles-input";
@@ -86,6 +86,8 @@ export default function ItemPaymentFormModal({ item, onSaved, onClose }: IItemPa
     },
   });
 
+  const isDirty = useStore(form.store, (state) => state.isDirty);
+
   useEffect(() => {
     if (item) {
       form.reset(buildDefaults(pending));
@@ -95,24 +97,17 @@ export default function ItemPaymentFormModal({ item, onSaved, onClose }: IItemPa
 
   return (
     <Modal
+      isDirty={isDirty}
       open={item !== null}
       title="Registrar pago"
       subtitle={item ? `N.º ${item.serial} · ${fullName(item.buyer)}` : undefined}
       onClose={onClose}
       footer={
-        <>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <form.Subscribe selector={(state) => state.isSubmitting}>
-            {(isSubmitting) => (
-              <Button type="submit" form={FORM_ID}>
-                {isSubmitting && <Loader2 className="animate-spin motion-reduce:animate-none" />}
-                Registrar pago
-              </Button>
-            )}
-          </form.Subscribe>
-        </>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <FormSubmitButtons formId={FORM_ID} isSubmitting={isSubmitting} label={"Registrar pago"} />
+          )}
+        </form.Subscribe>
       }
     >
       <form

@@ -7,7 +7,7 @@ import { cva, type VariantProps } from "class-variance-authority";
   generosos y "sombra sticker" que se hunde al presionar. Colores solo por token.
 */
 const buttonVariants = cva(
-  "group/button relative inline-flex shrink-0 items-center justify-center rounded-xl border border-transparent bg-clip-padding font-heading text-sm font-semibold whitespace-nowrap transition-all outline-none select-none focus-visible:ring-4 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+  "group/button relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding font-heading text-sm font-semibold whitespace-nowrap transition-all outline-none select-none focus-visible:ring-4 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {
@@ -16,7 +16,7 @@ const buttonVariants = cva(
         gold:
           "bg-gold text-gold-foreground hover:brightness-105 active:scale-[0.98]",
         outline:
-          "border-2 border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground aria-expanded:bg-accent",
+          "border border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground aria-expanded:bg-accent",
         secondary:
           "bg-secondary text-secondary-foreground hover:brightness-105 active:scale-[0.98]",
         ghost: "text-foreground hover:bg-accent hover:text-accent-foreground aria-expanded:bg-accent",

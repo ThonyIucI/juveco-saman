@@ -46,7 +46,11 @@ export default function StickyToolbar({ children, className }: IStickyToolbarPro
       <div
         style={{ top: stickyTop }}
         className={cn(
-          "sticky z-10 -mx-4 px-4 py-2 mb-0",
+          /*
+            Equidistante (Thony, 2026-11-08): el `py-2` es para el vidrio al pegarse. `-mt-2`
+            se lo descuenta al margen de arriba y `mb-2` completa el de abajo: 16 px a cada lado.
+          */
+          "sticky z-10 -mx-4 px-4 py-2 -mt-2 mb-2",
           "transition-[top,background-color,box-shadow] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
           isStuck ? "bg-card/80 shadow-edge-bottom backdrop-blur-md" : "bg-transparent",
           className,

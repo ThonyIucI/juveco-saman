@@ -1,4 +1,3 @@
-import { Button } from "@juveco/ui/components/button";
 import { Input } from "@juveco/ui/components/input";
 import { Label } from "@juveco/ui/components/label";
 import { Textarea } from "@juveco/ui/components/textarea";
@@ -9,6 +8,7 @@ import {
   ACTIVITY_ITEM_SERIAL_LENGTH_MESSAGE,
   ACTIVITY_ITEM_SERIAL_MAX_LENGTH,
   ACTIVITY_ITEM_SERIAL_REQUIRED_MESSAGE,
+  padItemSerial,
   type IActivityItemInput,
   type IActivityItemResource,
 } from "@juveco/shared/activity-items";
@@ -16,12 +16,13 @@ import { INVALID_SOLES_MESSAGE, parseSoles, toSolesInput } from "@juveco/shared/
 import { PERSON_NOTE_LENGTH_MESSAGE, PERSON_NOTE_MAX_LENGTH, fullName } from "@juveco/shared/people";
 import { EUserRole } from "@juveco/shared/roles";
 import type { IUserResource } from "@juveco/shared/users";
-import { useForm } from "@tanstack/react-form";
-import { Loader2, TriangleAlert } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useForm, useStore } from "@tanstack/react-form";
+import { TriangleAlert } from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
 import z from "zod";
 
 import FieldError from "@/common/components/field-error";
+import FormSubmitButtons from "@/common/components/form-submit-buttons";
 import Modal from "@/common/components/modal";
 import Select from "@/common/components/select";
 import TextField from "@/common/components/text-field";
@@ -60,7 +61,7 @@ const buildDefaults = (
 });
 
 const toPayload = (value: TActivityItemFormValues): IActivityItemInput => ({
-  serial: value.serial.trim(),
+  serial: padItemSerial(value.serial),
   buyerId: value.buyerId,
   sellerId: value.sellerId,
   /* El esquema ya garantizó que es un precio válido. */
@@ -111,6 +112,9 @@ export default function ActivityItemFormModal({
     [users],
   );
 
+  /* «Agregar y seguir»: guarda y deja el formulario abierto para la siguiente. */
+  const keepOpenRef = useRef(false);
+
   const form = useForm({
     defaultValues: buildDefaults(activity, currentUserId, item),
     validators: { onSubmit: formSchema },
@@ -120,12 +124,20 @@ export default function ActivityItemFormModal({
         ? await UpdateActivityItem.handler(item, payload)
         : await CreateActivityItem.handler(activity.id, payload);
 
-      if (saved) {
-        onSaved(saved);
-        onClose();
+      if (!saved) {
+        return;
       }
+      onSaved(saved);
+      if (keepOpenRef.current) {
+        /* La siguiente conserva vendedor y precio: es lo que se repite en una tanda. */
+        form.reset({ ...buildDefaults(activity, currentUserId), sellerId: value.sellerId, price: value.price });
+        return;
+      }
+      onClose();
     },
   });
+
+  const isDirty = useStore(form.store, (state) => state.isDirty);
 
   useEffect(() => {
     if (open) {
@@ -136,26 +148,30 @@ export default function ActivityItemFormModal({
 
   return (
     <Modal
+      isDirty={isDirty}
       open={open}
       title={isEdit ? `Editar ${itemLabel}` : `Nueva ${itemLabel}`}
       subtitle={activity.name}
       width="lg"
       onClose={onClose}
       footer={
-        <>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-
-          <form.Subscribe selector={(state) => state.isSubmitting}>
-            {(isSubmitting) => (
-              <Button type="submit" form={FORM_ID}>
-                {isSubmitting && <Loader2 className="animate-spin motion-reduce:animate-none" />}
-                {isEdit ? "Guardar cambios" : `Agregar ${itemLabel}`}
-              </Button>
-            )}
-          </form.Subscribe>
-        </>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <FormSubmitButtons
+              formId={FORM_ID}
+              isSubmitting={isSubmitting}
+              label={isEdit ? "Guardar cambios" : "Crear"}
+              onSubmitAndContinue={
+                isEdit
+                  ? undefined
+                  : () => {
+                      keepOpenRef.current = true;
+                      form.handleSubmit();
+                    }
+              }
+            />
+          )}
+        </form.Subscribe>
       }
     >
       <form
@@ -163,6 +179,8 @@ export default function ActivityItemFormModal({
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
+          /* Enter o el botón principal: guarda y cierra. «Crear y seguir creando» no pasa por acá. */
+          keepOpenRef.current = false;
           /* El botón nunca se apaga: un segundo clic mientras guarda no hace nada. */
           if (!form.state.isSubmitting) {
             form.handleSubmit();
@@ -188,35 +206,73 @@ export default function ActivityItemFormModal({
               </div>
             )}
           </form.Field>
-          <form.Field name="serial">
-            {(field) => {
-              const sameSerial = findSameSerial(items, field.state.value, item?.id);
+          {/* Serie y precio mitad y mitad, también en celular; el vendedor debajo (Thony, 2026-11-08). */}
+          <div className="grid grid-cols-2 gap-3">
+            <form.Field name="serial">
+              {(field) => {
+                const sameSerial = findSameSerial(items, field.state.value, item?.id);
 
-              return (
+                return (
+                  <div className="space-y-2">
+                    <TextField
+                      id={field.name}
+                      label="Serie"
+                      autoCapitalize="characters"
+                      autoComplete="off"
+                      maxLength={ACTIVITY_ITEM_SERIAL_MAX_LENGTH}
+                      placeholder="Ingresa la serie"
+                      value={field.state.value}
+                      errors={field.state.meta.errors}
+                      /* Al salir se ve como se va a guardar: «101» → «0101». */
+                      onBlur={() => {
+                        const padded = padItemSerial(field.state.value);
+                        if (padded !== field.state.value) {
+                          field.handleChange(padded);
+                        }
+                        field.handleBlur();
+                      }}
+                      onValueChange={field.handleChange}
+                    />
+                    {/* Se deja guardar igual (acordado 2026-11-07): solo se avisa. */}
+                    {sameSerial && (
+                      <p role="status" className="flex items-start gap-1.5 text-sm font-medium text-yellow">
+                        <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+                        Ya la tiene «{fullName(sameSerial.buyer)}». Puedes guardarla igual.
+                      </p>
+                    )}
+                  </div>
+                );
+              }}
+            </form.Field>
+            <form.Field name="price">
+              {(field) => (
                 <div className="space-y-2">
-                  <TextField
-                    id={field.name}
-                    label="Serie"
-                    autoCapitalize="characters"
-                    autoComplete="off"
-                    maxLength={ACTIVITY_ITEM_SERIAL_MAX_LENGTH}
-                    placeholder="Ingresa la serie"
-                    value={field.state.value}
-                    errors={field.state.meta.errors}
-                    onBlur={field.handleBlur}
-                    onValueChange={field.handleChange}
-                  />
-                  {/* Se deja guardar igual (acordado 2026-11-07): solo se avisa. */}
-                  {sameSerial && (
-                    <p role="status" className="flex items-start gap-1.5 text-sm font-medium text-yellow">
-                      <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
-                      Ya la tiene «{fullName(sameSerial.buyer)}». Puedes guardarla igual.
-                    </p>
-                  )}
+                  <Label htmlFor={field.name}>Precio</Label>
+                  <div className="relative">
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-y-0 left-4 flex items-center font-medium text-muted-foreground"
+                    >
+                      S/
+                    </span>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      placeholder="Ingresa el precio"
+                      aria-invalid={field.state.meta.errors.length > 0}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(event) => field.handleChange(event.target.value)}
+                      className="pl-11 tabular-nums"
+                    />
+                  </div>
+                  <FieldError errors={field.state.meta.errors} />
                 </div>
-              );
-            }}
-          </form.Field>
+              )}
+            </form.Field>
+          </div>
 
           <form.Field name="sellerId">
             {(field) => (
@@ -230,35 +286,6 @@ export default function ActivityItemFormModal({
                   value={sellerOptions.find((option) => option.value === field.state.value) ?? null}
                   onChange={(option) => field.handleChange(option?.value ?? "")}
                 />
-                <FieldError errors={field.state.meta.errors} />
-              </div>
-            )}
-          </form.Field>
-
-          <form.Field name="price">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Precio</Label>
-                <div className="relative">
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-y-0 left-4 flex items-center font-medium text-muted-foreground"
-                  >
-                    S/
-                  </span>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    inputMode="decimal"
-                    autoComplete="off"
-                    placeholder="Ingresa el precio"
-                    aria-invalid={field.state.meta.errors.length > 0}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    className="pl-11 tabular-nums"
-                  />
-                </div>
                 <FieldError errors={field.state.meta.errors} />
               </div>
             )}
@@ -280,7 +307,7 @@ export default function ActivityItemFormModal({
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
-                className="min-h-24 rounded-xl border-2 bg-field px-4 py-3 text-base font-medium focus-visible:ring-4 focus-visible:ring-ring/30 md:text-base"
+                className="min-h-24 rounded-lg border border-border bg-field px-4 py-3 text-sm font-medium focus-visible:ring-4 focus-visible:ring-ring/30 md:text-sm"
               />
               <FieldError errors={field.state.meta.errors} />
             </div>
