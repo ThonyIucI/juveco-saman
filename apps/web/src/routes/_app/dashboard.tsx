@@ -5,6 +5,7 @@ import { PartyPopper, UsersRound } from "lucide-react";
 import { useEffect } from "react";
 
 import EmptyState from "@/common/components/empty-state";
+import PageBox from "@/common/components/page-box";
 import ActivityOverviewCard from "@/modules/activities/components/activity-overview-card";
 import { useListActivities } from "@/modules/activities/hooks/use-list-activities";
 import { useListUsers } from "@/modules/users/hooks/use-list-users";
@@ -43,11 +44,17 @@ function DashboardPage() {
   const teamCount = ListUsers.users.filter((person) => TEAM_ROLES.has(person.role)).length;
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6">
-      <div>
-        <h1 className="font-heading text-xl font-bold text-foreground">Hola, {user.name}</h1>
+    <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6">
+      {/*
+        Encabezado y cuerpo en cajas blancas sobre el fondo gris (Thony, 2026-11-09): sin eso,
+        el encabezado gris de las cards se confundía con el fondo.
+      */}
+      <PageBox>
+        <h1 className="font-heading text-xl font-semibold text-foreground">Hola, {user.name}</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">{userRoleLabels[user.role]}</p>
-      </div>
+      </PageBox>
+
+      <PageBox className="space-y-6">
 
       <section aria-labelledby="team-title">
         <div className="flex items-center gap-3 rounded-sm border border-border bg-card p-3 sm:max-w-xs">
@@ -70,7 +77,7 @@ function DashboardPage() {
       </section>
 
       <section aria-labelledby="activities-title" className="space-y-3">
-        <h2 id="activities-title" className="font-heading text-lg font-bold text-foreground">
+        <h2 id="activities-title" className="font-heading text-lg font-semibold text-foreground">
           Actividades
         </h2>
 
@@ -95,6 +102,7 @@ function DashboardPage() {
           </ul>
         )}
       </section>
+      </PageBox>
     </div>
   );
 }

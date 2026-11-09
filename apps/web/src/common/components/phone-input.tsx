@@ -162,7 +162,7 @@ export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, dis
         disabled && "cursor-not-allowed opacity-60",
         isInvalid
           ? "border-destructive ring-4 ring-destructive/20"
-          : "border-border focus-within:border-ring focus-within:ring-4 focus-within:ring-ring/30",
+          : "border-border hover:border-primary/50 focus-within:border-ring focus-within:ring-4 focus-within:ring-ring/30",
       )}
     >
       <ReactSelect<ICountryOption, false>

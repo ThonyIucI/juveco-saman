@@ -1,4 +1,3 @@
-import { Button } from "@juveco/ui/components/button";
 import { Label } from "@juveco/ui/components/label";
 import { cn } from "@juveco/ui/lib/utils";
 import type { IActivityItemResource } from "@juveco/shared/activity-items";
@@ -6,7 +5,7 @@ import { NEIGHBORHOODS } from "@juveco/shared/neighborhoods";
 import { fullName } from "@juveco/shared/people";
 import { useId } from "react";
 
-import Modal from "@/common/components/modal";
+import FiltersModal from "@/common/components/filters-modal";
 import NeighborhoodBadge from "@/common/components/neighborhood-badge";
 import Select, { type IOption } from "@/common/components/select";
 import {
@@ -115,7 +114,7 @@ interface IActivityItemFiltersModalProps extends Omit<IFilterFieldsProps, "isRow
   onClose: () => void;
 }
 
-/** Los filtros en celular: se aplican al elegir, y el botón dice cuántos quedan. */
+/** Los filtros en celular, en la modal de filtros común. */
 export function ActivityItemFiltersModal({
   open,
   filters,
@@ -125,27 +124,14 @@ export function ActivityItemFiltersModal({
   onClose,
 }: IActivityItemFiltersModalProps) {
   return (
-    <Modal
+    <FiltersModal
       open={open}
-      title="Filtros"
+      activeCount={countActiveFilters(filters)}
+      resultCount={resultCount}
+      onClear={() => onChange(EMPTY_ITEM_FILTERS)}
       onClose={onClose}
-      footer={
-        <>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={countActiveFilters(filters) === 0}
-            onClick={() => onChange(EMPTY_ITEM_FILTERS)}
-          >
-            Limpiar
-          </Button>
-          <Button type="button" onClick={onClose}>
-            Ver {resultCount}
-          </Button>
-        </>
-      }
     >
       <ActivityItemFilterFields filters={filters} sellers={sellers} onChange={onChange} />
-    </Modal>
+    </FiltersModal>
   );
 }

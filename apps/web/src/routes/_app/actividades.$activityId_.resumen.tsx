@@ -10,6 +10,7 @@ import { ChevronLeft, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import ConfirmModal from "@/common/components/confirm-modal";
+import PageBox from "@/common/components/page-box";
 import PageHeader from "@/common/components/page-header";
 import type { IRowAction } from "@/common/components/row-actions";
 import { formatShortDate } from "@/common/utils/format-date";
@@ -156,14 +157,17 @@ function ActivitySummaryPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 px-4 py-6">
-      <div>
+    <div className="mx-auto w-full max-w-7xl space-y-4 p-4">
+      {/* Encabezado y cuerpo en cajas blancas sobre el fondo gris, como cartillas (Thony, 2026-11-09). */}
+      <PageBox>
+        {/* Volver: solo el alto del ícono y la palabra (32 px), sin inflar el espacio de arriba. */}
         <Button
           variant="ghost"
-          className="-ml-2 gap-1 px-2 font-heading text-sm"
+          size="xs"
+          className="mb-2 -ml-2.5 gap-1 font-heading"
           onClick={() => navigate({ to: "/actividades/$activityId", params: { activityId } })}
         >
-          <ChevronLeft className="size-5" />
+          <ChevronLeft />
           {activity ? capitalize(activityItemLabels[activity.type].plural) : "Volver"}
         </Button>
 
@@ -175,8 +179,9 @@ function ActivitySummaryPage() {
           }
           isLoadingSubtitle={!activity}
         />
-      </div>
+      </PageBox>
 
+      <PageBox className="space-y-4">
       {activity && <ActivityKpis activityType={activity.type} summary={GetActivitySummary.summary} />}
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
@@ -197,6 +202,7 @@ function ActivitySummaryPage() {
           />
         </div>
       </div>
+      </PageBox>
 
       <PrizeFormModal
         open={prizeForm !== null}

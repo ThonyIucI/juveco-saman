@@ -105,7 +105,8 @@ const sharedSelectProps = (
     classNames: {
       control: ({ isFocused, isDisabled }) =>
         cn(
-          "rounded-lg border bg-field px-4 text-sm font-medium transition-colors",
+          /* `group`: el chevron es parte del control y también reacciona al hover. */
+          "group rounded-lg border bg-field px-4 text-sm font-medium transition-colors",
           isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
           isInvalid
             ? "border-destructive ring-4 ring-destructive/20"
@@ -113,16 +114,20 @@ const sharedSelectProps = (
               ? "border-ring ring-4 ring-ring/30"
               : isHighlighted
                 ? "border-primary"
-                : "border-border",
+                : /* Al pasar el mouse el borde se oscurece: se nota que se puede tocar (Thony, 2026-11-09). */
+                  "border-border hover:border-primary/50",
         ),
       valueContainer: () => "gap-1",
       placeholder: () => "font-normal text-muted-foreground",
       singleValue: () => "text-foreground",
       input: () => "text-foreground",
       indicatorsContainer: () => "gap-1",
-      /* El chevron sigue al borde: gris de borde en reposo y de color solo enfocado o con algo elegido (Thony, 2026-11-09). */
+      /* El chevron sigue al borde: gris de borde en reposo, y cambia con él en hover, foco o con algo elegido (Thony, 2026-11-09). */
       dropdownIndicator: ({ isFocused }) =>
-        cn("transition-colors", isFocused ? "text-ring" : isHighlighted ? "text-primary" : "text-border"),
+        cn(
+          "transition-colors",
+          isFocused ? "text-ring" : isHighlighted ? "text-primary" : "text-border group-hover:text-primary/50",
+        ),
       clearIndicator: () => "text-muted-foreground hover:text-foreground",
       menu: () => "mt-2 overflow-hidden rounded-2xl bg-popover p-1.5 shadow-elevated",
       menuList: () => "max-h-64",

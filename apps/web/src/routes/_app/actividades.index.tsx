@@ -33,7 +33,7 @@ function ActivitiesPage() {
   const hasNoActivities = ListActivities.activities?.length === 0;
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 px-4 py-6">
+    <div className="mx-auto w-full max-w-7xl space-y-4 p-4">
       <h1 className="font-heading text-xl font-bold text-foreground">Actividades</h1>
       {hasNoActivities ? (
         <EmptyState icon={PartyPopper} title="Todavía no hay actividades" />

@@ -24,6 +24,7 @@ import ConfirmModal from "@/common/components/confirm-modal";
 import EmptyState from "@/common/components/empty-state";
 import FilterButton from "@/common/components/filter-button";
 import FloatingActionButton from "@/common/components/floating-action-button";
+import PageBox from "@/common/components/page-box";
 import PageHeader from "@/common/components/page-header";
 import type { IRowAction } from "@/common/components/row-actions";
 import SearchInput from "@/common/components/search-input";
@@ -83,9 +84,6 @@ export const Route = createFileRoute("/_app/actividades/$activityId")({
 });
 
 /* Mientras carga la actividad todavía no se sabe su tipo. */
-/* Encabezado y cuerpo en escritorio: cajas blancas sobre el fondo gris, sin borde y con radio de 12 px; en celular, nada. */
-const DESKTOP_BOX_CLASS = "md:rounded-xl md:bg-card md:p-5";
-
 const FALLBACK_ITEM_LABEL = { singular: "venta", plural: "ventas" };
 
 /**
@@ -215,7 +213,7 @@ function ActivityPage() {
         Escritorio, como Clientes de id-pos (Thony, 2026-11-09): el encabezado y el cuerpo en
         dos cajas separadas, con radio de 12 px. En celular no hay cajas.
       */}
-      <div className={DESKTOP_BOX_CLASS}>
+      <PageBox>
       {activity ? (
         <PageHeader
           title={activity.name}
@@ -256,9 +254,9 @@ function ActivityPage() {
           <Skeleton className="h-4 w-40 rounded-md" />
         </div>
       )}
-      </div>
+      </PageBox>
 
-      <div className={cn(DESKTOP_BOX_CLASS, "space-y-4")}>
+      <PageBox className="space-y-4">
       {/* Escritorio: el buscador a la izquierda y los tres filtros a la derecha, alineados abajo. */}
       {items.length > 0 && (
         <div className="hidden items-end justify-between gap-4 md:flex">
@@ -341,7 +339,7 @@ function ActivityPage() {
           )}
         </div>
       )}
-      </div>
+      </PageBox>
 
       {/* Encima del «+», del mismo tamaño y en gris, a 12 px: cambia entre cards y vista compacta. */}
       <FloatingActionButton

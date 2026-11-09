@@ -43,7 +43,8 @@ export default function UserTable({
   footer,
 }: IUserTableProps) {
   return (
-    <div className="hidden overflow-hidden rounded-md bg-card shadow-card md:block">
+    /* Dentro de la caja blanca de la página: borde en vez de sombra, como la tabla de cartillas. */
+    <div className="hidden overflow-hidden rounded-sm border border-border bg-card md:block">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted hover:bg-muted">
