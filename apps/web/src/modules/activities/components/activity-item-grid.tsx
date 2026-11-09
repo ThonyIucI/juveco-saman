@@ -11,7 +11,8 @@ const STAGGER_SECONDS = 0.03;
 const MAX_STAGGERED = 12;
 
 /* Solo en celular: en escritorio va `ActivityItemTable` (Thony, 2026-11-07). */
-const GRID_CLASS = "grid gap-3 sm:grid-cols-2 md:hidden";
+/* `grid-cols-1` (minmax(0, 1fr)): sin columna explícita, un texto largo ensancha la card. */
+const GRID_CLASS = "grid grid-cols-1 gap-3 sm:grid-cols-2 md:hidden";
 
 interface IActivityItemGridProps {
   items: IActivityItemResource[];

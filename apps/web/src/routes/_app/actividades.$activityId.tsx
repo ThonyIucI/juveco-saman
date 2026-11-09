@@ -56,14 +56,17 @@ import {
 } from "@/modules/activities/utils/activity-items";
 import { useListUsers } from "@/modules/users/hooks/use-list-users";
 
-/* La vista compacta de celular se recuerda en este navegador (Thony, 2026-11-08). */
+/*
+  La vista de celular se recuerda en este navegador. Por defecto, la compacta; el botón pasa a
+  cards (Thony, 2026-11-08). Solo un «false» guardado deja las cards.
+*/
 const COMPACT_VIEW_KEY = "juveco:activity-items-compact";
 
 const readCompactView = (): boolean => {
   try {
-    return localStorage.getItem(COMPACT_VIEW_KEY) === "true";
+    return localStorage.getItem(COMPACT_VIEW_KEY) !== "false";
   } catch {
-    return false;
+    return true;
   }
 };
 
@@ -200,7 +203,7 @@ function ActivityPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 px-4 py-6">
+    <div className="mx-auto w-full max-w-7xl space-y-4 p-4">
       {activity ? (
         <PageHeader
           title={activity.name}
@@ -322,7 +325,7 @@ function ActivityPage() {
         label={isCompactView ? "Ver en cards" : "Ver en vista compacta"}
         icon={isCompactView ? LayoutGrid : Rows3}
         onClick={toggleCompactView}
-        className="bottom-[calc(9.25rem+env(safe-area-inset-bottom))] border border-border bg-card text-foreground sm:bottom-[5.75rem]"
+        className="bottom-[calc(8.5rem+env(safe-area-inset-bottom))] border border-border bg-card text-foreground sm:bottom-[5.5rem]"
       />
       {activity && <FloatingActionButton label={`Agregar ${itemLabel.singular}`} icon={Plus} onClick={openCreate} />}
 

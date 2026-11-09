@@ -89,7 +89,7 @@ export default function AccessFormModal({ user, onSaved, onClose }: IAccessFormM
           {(field) => (
             <TextField
               id={field.name}
-              label="Correo para entrar"
+              label="Correo"
               type="email"
               inputMode="email"
               autoComplete="off"

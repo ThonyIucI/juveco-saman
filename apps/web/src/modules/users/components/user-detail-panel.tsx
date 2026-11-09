@@ -14,6 +14,12 @@ import SidePanel from "@/common/components/side-panel";
 import WhatsAppButton from "@/common/components/whatsapp-button";
 import { formatShortDate } from "@/common/utils/format-date";
 
+/* Editar y eliminar van directos; el resto (dar acceso…) queda en `⋯` (Thony, 2026-11-09). */
+const INLINE_ACTION_LABELS = new Set(["Editar", "Eliminar"]);
+
+const withInlineActions = (actions: IRowAction[]): IRowAction[] =>
+  actions.map((action) => (INLINE_ACTION_LABELS.has(action.label) ? { ...action, inline: true } : action));
+
 interface IUserDetailPanelProps {
   /** El usuario abierto; `null` cierra el panel. */
   user: IUserResource | null;
@@ -39,7 +45,7 @@ export default function UserDetailPanel({ user, buildActions, onClose }: IUserDe
 
   const current = user ?? shown;
 
-  const actions: IRowAction[] = current ? buildActions(current) : [];
+  const actions: IRowAction[] = current ? withInlineActions(buildActions(current)) : [];
 
   const phone = current?.phone ?? null;
   const country = phone ? countryOfPhone(phone.countryPrefix, phone.number) : null;
@@ -55,7 +61,7 @@ export default function UserDetailPanel({ user, buildActions, onClose }: IUserDe
         current && (
           <>
             <WhatsAppButton phone={current.phone} username={current.whatsappUsername} />
-            <RowActions actions={actions} />
+            <RowActions actions={actions} isBordered />
           </>
         )
       }
@@ -112,7 +118,7 @@ export default function UserDetailPanel({ user, buildActions, onClose }: IUserDe
               <DetailRow icon={KeyRound} label="Rol">
                 {userRoleLabels[current.role]}
               </DetailRow>
-              <DetailRow icon={Mail} label="Correo para entrar">
+              <DetailRow icon={Mail} label="Correo">
                 {current.email}
               </DetailRow>
               <DetailRow icon={CalendarDays} label="Registrado el">

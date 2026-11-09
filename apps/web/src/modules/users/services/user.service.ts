@@ -4,7 +4,14 @@ import type { IUserResource } from "@juveco/shared/users";
 
 import { apiRequest } from "@/lib/api";
 
-export type TUpdateUserPayload = Partial<IPersonInput>;
+/** Acceso al editar: con contraseña vacía (si ya tenía acceso) no se cambia. */
+export interface IEditAccessPayload {
+  email: string;
+  password?: string;
+}
+
+/** `access` solo el superadmin: `null` quita el acceso; sin `access`, no se toca. */
+export type TUpdateUserPayload = Partial<IPersonInput> & { access?: IEditAccessPayload | null };
 
 export interface IGrantAccessPayload {
   /** Hoy solo ADMIN; si no se manda, el server usa ADMIN. */

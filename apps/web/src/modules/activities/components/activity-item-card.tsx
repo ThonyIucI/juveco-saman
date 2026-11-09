@@ -53,9 +53,15 @@ export default function ActivityItemCard({ item, isSerialRepeated, actions, onOp
               </TriangleAlert>
             )}
           </p>
-          {/* El barrio al lado del nombre (prueba, Thony 2026-11-07); sin barrio, nada. */}
-          <div className="flex min-w-0 items-center gap-2">
-            <p className="truncate font-heading text-base font-medium text-foreground">{fullName(item.buyer)}</p>
+          {/*
+            El barrio al lado del nombre (prueba, Thony 2026-11-07); sin barrio, nada. Un nombre
+            largo parte en hasta dos líneas y el barrio baja, en vez de ensanchar la card
+            (Thony, 2026-11-08).
+          */}
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+            <p className="line-clamp-2 min-w-0 font-heading text-base font-medium wrap-anywhere text-foreground">
+              {fullName(item.buyer)}
+            </p>
             {item.buyer.neighborhood && (
               <span className="shrink-0">
                 <NeighborhoodBadge neighborhood={item.buyer.neighborhood} hasIcon={false} />

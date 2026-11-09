@@ -1,4 +1,3 @@
-import type { TAuth } from "@juveco/auth";
 import { createDb } from "@juveco/db";
 import { authUsers } from "@juveco/db/schema/auth";
 import { activityItems } from "@juveco/db/schema/activity-items";
@@ -6,19 +5,27 @@ import { activityPrizes } from "@juveco/db/schema/activity-prizes";
 import { users } from "@juveco/db/schema/users";
 import { neighborhoodOf } from "@juveco/shared/neighborhoods";
 import { fullName } from "@juveco/shared/people";
-import { EUserRole } from "@juveco/shared/roles";
-import { USER_MIN_PASSWORD_LENGTH, type IUserResource } from "@juveco/shared/users";
+import { EUserRole, type TUserRole } from "@juveco/shared/roles";
+import type { IUserResource } from "@juveco/shared/users";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import type { TAppEnv } from "../lib/app-env";
-import { conflict, forbidden, notFound } from "../lib/errors";
+import { badRequest, conflict, forbidden, notFound } from "../lib/errors";
 import { newId } from "../lib/ids";
 import { assertPhoneAvailable, assertUsernameAvailable } from "../lib/person-guards";
 import { firstNameSchema, personExtraFields } from "../lib/person-input";
 import { type TPhoneInput, toPhoneColumns, toPhoneResource } from "../lib/phone-input";
 import { ok } from "../lib/response";
+import {
+  assertEmailAvailable,
+  editAccessSchema,
+  grantAccessSchema,
+  grantLogin,
+  revokeLogin,
+  updateLogin,
+} from "../lib/user-access";
 import { validateJson } from "../lib/validator";
 import { requireAuth, requireSuperadmin } from "../middleware/require-role";
 
@@ -31,15 +38,6 @@ export const USER_ROUTES = {
 const USER_NOT_FOUND = "No encontramos ese usuario.";
 const NO_CHANGES_MESSAGE = "No hay cambios para guardar.";
 
-const grantAccessSchema = z.object({
-  /* Solo se puede dar ADMIN: el superadmin no se asigna desde la app. */
-  role: z.literal(EUserRole.ADMIN).default(EUserRole.ADMIN),
-  email: z.email("Correo inválido.").transform((email) => email.toLowerCase()),
-  password: z
-    .string()
-    .min(USER_MIN_PASSWORD_LENGTH, "La contraseña debe tener al menos 8 caracteres."),
-});
-
 /* `access` es opcional: con él, la persona se crea ya con su login (solo el superadmin). */
 const createUserSchema = z.object({
   firstName: firstNameSchema,
@@ -47,11 +45,27 @@ const createUserSchema = z.object({
   access: grantAccessSchema.optional(),
 });
 
+/* `access` solo lo manda el superadmin: `null` quita el acceso; con correo lo da o lo cambia. */
 const updateUserSchema = z
-  .object({ firstName: firstNameSchema.optional(), ...personExtraFields })
+  .object({ firstName: firstNameSchema.optional(), ...personExtraFields, access: editAccessSchema })
   .refine((body) => Object.values(body).some((value) => value !== undefined), {
     message: NO_CHANGES_MESSAGE,
   });
+
+interface IRequester {
+  id: string;
+  role: TUserRole;
+}
+
+/* Solo el superadmin, y nunca sobre sí mismo ni sobre otro superadmin. */
+const assertCanEditAccess = (requester: IRequester, target: TUserRow) => {
+  if (requester.role !== EUserRole.SUPERADMIN) {
+    throw forbidden("Solo el superadmin puede cambiar el acceso a la app.");
+  }
+  if (target.id === requester.id || target.role === EUserRole.SUPERADMIN) {
+    throw forbidden("El acceso del superadmin no se cambia desde la app.");
+  }
+};
 
 type TDb = ReturnType<typeof createDb>;
 type TUserRow = typeof users.$inferSelect;
@@ -102,36 +116,6 @@ const findByUsername = (db: TDb) => async (usernameLower: string) => {
     .where(sql`lower(${users.whatsappUsername}) = ${usernameLower}`)
     .get();
   return toMatch(row);
-};
-
-const assertEmailAvailable = async (db: TDb, email: string) => {
-  const taken = await db
-    .select({ id: authUsers.id })
-    .from(authUsers)
-    .where(eq(authUsers.email, email))
-    .get();
-  if (taken) {
-    throw conflict("Ya hay alguien que entra con ese correo.");
-  }
-};
-
-interface IGrantLoginParams {
-  db: TDb;
-  auth: TAuth;
-  person: TUserRow;
-  access: z.infer<typeof grantAccessSchema>;
-}
-
-/* Crea el login de la persona y la pasa a ADMIN; devuelve la persona ya actualizada. */
-const grantLogin = async ({ db, auth, person, access }: IGrantLoginParams): Promise<TUserRow> => {
-  const { user: login } = await auth.api.signUpEmail({
-    body: { name: fullName(person), email: access.email, password: access.password },
-  });
-  const [, [updated]] = await db.batch([
-    db.update(authUsers).set({ userId: person.id }).where(eq(authUsers.id, login.id)),
-    db.update(users).set({ role: access.role }).where(eq(users.id, person.id)).returning(),
-  ]);
-  return updated!;
 };
 
 /**
@@ -200,7 +184,7 @@ export const userRoutes = new Hono<TAppEnv>()
 
   .patch(USER_ROUTES.USER, requireAuth, validateJson(updateUserSchema), async (context) => {
     const id = context.req.param("id");
-    const body = context.req.valid("json");
+    const { access, ...body } = context.req.valid("json");
     const db = createDb();
 
     const current = await findUser(db, id);
@@ -210,21 +194,47 @@ export const userRoutes = new Hono<TAppEnv>()
       findByUsername: findByUsername(db),
       exceptId: id,
     });
+    if (access !== undefined) {
+      assertCanEditAccess(context.var.user, current.user);
+    }
+    if (access && !current.email && !access.password) {
+      throw badRequest("Ingresa la contraseña para darle acceso.");
+    }
+    if (access) {
+      await assertEmailAvailable(db, access.email, id);
+    }
 
-    const [updated] = await db
-      .update(users)
-      .set({
-        ...(body.firstName !== undefined && { firstName: body.firstName }),
-        ...(body.lastName !== undefined && { lastName: body.lastName }),
-        ...(body.neighborhoodId !== undefined && { neighborhoodId: body.neighborhoodId }),
-        ...(body.phone !== undefined && toPhoneColumns(body.phone)),
-        ...(body.whatsappUsername !== undefined && { whatsappUsername: body.whatsappUsername }),
-        ...(body.note !== undefined && { note: body.note }),
-      })
-      .where(eq(users.id, id))
-      .returning();
+    const personChanges = {
+      ...(body.firstName !== undefined && { firstName: body.firstName }),
+      ...(body.lastName !== undefined && { lastName: body.lastName }),
+      ...(body.neighborhoodId !== undefined && { neighborhoodId: body.neighborhoodId }),
+      ...(body.phone !== undefined && toPhoneColumns(body.phone)),
+      ...(body.whatsappUsername !== undefined && { whatsappUsername: body.whatsappUsername }),
+      ...(body.note !== undefined && { note: body.note }),
+    };
+    /* Si solo cambió el acceso no hay nada que actualizar en la persona. */
+    const [person] =
+      Object.keys(personChanges).length > 0
+        ? await db.update(users).set(personChanges).where(eq(users.id, id)).returning()
+        : [current.user];
 
-    return ok(context, toUserResource(updated!, current.email));
+    if (access === undefined) {
+      return ok(context, toUserResource(person!, current.email));
+    }
+    if (access === null) {
+      return ok(context, toUserResource(await revokeLogin(db, id), null));
+    }
+    if (!current.email) {
+      const withAccess = await grantLogin({
+        db,
+        auth: context.var.auth,
+        person: person!,
+        access: { role: EUserRole.ADMIN, email: access.email, password: access.password! },
+      });
+      return ok(context, toUserResource(withAccess, access.email));
+    }
+    await updateLogin({ db, auth: context.var.auth, personId: id, email: access.email, password: access.password });
+    return ok(context, toUserResource(person!, access.email));
   })
 
   /* Quien entra a la app no se borra desde acá: primero habría que quitarle el acceso. */

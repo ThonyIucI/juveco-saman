@@ -116,7 +116,7 @@ export default function SidePanel({
 
             <div
               onScroll={(event) => setIsScrolled(event.currentTarget.scrollTop > 2)}
-              className="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-[max(env(safe-area-inset-bottom),1.5rem)]"
+              className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(env(safe-area-inset-bottom),1.5rem)]"
             >
               {children}
             </div>

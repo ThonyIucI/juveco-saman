@@ -33,7 +33,7 @@ import {
 } from "@/common/utils/person-form";
 import { useCreateUser } from "@/modules/users/hooks/use-create-user";
 import { useUpdateUser } from "@/modules/users/hooks/use-update-user";
-import type { IGrantAccessPayload } from "@/modules/users/services/user.service";
+import type { IEditAccessPayload, IGrantAccessPayload } from "@/modules/users/services/user.service";
 
 const FORM_ID = "user-form";
 
@@ -43,27 +43,55 @@ const ROLE_OPTIONS: IOption[] = ASSIGNABLE_ROLES.map((role) => ({ value: role, l
 
 const ACCESS_DEFAULTS = { hasAccess: false, role: EUserRole.ADMIN as string, email: "", password: "" };
 
-/* Con el switch encendido, el correo y la contraseña pasan a ser obligatorios. */
-const formSchema = personFormSchema
-  .extend({ hasAccess: z.boolean(), role: z.string(), email: z.string(), password: z.string() })
-  .superRefine((value, context) => {
-    if (!value.hasAccess) {
-      return;
-    }
-    if (!ROLE_OPTIONS.some((option) => option.value === value.role)) {
-      context.addIssue({ code: "custom", path: ["role"], message: "Elige el rol" });
-    }
-    if (!z.email().safeParse(value.email.trim()).success) {
-      context.addIssue({ code: "custom", path: ["email"], message: "Correo inválido" });
-    }
-    if (value.password.length < USER_MIN_PASSWORD_LENGTH) {
-      context.addIssue({
-        code: "custom",
-        path: ["password"],
-        message: "La contraseña debe tener al menos 8 caracteres",
-      });
-    }
-  });
+/*
+  Con el switch encendido, el correo es obligatorio. La contraseña también, salvo que ya tenga
+  acceso: ahí vacía significa «no cambiarla».
+*/
+const buildFormSchema = (hasLogin: boolean) =>
+  personFormSchema
+    .extend({ hasAccess: z.boolean(), role: z.string(), email: z.string(), password: z.string() })
+    .superRefine((value, context) => {
+      if (!value.hasAccess) {
+        return;
+      }
+      if (!ROLE_OPTIONS.some((option) => option.value === value.role)) {
+        context.addIssue({ code: "custom", path: ["role"], message: "Elige el rol" });
+      }
+      if (!z.email().safeParse(value.email.trim()).success) {
+        context.addIssue({ code: "custom", path: ["email"], message: "Correo inválido" });
+      }
+      const isPasswordKept = hasLogin && value.password === "";
+      if (!isPasswordKept && value.password.length < USER_MIN_PASSWORD_LENGTH) {
+        context.addIssue({
+          code: "custom",
+          path: ["password"],
+          message: "La contraseña debe tener al menos 8 caracteres",
+        });
+      }
+    });
+
+type TAccessValues = typeof ACCESS_DEFAULTS;
+
+/* Al editar, el switch arranca como está: encendido si ya entra, con su correo. */
+const buildAccessDefaults = (user?: IUserResource): TAccessValues =>
+  user?.email ? { ...ACCESS_DEFAULTS, hasAccess: true, email: user.email } : ACCESS_DEFAULTS;
+
+/*
+  Qué mandar de acceso al editar: nada si no cambió, `null` si se apagó el switch de alguien
+  que entraba, o el correo (y la contraseña si se escribió).
+*/
+const toEditAccess = (value: TAccessValues, user: IUserResource): IEditAccessPayload | null | undefined => {
+  const hasLogin = Boolean(user.email);
+  if (!value.hasAccess) {
+    return hasLogin ? null : undefined;
+  }
+  const email = value.email.trim().toLowerCase();
+  const password = value.password || undefined;
+  if (hasLogin && email === user.email && !password) {
+    return undefined;
+  }
+  return { email, password };
+};
 
 const WHATSAPP_LABELS: Record<TWhatsAppMode, string> = {
   phone: "Número de WhatsApp (opcional)",
@@ -92,7 +120,7 @@ interface IUserFormModalProps {
   user?: IUserResource;
   /** Solo al crear: lo que se escribió en el buscador. */
   initialValues?: IPersonInitialValues;
-  /** Solo el superadmin: muestra el switch para dar acceso a la app al crear. */
+  /** Solo el superadmin: muestra el switch de acceso a la app (al crear y al editar). */
   canGrantAccess?: boolean;
   onSaved: (user: IUserResource) => void;
   onClose: () => void;
@@ -108,12 +136,15 @@ export default function UserFormModal({
   onClose,
 }: IUserFormModalProps) {
   const isEdit = Boolean(user);
-  const canShowAccess = canGrantAccess && !isEdit;
+  const hasLogin = Boolean(user?.email);
   const CreateUser = useCreateUser();
   const UpdateUser = useUpdateUser();
   const [whatsappMode, setWhatsappMode] = useState<TWhatsAppMode>("phone");
   /* El administrador con sesión: el último barrio se recuerda por cada uno. */
   const { user: sessionUser } = useRouteContext({ from: "/_app" });
+  /* El acceso del superadmin (y el propio) no se cambia desde la app. */
+  const canShowAccess =
+    canGrantAccess && (!user || (user.role !== EUserRole.SUPERADMIN && user.id !== sessionUser.personId));
   /* «Crear y seguir creando»: guarda y deja el formulario abierto para el siguiente. */
   const keepOpenRef = useRef(false);
 
@@ -125,13 +156,13 @@ export default function UserFormModal({
 
   const resetForm = (values?: IPersonInitialValues) => {
     const defaults = buildPersonDefaults(user, values);
-    form.reset({ ...defaults, ...ACCESS_DEFAULTS });
+    form.reset({ ...defaults, ...buildAccessDefaults(user) });
     setWhatsappMode(initialWhatsAppMode(defaults));
   };
 
   const form = useForm({
-    defaultValues: { ...buildPersonDefaults(user), ...ACCESS_DEFAULTS },
-    validators: { onSubmit: formSchema },
+    defaultValues: { ...buildPersonDefaults(user), ...buildAccessDefaults(user) },
+    validators: { onSubmit: buildFormSchema(hasLogin) },
     onSubmit: async ({ value }) => {
       const payload = toPersonPayload(value);
       const access: IGrantAccessPayload | undefined =
@@ -139,7 +170,10 @@ export default function UserFormModal({
           ? { role: EUserRole.ADMIN, email: value.email.trim().toLowerCase(), password: value.password }
           : undefined;
       const saved = user
-        ? await UpdateUser.handler(user.id, payload)
+        ? await UpdateUser.handler(user.id, {
+            ...payload,
+            ...(canShowAccess && { access: toEditAccess(value, user) }),
+          })
         : await CreateUser.handler({ ...payload, access });
 
       if (!saved) {
@@ -346,8 +380,15 @@ export default function UserFormModal({
               {(field) => (
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <Label htmlFor={field.name} className="font-bold">Crear usuario</Label>
-                    <p className="text-sm text-muted-foreground">Puede acceder y utilizar las funcionalidades del sistema según su rol.</p>
+                    <Label htmlFor={field.name} className="font-semibold">
+                      {isEdit ? "Acceso a la app" : "Crear usuario"}
+                    </Label>
+                    {/* Apagarlo a quien ya entra le quita el acceso al guardar. */}
+                    <p className="text-sm text-muted-foreground">
+                      {hasLogin && !field.state.value
+                        ? "Al guardar se le quita el acceso: ya no podrá entrar."
+                        : "Puede acceder y utilizar las funcionalidades del sistema según su rol."}
+                    </p>
                   </div>
                   <Switch
                     id={field.name}
@@ -382,10 +423,10 @@ export default function UserFormModal({
                       {(field) => (
                         <TextField
                           id={field.name}
-                          label="Contraseña"
+                          label={hasLogin ? "Nueva contraseña (opcional)" : "Contraseña"}
                           type="text"
                           autoComplete="new-password"
-                          placeholder="Ingresa la contraseña"
+                          placeholder={hasLogin ? "Ingresa la nueva contraseña" : "Ingresa la contraseña"}
                           value={field.state.value}
                           errors={field.state.meta.errors}
                           onBlur={field.handleBlur}

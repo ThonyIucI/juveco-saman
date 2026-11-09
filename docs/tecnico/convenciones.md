@@ -60,6 +60,9 @@ no está acá no aplica (Laravel, yup, react-hook-form, `idbi-components`).
 - Ningún botón se deshabilita: al clic se muestra el error.
 - El texto de un botón nunca se parte en dos líneas.
 - Para enfocar un campo al abrir una modal, nunca `autoFocus`.
+- **Ahorrar clics es imperativo** (acordado 2026-11-09): una acción que se usa seguido
+  (editar, cobrar…) va como ícono directo (`inline: true` en `IRowAction`) en tabla, card y
+  detalle, nunca escondida en `⋯`. En `⋯` queda solo lo que se usa poco.
 
 ### Formularios (acordado 2026-11-07)
 

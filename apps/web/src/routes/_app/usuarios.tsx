@@ -38,6 +38,14 @@ export const Route = createFileRoute("/_app/usuarios")({
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
+/* Los que tienen rol van arriba para no buscarlos con scroll (Thony, 2026-11-09); luego por nombre. */
+const ROLE_ORDER: Record<string, number> = { [EUserRole.SUPERADMIN]: 0, [EUserRole.ADMIN]: 1 };
+const LAST_ROLE_RANK = 2;
+
+const compareByRoleThenName = (first: IUserResource, second: IUserResource): number =>
+  (ROLE_ORDER[first.role] ?? LAST_ROLE_RANK) - (ROLE_ORDER[second.role] ?? LAST_ROLE_RANK) ||
+  fullName(first).localeCompare(fullName(second), "es");
+
 const pluralize = (count: number, singular: string, plural: string) =>
   `${count} ${count === 1 ? singular : plural}`;
 
@@ -75,7 +83,7 @@ function UsersPage() {
   const normalizedTerm = term.trim().toLowerCase();
   const visible = users
     .filter((user) => !normalizedTerm || matchesUserSearch(user, normalizedTerm))
-    .sort((first, second) => fullName(first).localeCompare(fullName(second), "es"));
+    .sort(compareByRoleThenName);
   const pager = usePagination(visible, { initialPageSize: PAGE_SIZE_OPTIONS[0] });
   const hasContent = !isLoading && visible.length > 0;
 
@@ -113,7 +121,8 @@ function UsersPage() {
 
   const buildActions = (user: IUserResource): IRowAction[] => {
     const isPlainUser = user.role === EUserRole.USER;
-    const edit: IRowAction = { icon: Pencil, label: "Editar", onClick: () => openEdit(user) };
+    /* Editar se usa mucho: va directo en tabla, card y detalle, no en `⋯` (Thony, 2026-11-09). */
+    const edit: IRowAction = { icon: Pencil, label: "Editar", inline: true, onClick: () => openEdit(user) };
     const grantAccess: IRowAction = { icon: KeyRound, label: "Dar acceso", onClick: () => setAccessTarget(user) };
     const remove: IRowAction = {
       icon: Trash2,
