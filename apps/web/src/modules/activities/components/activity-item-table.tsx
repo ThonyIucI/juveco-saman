@@ -14,6 +14,7 @@ import { TriangleAlert } from "lucide-react";
 
 import NeighborhoodBadge from "@/common/components/neighborhood-badge";
 import RowActions, { type IRowAction } from "@/common/components/row-actions";
+import { FADE_IN_CLASS } from "@/common/constants/motion";
 
 import CollectionBadge from "./collection-badge";
 
@@ -56,7 +57,7 @@ export default function ActivityItemTable({
             <TableHead />
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className={isLoading ? undefined : FADE_IN_CLASS}>
           {isLoading
             ? Array.from({ length: SKELETON_COUNT }, (_, index) => (
                 <TableRow key={index}>

@@ -11,6 +11,7 @@ import {
   isNavGroup,
 } from "@/common/constants/routes";
 import { EASE_OUT } from "@/common/constants/motion";
+import { useSectionLinkClick } from "@/common/hooks/use-section-link-click";
 
 const LINK_CLASS =
   "flex items-center gap-3 rounded-xl px-3 py-3 font-heading text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&.active]:bg-primary/10 [&.active]:text-primary";
@@ -23,10 +24,11 @@ interface ISidebarLinkProps {
 
 function SidebarLink({ item, isNested = false, onNavigate }: ISidebarLinkProps) {
   const { to, label, icon: Icon } = item;
+  const handleSectionClick = useSectionLinkClick();
   return (
     <Link
       to={to}
-      onClick={onNavigate}
+      onClick={handleSectionClick(to, onNavigate)}
       className={cn(LINK_CLASS, isNested && "py-2.5 pl-11 text-[0.95rem]")}
     >
       <Icon className={cn("size-5", isNested && "size-4.5")} />

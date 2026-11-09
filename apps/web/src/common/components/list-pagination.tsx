@@ -11,7 +11,10 @@ import { Skeleton } from "@juveco/ui/components/skeleton";
 import { cn } from "@juveco/ui/lib/utils";
 
 import PageSizeSelect from "@/common/components/page-size-select";
+import { useMediaQuery } from "@/common/hooks/use-media-query";
 import { getPaginationRange, PAGINATION_ELLIPSIS } from "@/common/utils/pagination-range";
+
+const DESKTOP_QUERY = "(min-width: 640px)";
 
 interface IListPaginationProps {
   currentPage: number;
@@ -37,6 +40,7 @@ export default function ListPagination({
   onPageSizeChange,
   className,
 }: IListPaginationProps) {
+  const isDesktop = useMediaQuery(DESKTOP_QUERY);
   const showPageSize = pageSize !== undefined && !!pageSizeOptions && !!onPageSizeChange;
   const showPages = totalPages > 1;
 
@@ -68,8 +72,12 @@ export default function ListPagination({
       )}
 
       {showPages && (
-        <Pagination className="mx-0 w-auto justify-center sm:justify-end">
-          <PaginationContent>
+        /*
+          En celular ocupa todo el ancho: «‹» y «›» en los extremos y las páginas repartidas, para
+          que no quede apretado al centro con aire a los costados (Thony, 2026-11-09).
+        */
+        <Pagination className="mx-0 w-full self-stretch sm:w-auto sm:self-auto sm:justify-end">
+          <PaginationContent className="w-full justify-between sm:w-auto sm:justify-start">
             <PaginationItem>
               <PaginationPrevious
                 onClick={() => goToPage(currentPage - 1)}
@@ -77,7 +85,7 @@ export default function ListPagination({
                 className={cn("cursor-pointer", currentPage === 1 && "pointer-events-none opacity-40")}
               />
             </PaginationItem>
-            {getPaginationRange(currentPage, totalPages).map((slot, index) =>
+            {getPaginationRange(currentPage, totalPages, isDesktop ? 1 : 0).map((slot, index) =>
               slot === PAGINATION_ELLIPSIS ? (
                 <PaginationItem key={`ellipsis-${index}`}>
                   <PaginationEllipsis />
@@ -87,7 +95,8 @@ export default function ListPagination({
                   <PaginationLink
                     isActive={currentPage === slot}
                     onClick={() => goToPage(slot)}
-                    className="cursor-pointer"
+                    /* En celular 32 px y sin vecinas: «‹ 1 … 6 … 10 ›» entra sin desbordarse. */
+                    className="size-8 cursor-pointer sm:size-9"
                   >
                     {slot}
                   </PaginationLink>

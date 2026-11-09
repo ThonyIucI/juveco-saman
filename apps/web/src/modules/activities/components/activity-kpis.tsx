@@ -6,6 +6,8 @@ import { formatSoles } from "@juveco/shared/money";
 import type { IActivitySummary } from "@juveco/shared/activity-item-payments";
 import type { ReactNode } from "react";
 
+import { FADE_IN_CLASS } from "@/common/constants/motion";
+
 import { COLLECTION_BADGE } from "./collection-badge";
 
 const SKELETON_TILES = 4;
@@ -37,7 +39,7 @@ export default function ActivityKpis({ activityType, summary }: IActivityKpisPro
   }
 
   return (
-    <div className="space-y-3">
+    <div className={`space-y-3 ${FADE_IN_CLASS}`}>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile label={`${capitalize(labels.plural)} vendidas`} value={String(summary.itemCount)} />
         <Tile

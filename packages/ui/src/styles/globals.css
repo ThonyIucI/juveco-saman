@@ -41,6 +41,8 @@
   --muted-foreground: oklch(0.5 0.04 266);
   /* Labels de campo como id-pos: gris oscuro #495057, 14 px y peso 400 (Thony, 2026-11-09). */
   --label: #495057;
+  /* Placeholders más claros que el label: se nota que es una sugerencia, no un dato (Thony, 2026-11-09). */
+  --placeholder: #9aa1ab;
   --canvas: oklch(0.975 0.006 264);
   /* Fondo de los campos de texto. */
   --field: oklch(1 0 0);
@@ -133,6 +135,7 @@
   --muted: #172133;
   --muted-foreground: #94a3b8;
   --label: #cbd5e1;
+  --placeholder: #64748b;
   --canvas: #080d19;
   --field: #172133;
   --accent: #1a253a;
@@ -205,6 +208,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-label: var(--label);
+  --color-placeholder: var(--placeholder);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);

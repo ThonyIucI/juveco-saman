@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import EmptyState from "@/common/components/empty-state";
 import PageBox from "@/common/components/page-box";
+import { FADE_IN_CLASS } from "@/common/constants/motion";
 import ActivityOverviewCard from "@/modules/activities/components/activity-overview-card";
 import { useListActivities } from "@/modules/activities/hooks/use-list-activities";
 import { useListUsers } from "@/modules/users/hooks/use-list-users";
@@ -68,7 +69,7 @@ function DashboardPage() {
             {isLoadingTeam ? (
               <Skeleton className="mt-1 h-6 w-32 rounded-md" />
             ) : (
-              <p className="font-heading text-lg font-bold text-foreground">
+              <p className={`font-heading text-lg font-bold text-foreground ${FADE_IN_CLASS}`}>
                 {teamCount === 1 ? "1 administrador" : `${teamCount} administradores`}
               </p>
             )}
@@ -90,7 +91,7 @@ function DashboardPage() {
         ) : activities.length === 0 ? (
           <EmptyState icon={PartyPopper} title="Todavía no hay actividades" />
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-3 ${FADE_IN_CLASS}`}>
             {activities.map((activity) => (
               <li key={activity.id}>
                 <ActivityOverviewCard

@@ -89,7 +89,7 @@ export default function DateInput({ value, onChange, validate, rangeEdge, label 
             aria-invalid={error !== null}
             value={text}
             onChange={(event) => handleTextChange(event.target.value)}
-            className="min-w-0 flex-1 bg-transparent text-base tabular-nums outline-none placeholder:text-muted-foreground md:text-sm"
+            className="min-w-0 flex-1 bg-transparent text-base tabular-nums outline-none placeholder:text-placeholder md:text-sm"
           />
         </label>
         {error && <p className="text-xs font-medium text-destructive">{error}</p>}

@@ -36,7 +36,8 @@ export default function FormSubmitButtons({
           Crear y seguir creando
         </Button>
       )}
-      <Button type="submit" form={formId}>
+      {/* Ancho mínimo: un «Crear» corto no queda como un botón angosto (Thony, 2026-11-09). */}
+      <Button type="submit" form={formId} className="min-w-32">
         {isSubmitting && <Loader2 className="animate-spin motion-reduce:animate-none" />}
         {label}
       </Button>

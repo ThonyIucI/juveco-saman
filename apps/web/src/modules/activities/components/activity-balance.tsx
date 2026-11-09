@@ -4,6 +4,7 @@ import type { IActivityBalance } from "@juveco/shared/activity-expenses";
 import { formatSoles } from "@juveco/shared/money";
 
 import { DetailSection } from "@/common/components/detail-section";
+import { FADE_IN_CLASS } from "@/common/constants/motion";
 
 interface IActivityBalanceProps {
   /** `null` mientras carga. */
@@ -51,7 +52,7 @@ export default function ActivityBalance({ balance }: IActivityBalanceProps) {
 
   return (
     <DetailSection title="Balance" isBordered>
-      <table className="w-full text-sm tabular-nums">
+      <table className={`w-full text-sm tabular-nums ${FADE_IN_CLASS}`}>
         <thead>
           <tr className="text-muted-foreground">
             <th className="pb-2 text-left font-medium" />

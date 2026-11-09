@@ -2,7 +2,7 @@ import { type IActivityItemResource, normalizeItemSerial } from "@juveco/shared/
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import type { IRowAction } from "@/common/components/row-actions";
-import { EASE_OUT } from "@/common/constants/motion";
+import { EASE_OUT, FADE_IN_CLASS } from "@/common/constants/motion";
 
 import ActivityItemCard, { ActivityItemCardSkeleton } from "./activity-item-card";
 
@@ -39,7 +39,7 @@ export default function ActivityItemGrid({ items, isLoading, serialCounts, build
   }
 
   return (
-    <ul className={GRID_CLASS}>
+    <ul className={`${GRID_CLASS} ${FADE_IN_CLASS}`}>
       <AnimatePresence initial={false} mode="popLayout">
         {items.map((item, index) => {
           const serialCount = serialCounts.get(normalizeItemSerial(item.serial)) ?? 0;

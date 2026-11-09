@@ -8,6 +8,7 @@ import { Gift, Plus, ShoppingBag } from "lucide-react";
 
 import { DetailSection } from "@/common/components/detail-section";
 import RowActions, { type IRowAction } from "@/common/components/row-actions";
+import { FADE_IN_CLASS } from "@/common/constants/motion";
 
 const SKELETON_ROWS = 3;
 
@@ -40,7 +41,7 @@ export default function PrizeList({ prizes, isLoading, buildActions, onCreate }:
       ) : prizes.length === 0 ? (
         <p className="py-1 text-sm text-muted-foreground">Todavía no hay premios.</p>
       ) : (
-        <ul className="-my-1 divide-y divide-border">
+        <ul className={`-my-1 divide-y divide-border ${FADE_IN_CLASS}`}>
           {prizes.map((prize) => {
             const isDonated = prize.origin === EPrizeOrigin.DONATED;
             const Icon = isDonated ? Gift : ShoppingBag;

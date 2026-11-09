@@ -2,7 +2,7 @@ import type { IUserResource } from "@juveco/shared/users";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import type { IRowAction } from "@/common/components/row-actions";
-import { EASE_OUT } from "@/common/constants/motion";
+import { EASE_OUT, FADE_IN_CLASS } from "@/common/constants/motion";
 
 import UserCard, { UserCardSkeleton } from "./user-card";
 
@@ -39,7 +39,7 @@ export default function UserMobileList({
   }
 
   return (
-    <ul className="space-y-3 md:hidden">
+    <ul className={`space-y-3 md:hidden ${FADE_IN_CLASS}`}>
       <AnimatePresence initial={false} mode="popLayout">
         {users.map((user, index) => (
           <motion.li

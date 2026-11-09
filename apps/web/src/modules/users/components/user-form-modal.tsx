@@ -386,8 +386,8 @@ export default function UserFormModal({
                     {/* Apagarlo a quien ya entra le quita el acceso al guardar. */}
                     <p className="text-sm text-muted-foreground">
                       {hasLogin && !field.state.value
-                        ? "Al guardar se le quita el acceso: ya no podrá entrar."
-                        : "Puede acceder y utilizar las funcionalidades del sistema según su rol."}
+                        ? "Al quitar el acceso ya no podrá entrar"
+                        : "Puede usar el sistema según su rol"}
                     </p>
                   </div>
                   <Switch

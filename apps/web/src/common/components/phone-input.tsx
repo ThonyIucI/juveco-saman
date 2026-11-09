@@ -236,7 +236,7 @@ export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, dis
         onBlur={onBlur}
         onPaste={handlePaste}
         onChange={handleNumberChange}
-        className="min-w-0 flex-1 rounded-r-[0.4375rem] bg-transparent px-3 text-sm font-medium text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground disabled:cursor-not-allowed"
+        className="min-w-0 flex-1 rounded-r-[0.4375rem] bg-transparent px-3 text-sm font-medium text-foreground outline-none placeholder:font-normal placeholder:text-placeholder disabled:cursor-not-allowed"
       />
     </div>
   );

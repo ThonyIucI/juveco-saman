@@ -61,6 +61,10 @@ no está acá no aplica (Laravel, yup, react-hook-form, `idbi-components`).
   (acordado 2026-11-09): un clic por error no puede costarle volver a entrar.
 - Ningún botón se deshabilita: al clic se muestra el error.
 - El texto de un botón nunca se parte en dos líneas.
+- Botón principal con ancho mínimo (`min-w-32` en el pie de modal): un «Crear» corto no
+  queda angosto. Ícono y texto juntos siempre centrados en la vertical (acordado 2026-11-09).
+- Lo que llega después del skeleton entra con fundido (`FADE_IN_CLASS`), nunca de golpe.
+- Tocar en la navegación la sección en la que ya se está no recarga: sube al inicio.
 - Para enfocar un campo al abrir una modal, nunca `autoFocus`.
 - **Ahorrar clics es imperativo** (acordado 2026-11-09): una acción que se usa seguido
   (editar, cobrar…) va como ícono directo (`inline: true` en `IRowAction`) en tabla, card y

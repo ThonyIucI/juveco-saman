@@ -1,6 +1,7 @@
 import { Button } from "@juveco/ui/components/button";
 import { Loader2 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { createPortal } from "react-dom";
 
 import { useMediaQuery } from "@/common/hooks/use-media-query";
 
@@ -66,7 +67,16 @@ export default function ConfirmModal({
       ? { opacity: 1, scale: 1 }
       : { opacity: 1, y: 0 };
 
-  return (
+  /*
+    En un portal a `body`: abierta desde el menú lateral (que se anima con `transform`), un
+    `fixed` quedaba atado al ancho del menú y la hoja salía corrida a la izquierda
+    (Thony, 2026-11-09). Desde `body` se centra en la pantalla.
+  */
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         /* z-60: una confirmación puede abrirse encima de una modal de formulario. */
@@ -104,11 +114,11 @@ export default function ConfirmModal({
 
               <div className="mt-5 flex justify-end gap-2">
                 {!hideCancel && (
-                  <Button variant="outline" onClick={handleCancel}>
+                  <Button variant="outline" className="min-w-28" onClick={handleCancel}>
                     {cancelLabel}
                   </Button>
                 )}
-                <Button variant={variant} onClick={handleConfirm}>
+                <Button variant={variant} className="min-w-28" onClick={handleConfirm}>
                   {loading && <Loader2 className="animate-spin motion-reduce:animate-none" />}
                   {confirmLabel}
                 </Button>
@@ -153,6 +163,7 @@ export default function ConfirmModal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

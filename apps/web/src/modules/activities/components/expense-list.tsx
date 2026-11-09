@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 
 import { DetailSection } from "@/common/components/detail-section";
 import RowActions, { type IRowAction } from "@/common/components/row-actions";
+import { FADE_IN_CLASS } from "@/common/constants/motion";
 
 const SKELETON_ROWS = 2;
 
@@ -38,7 +39,7 @@ export default function ExpenseList({ expenses, isLoading, buildActions, onCreat
       ) : expenses.length === 0 ? (
         <p className="py-1 text-sm text-muted-foreground">Todavía no hay gastos.</p>
       ) : (
-        <ul className="-my-1 divide-y divide-border">
+        <ul className={`-my-1 divide-y divide-border ${FADE_IN_CLASS}`}>
           {expenses.map((expense) => (
             <li key={expense.id} className="flex items-center gap-3 py-2.5">
               <div className="min-w-0 flex-1">

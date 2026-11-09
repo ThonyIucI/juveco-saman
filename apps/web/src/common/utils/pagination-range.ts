@@ -5,8 +5,6 @@ export type TPaginationSlot = number | typeof PAGINATION_ELLIPSIS;
 
 /** Páginas visibles a cada lado de la actual antes de colapsar con elipsis. */
 const SIBLING_COUNT = 1;
-/** Primera, última, actual + 2 vecinos + 2 elipsis = umbral para no truncar. */
-const MAX_SLOTS_WITHOUT_ELLIPSIS = SIBLING_COUNT * 2 + 5;
 
 /**
  * Copia de `getPaginationRange` del saas. Arma la secuencia de páginas a mostrar,
@@ -15,14 +13,20 @@ const MAX_SLOTS_WITHOUT_ELLIPSIS = SIBLING_COUNT * 2 + 5;
  *
  * @param currentPage Página activa (desde 1).
  * @param totalPages Total de páginas.
+ * @param siblingCount Vecinas a cada lado de la actual; 0 en celular para que no se desborde.
  */
-export const getPaginationRange = (currentPage: number, totalPages: number): TPaginationSlot[] => {
-  if (totalPages <= MAX_SLOTS_WITHOUT_ELLIPSIS) {
+export const getPaginationRange = (
+  currentPage: number,
+  totalPages: number,
+  siblingCount: number = SIBLING_COUNT,
+): TPaginationSlot[] => {
+  /* Primera, última, actual + vecinas + 2 elipsis: con menos páginas, se muestran todas. */
+  if (totalPages <= siblingCount * 2 + 5) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
   }
 
-  const leftSibling = Math.max(currentPage - SIBLING_COUNT, 1);
-  const rightSibling = Math.min(currentPage + SIBLING_COUNT, totalPages);
+  const leftSibling = Math.max(currentPage - siblingCount, 1);
+  const rightSibling = Math.min(currentPage + siblingCount, totalPages);
 
   const showLeftEllipsis = leftSibling > 2;
   const showRightEllipsis = rightSibling < totalPages - 1;

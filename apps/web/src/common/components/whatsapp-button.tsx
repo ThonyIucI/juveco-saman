@@ -11,8 +11,8 @@ interface IWhatsAppButtonProps {
   isBordered?: boolean;
 }
 
-/* El chat por el número; si no hay, por el usuario. */
-const chatTarget = (phone: IPhone | null, username?: string | null) => {
+/** El chat por el número; si no hay, por el usuario. Sin ninguno, `null`. */
+export const whatsAppChatTarget = (phone: IPhone | null, username?: string | null) => {
   if (phone) {
     return {
       href: whatsAppUrl(phone.countryPrefix, phone.number),
@@ -31,7 +31,7 @@ const chatTarget = (phone: IPhone | null, username?: string | null) => {
  * `wa.me/<prefijo><número>`; sin número, `wa.me/<usuario>`. Sin ninguno, no se muestra.
  */
 export default function WhatsAppButton({ phone, username, isBordered = false }: IWhatsAppButtonProps) {
-  const target = chatTarget(phone, username);
+  const target = whatsAppChatTarget(phone, username);
   if (!target) {
     return null;
   }

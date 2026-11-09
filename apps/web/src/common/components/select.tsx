@@ -118,7 +118,7 @@ const sharedSelectProps = (
                   "border-border hover:border-primary/50",
         ),
       valueContainer: () => "gap-1",
-      placeholder: () => "font-normal text-muted-foreground",
+      placeholder: () => "font-normal text-placeholder",
       singleValue: () => "text-foreground",
       input: () => "text-foreground",
       indicatorsContainer: () => "gap-1",

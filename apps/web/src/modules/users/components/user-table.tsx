@@ -14,6 +14,7 @@ import type { ReactNode } from "react";
 import InitialsAvatar, { avatarColorOf } from "@/common/components/initials-avatar";
 import RowActions, { type IRowAction } from "@/common/components/row-actions";
 import WhatsAppButton from "@/common/components/whatsapp-button";
+import { FADE_IN_CLASS } from "@/common/constants/motion";
 
 import RoleBadge from "./role-badge";
 import UserWhatsAppValue from "./user-whatsapp-value";
@@ -55,7 +56,7 @@ export default function UserTable({
             <TableHead />
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className={isLoading ? undefined : FADE_IN_CLASS}>
           {isLoading
             ? Array.from({ length: SKELETON_COUNT }, (_, index) => (
                 <TableRow key={index}>

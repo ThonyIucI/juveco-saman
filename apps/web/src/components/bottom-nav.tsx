@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 
 import { useChromeHidden } from "@/common/hooks/use-chrome-hidden";
 import { useQuickAccessItems } from "@/common/hooks/use-nav-items";
+import { useSectionLinkClick } from "@/common/hooks/use-section-link-click";
 
 /**
  * Navegación de pulgar para móvil. Solo aparece en pantallas chicas: en escritorio los
@@ -21,6 +22,7 @@ import { useQuickAccessItems } from "@/common/hooks/use-nav-items";
 export default function BottomNav() {
   const items = useQuickAccessItems();
   const isHidden = useChromeHidden();
+  const handleSectionClick = useSectionLinkClick();
 
   if (items.length === 0) {
     return null;
@@ -39,6 +41,7 @@ export default function BottomNav() {
           <li key={to} className="flex-1">
             <Link
               to={to}
+              onClick={handleSectionClick(to)}
               className={cn(
                 "group flex flex-col items-center gap-1 px-2 py-2 font-heading text-xs font-medium text-muted-foreground transition-colors",
                 /* La actual, además de la píldora, con el texto en color y más peso. */

@@ -1,6 +1,8 @@
 import { Skeleton } from "@juveco/ui/components/skeleton";
 import type { ReactNode } from "react";
 
+import { FADE_IN_CLASS } from "@/common/constants/motion";
+
 interface IPageHeaderProps {
   title: string;
   /** Pegado al título (p. ej. el botón de sincronizar). */
@@ -24,7 +26,7 @@ export default function PageHeader({ title, titleAction, subtitle, isLoadingSubt
         {isLoadingSubtitle ? (
           <Skeleton className="mt-1.5 h-4 w-32 rounded-md" />
         ) : (
-          subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
+          subtitle && <p className={`mt-0.5 text-sm text-muted-foreground ${FADE_IN_CLASS}`}>{subtitle}</p>
         )}
       </div>
       {action}

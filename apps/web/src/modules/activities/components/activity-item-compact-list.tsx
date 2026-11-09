@@ -5,6 +5,7 @@ import { type IActivityItemResource, normalizeItemSerial } from "@juveco/shared/
 import { fullName } from "@juveco/shared/people";
 import { HandCoins } from "lucide-react";
 
+import { FADE_IN_CLASS } from "@/common/constants/motion";
 import { collectionOf } from "@/modules/activities/utils/activity-items";
 
 import CollectionBadge from "./collection-badge";
@@ -61,7 +62,7 @@ export default function ActivityItemCompactList({
           ))}
         </ul>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className={cn("divide-y divide-border", FADE_IN_CLASS)}>
           {items.map((item) => {
             const isSerialRepeated = (serialCounts.get(normalizeItemSerial(item.serial)) ?? 0) > 1;
             const isPending = collectionOf(item).pending > 0;

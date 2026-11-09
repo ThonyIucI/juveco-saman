@@ -4,6 +4,14 @@ import { useSyncExternalStore } from "react";
 const DIRECTION_THRESHOLD = 10;
 /** Cerca del tope no se oculta nada: ahí el encabezado siempre va completo. */
 const TOP_ZONE = 80;
+/*
+  Al llegar al final vuelven el encabezado y la barra inferior: el espacio que se deja abajo
+  para la barra queda tapado por ella y no se ve un hueco vacío (Thony, 2026-11-09).
+*/
+const BOTTOM_ZONE = 24;
+
+const isNearBottom = (scrollY: number) =>
+  window.innerHeight + scrollY >= document.documentElement.scrollHeight - BOTTOM_ZONE;
 
 export type TScrollDirection = "top" | "up" | "down";
 
@@ -35,6 +43,12 @@ const readScroll = () => {
   if (scrollY <= TOP_ZONE) {
     lastScrollY = scrollY;
     setDirection("top");
+    return;
+  }
+
+  if (isNearBottom(scrollY)) {
+    lastScrollY = scrollY;
+    setDirection("up");
     return;
   }
 

@@ -1,11 +1,13 @@
 import { Skeleton } from "@juveco/ui/components/skeleton";
 import type { IUserResource } from "@juveco/shared/users";
 import { fullName } from "@juveco/shared/people";
+import { EUserRole } from "@juveco/shared/roles";
+import { MessageCircle } from "lucide-react";
 
 import InitialsAvatar, { avatarColorOf } from "@/common/components/initials-avatar";
 import NeighborhoodBadge from "@/common/components/neighborhood-badge";
 import RowActions, { type IRowAction } from "@/common/components/row-actions";
-import WhatsAppButton from "@/common/components/whatsapp-button";
+import WhatsAppButton, { whatsAppChatTarget } from "@/common/components/whatsapp-button";
 import { formatMonthYear } from "@/common/utils/format-date";
 
 import RoleBadge from "./role-badge";
@@ -19,8 +21,10 @@ interface IUserCardProps {
 
 /**
  * Card de un usuario:
- * - **Cabecera** (fondo gris): sus iniciales en su color, el nombre con su rol (si entra a
- *   la app) y debajo «Registrado en oct 2026». A la derecha, WhatsApp y `⋯`.
+ * - **Cabecera** (fondo gris): sus iniciales en su color, el nombre y debajo su rol; sin rol,
+ *   «Registrado en oct 2026» (Thony, 2026-11-09). A la derecha, con borde, solo dos botones:
+ *   editar y `⋯`, con WhatsApp dentro del `⋯`. Si no hay `⋯` (solo editar), WhatsApp va
+ *   directo en su lugar.
  * - **Cuerpo:** «WhatsApp» (el número o el usuario) y «Barrio».
  * - **Sin nota:** se ve solo en el detalle.
  *
@@ -28,6 +32,21 @@ interface IUserCardProps {
  * presionado el número para copiarlo.
  */
 export default function UserCard({ user, actions, onOpen }: IUserCardProps) {
+  const chat = whatsAppChatTarget(user.phone, user.whatsappUsername);
+  const hasMenu = actions.some((action) => !action.inline);
+  /* Con `⋯`, WhatsApp va primero dentro de él; sin `⋯`, queda lugar para el botón directo. */
+  const cardActions: IRowAction[] =
+    chat && hasMenu
+      ? [
+          {
+            icon: MessageCircle,
+            label: "Escribir por WhatsApp",
+            onClick: () => window.open(chat.href, "_blank", "noopener,noreferrer"),
+          },
+          ...actions,
+        ]
+      : actions;
+
   return (
     <article className="overflow-hidden rounded-2xl bg-card shadow-card">
       <div className="flex items-center justify-between gap-2 bg-muted px-3 py-3">
@@ -47,17 +66,18 @@ export default function UserCard({ user, actions, onOpen }: IUserCardProps) {
         >
           <InitialsAvatar name={fullName(user)} color={avatarColorOf(fullName(user))} />
           <div className="min-w-0">
-            <p className="flex min-w-0 items-center gap-2">
-              <span className="truncate font-heading font-semibold text-foreground">{fullName(user)}</span>
+            <p className="truncate font-heading font-semibold text-foreground">{fullName(user)}</p>
+            {user.role === EUserRole.USER ? (
+              <p className="text-muted-foreground">Registrado en {formatMonthYear(user.createdAt)}</p>
+            ) : (
               <RoleBadge role={user.role} />
-            </p>
-            <p className="text-muted-foreground">Registrado en {formatMonthYear(user.createdAt)}</p>
+            )}
           </div>
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
-          <WhatsAppButton phone={user.phone} username={user.whatsappUsername} />
-          <RowActions actions={actions} />
+          {!hasMenu && <WhatsAppButton phone={user.phone} username={user.whatsappUsername} isBordered />}
+          <RowActions actions={cardActions} isBordered />
         </div>
       </div>
 
