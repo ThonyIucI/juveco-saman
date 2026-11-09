@@ -25,16 +25,16 @@ const buttonVariants = cva(
         link: "font-sans text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-11 gap-2 px-4",
+        default: "h-control gap-2 px-4",
         xs: "h-8 gap-1 rounded-lg px-2.5 text-sm [&_svg:not([class*='size-'])]:size-4",
         sm: "h-9 gap-1.5 rounded-lg px-3 text-sm [&_svg:not([class*='size-'])]:size-4",
-        lg: "h-13 gap-2 px-5 text-base",
+        lg: "h-control-lg gap-2 px-5 text-base",
         xl: "h-14 w-full gap-2 px-6 text-xl",
         /* Los `icon*` quedan para los componentes internos de `ui`. En la app, IconButton. */
-        icon: "size-11",
+        icon: "size-control",
         "icon-xs": "size-8 rounded-lg [&_svg:not([class*='size-'])]:size-4",
         "icon-sm": "size-9 rounded-lg [&_svg:not([class*='size-'])]:size-4",
-        "icon-lg": "size-13",
+        "icon-lg": "size-control-lg",
       },
     },
     defaultVariants: {

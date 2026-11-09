@@ -3,8 +3,10 @@ import type { ReactNode } from "react";
 import ReactSelect, { type GroupBase, type Props as ReactSelectProps } from "react-select";
 import CreatableReactSelect, { type CreatableProps } from "react-select/creatable";
 
-/* Igual que `Input` (`h-13`): todos los campos del formulario miden lo mismo. */
-const CONTROL_HEIGHT = "3.25rem";
+/* Los mismos altos que `Input` y la barra de la página (`--spacing-control*` del tema). */
+const CONTROL_HEIGHTS = { md: "var(--spacing-control)", lg: "var(--spacing-control-lg)" } as const;
+
+type TSelectSize = keyof typeof CONTROL_HEIGHTS;
 /* Por encima de la modal (z-50) y de la confirmación (z-60). */
 const MENU_Z_INDEX = 70;
 
@@ -23,6 +25,8 @@ interface ISelectProps
   isInvalid?: boolean;
   /** Borde de marca cuando tiene algo elegido (p. ej. un filtro puesto). */
   isHighlighted?: boolean;
+  /** `lg` en la barra de la página, junto al buscador; `md` (por defecto) en formularios. */
+  size?: TSelectSize;
 }
 
 /**
@@ -32,8 +36,8 @@ interface ISelectProps
  *
  * El menú se monta en `document.body` para que una modal con scroll no lo recorte.
  */
-export default function Select({ isInvalid, isHighlighted, ...props }: ISelectProps) {
-  return <ReactSelect<IOption, false> {...sharedSelectProps(isInvalid, isHighlighted)} {...props} />;
+export default function Select({ isInvalid, isHighlighted, size = "md", ...props }: ISelectProps) {
+  return <ReactSelect<IOption, false> {...sharedSelectProps(isInvalid, isHighlighted, size)} {...props} />;
 }
 
 interface ICreatableSelectProps
@@ -59,7 +63,11 @@ export function CreatableSelect({ isInvalid, isHighlighted, ...props }: ICreatab
 }
 
 /* Lo que comparten `Select` y `CreatableSelect`: el mismo aspecto y los mismos textos. */
-const sharedSelectProps = (isInvalid: boolean | undefined, isHighlighted: boolean | undefined) =>
+const sharedSelectProps = (
+  isInvalid: boolean | undefined,
+  isHighlighted: boolean | undefined,
+  size: TSelectSize = "md",
+) =>
   ({
     unstyled: true,
     menuPortalTarget: typeof document === "undefined" ? undefined : document.body,
@@ -77,7 +85,7 @@ const sharedSelectProps = (isInvalid: boolean | undefined, isHighlighted: boolea
       pisa la clase de Tailwind. Las medidas que tienen que ganar van por `styles`.
     */
     styles: {
-      control: (base) => ({ ...base, minHeight: CONTROL_HEIGHT }),
+      control: (base) => ({ ...base, minHeight: CONTROL_HEIGHTS[size] }),
       menuPortal: (base) => ({ ...base, zIndex: MENU_Z_INDEX }),
     },
     formatOptionLabel: (option, { context }) => (
@@ -112,8 +120,9 @@ const sharedSelectProps = (isInvalid: boolean | undefined, isHighlighted: boolea
       singleValue: () => "text-foreground",
       input: () => "text-foreground",
       indicatorsContainer: () => "gap-1",
+      /* El chevron sigue al borde: gris de borde en reposo y de color solo enfocado o con algo elegido (Thony, 2026-11-09). */
       dropdownIndicator: ({ isFocused }) =>
-        cn("transition-colors", isFocused ? "text-primary" : "text-muted-foreground"),
+        cn("transition-colors", isFocused ? "text-ring" : isHighlighted ? "text-primary" : "text-border"),
       clearIndicator: () => "text-muted-foreground hover:text-foreground",
       menu: () => "mt-2 overflow-hidden rounded-2xl bg-popover p-1.5 shadow-elevated",
       menuList: () => "max-h-64",

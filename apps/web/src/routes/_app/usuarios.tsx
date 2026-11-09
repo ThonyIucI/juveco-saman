@@ -166,7 +166,8 @@ function UsersPage() {
           <div className="flex items-center gap-3">
             {/* En escritorio el buscador va junto al botón para ahorrar una fila. */}
             {users.length > 0 && <div className="hidden w-72 md:block">{searchInput}</div>}
-            <Button type="button" onClick={openCreate}>
+            {/* `lg`: botón de acción de la página, del mismo alto que el buscador de al lado. */}
+            <Button type="button" size="lg" onClick={openCreate}>
               <Plus />
               Agregar
             </Button>

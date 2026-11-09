@@ -77,7 +77,7 @@ export default function DateInput({ value, onChange, validate, rangeEdge, label 
       <div className="space-y-1.5">
         <label
           className={cn(
-            "flex h-11 w-full items-center gap-2.5 rounded-xl border bg-card px-3.5 text-sm text-foreground transition-colors focus-within:ring-4 focus-within:ring-ring/30",
+            "flex h-control w-full items-center gap-2.5 rounded-xl border bg-card px-3.5 text-sm text-foreground transition-colors focus-within:ring-4 focus-within:ring-ring/30",
             error ? "border-destructive" : "border-border focus-within:border-foreground/40",
           )}
         >

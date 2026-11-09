@@ -9,7 +9,10 @@ interface ISearchInputProps extends ComponentProps<typeof Input> {
    * concreta (la persona en el buscador de usuarios, como en id-pos).
    */
   icon?: LucideIcon;
-  /** Más bajo (44 px), para buscadores dentro de un panel, como el del carrito. */
+  /**
+   * Del alto de un campo de formulario (`h-control`, 44 px), p. ej. el comprador. Sin esto
+   * mide como la barra de la página (`h-control-lg`), junto a Agregar o Filtros.
+   */
   isCompact?: boolean;
 }
 
@@ -24,7 +27,7 @@ export default function SearchInput({ icon: Icon = Search, isCompact = false, cl
           isCompact ? "left-3.5 size-4.5" : "left-4 size-5",
         )}
       />
-      <Input type="search" className={cn(isCompact ? "h-11 pl-10" : "pl-12", className)} {...props} />
+      <Input type="search" className={cn(isCompact ? "pl-10" : "h-control-lg pl-12", className)} {...props} />
     </div>
   );
 }

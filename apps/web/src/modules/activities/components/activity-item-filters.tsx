@@ -22,6 +22,9 @@ const STATUS_OPTIONS: IOption[] = (Object.keys(collectionStatusLabels) as TColle
   label: collectionStatusLabels[status],
 }));
 
+/* Sin filtro elegido: solo «Todos», sin repetir el label. */
+const ALL_PLACEHOLDER = "Todos";
+
 const NEIGHBORHOOD_OPTIONS: IOption[] = NEIGHBORHOODS.map(({ id, name }) => ({ value: id, label: name }));
 
 interface IFilterFieldsProps {
@@ -29,7 +32,7 @@ interface IFilterFieldsProps {
   /** Los vendedores salen de lo vendido: solo quienes vendieron algo. */
   sellers: IActivityItemResource["seller"][];
   onChange: (filters: IActivityItemFilters) => void;
-  /** En escritorio, en una fila; en la modal, uno debajo del otro. */
+  /** En escritorio, en una fila a la derecha del buscador; en la modal, uno debajo del otro. */
   isRow?: boolean;
 }
 
@@ -39,18 +42,22 @@ export function ActivityItemFilterFields({ filters, sellers, onChange, isRow = f
   const idPrefix = useId();
   const ids = { status: `${idPrefix}-status`, seller: `${idPrefix}-seller`, neighborhood: `${idPrefix}-neighborhood` };
   const sellerOptions: IOption[] = sellers.map((seller) => ({ value: seller.id, label: fullName(seller) }));
+  /* En la fila de escritorio, del alto del buscador de al lado; en la modal, del de un formulario. */
+  const selectSize = isRow ? "lg" : "md";
   const valueOf = (options: IOption[], value: string) => options.find((option) => option.value === value) ?? null;
 
   return (
     <div className={cn("grid gap-3", isRow ? "grid-cols-3" : "grid-cols-1")}>
+      {/* Con label también en escritorio, y el placeholder solo «Todos» (Thony, 2026-11-09). */}
       <div className="space-y-2">
-        <Label htmlFor={ids.status} className={cn(isRow && "sr-only")}>
+        <Label htmlFor={ids.status}>
           Estado de pago
         </Label>
         <Select
           inputId={ids.status}
+          size={selectSize}
           options={STATUS_OPTIONS}
-          placeholder="Todos los estados"
+          placeholder={ALL_PLACEHOLDER}
           isClearable
           isSearchable={false}
           isHighlighted={filters.status !== ""}
@@ -62,13 +69,14 @@ export function ActivityItemFilterFields({ filters, sellers, onChange, isRow = f
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={ids.seller} className={cn(isRow && "sr-only")}>
+        <Label htmlFor={ids.seller}>
           Vendedor
         </Label>
         <Select
           inputId={ids.seller}
+          size={selectSize}
           options={sellerOptions}
-          placeholder="Todos los vendedores"
+          placeholder={ALL_PLACEHOLDER}
           isClearable
           noOptionsMessage={() => "Todavía nadie vendió"}
           isHighlighted={filters.sellerId !== ""}
@@ -78,13 +86,14 @@ export function ActivityItemFilterFields({ filters, sellers, onChange, isRow = f
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={ids.neighborhood} className={cn(isRow && "sr-only")}>
+        <Label htmlFor={ids.neighborhood}>
           Barrio
         </Label>
         <Select
           inputId={ids.neighborhood}
+          size={selectSize}
           options={NEIGHBORHOOD_OPTIONS}
-          placeholder="Todos los barrios"
+          placeholder={ALL_PLACEHOLDER}
           isClearable
           isSearchable={false}
           formatOptionLabel={(option) => (

@@ -15,12 +15,13 @@ import { LogOut } from "lucide-react";
 import { parseUserRole } from "@juveco/shared/roles";
 
 import { navItemsForRole } from "@/common/constants/routes";
-import { useSignOut } from "@/common/hooks/use-sign-out";
+import SignOutConfirm from "@/common/components/sign-out-confirm";
+import { useBoolean } from "@/common/hooks/use-boolean";
 import { authClient } from "@/lib/auth-client";
 
 export default function UserMenu() {
   const navigate = useNavigate();
-  const signOut = useSignOut();
+  const confirmSignOut = useBoolean();
   const { data: session, isPending } = authClient.useSession();
 
   if (isPending) {
@@ -38,6 +39,7 @@ export default function UserMenu() {
   const role = parseUserRole(session.user.role);
 
   return (
+    <>
     <DropdownMenu>
       {/* El nombre se recorta: hay apellidos largos y el encabezado no puede crecer. */}
       <DropdownMenuTrigger render={<Button variant="outline" className="max-w-40" />}>
@@ -62,12 +64,14 @@ export default function UserMenu() {
             </DropdownMenuItem>
           ))}
 
-          <DropdownMenuItem variant="destructive" onClick={signOut}>
+          <DropdownMenuItem variant="destructive" onClick={confirmSignOut.on}>
             <LogOut className="size-4" />
             Cerrar sesión
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+    <SignOutConfirm open={confirmSignOut.active} onCancel={confirmSignOut.off} />
+    </>
   );
 }

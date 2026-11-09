@@ -40,7 +40,8 @@ function PaginationLink({ className, isActive, size = "icon-sm", ...props }: TPa
     <Button
       variant={isActive ? "outline" : "ghost"}
       size={size}
-      className={cn(className)}
+      /* La página actual con fondo suave de marca: con solo el borde casi no se distinguía (Thony, 2026-11-09). */
+      className={cn(isActive && "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15", className)}
       nativeButton={false}
       render={
         <a

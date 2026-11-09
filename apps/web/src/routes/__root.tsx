@@ -48,7 +48,11 @@ function RootComponent() {
           {/* En escritorio el menú lateral va `fixed`: el resto se corre su ancho. */}
           <div className={cn("grid min-h-svh grid-rows-[auto_1fr]", hasSidebar && "md:pl-64")}>
             <Header />
-            <div className={cn("min-w-0", hasBottomNav && "pb-20 sm:pb-0")}>
+            {/*
+              En escritorio, con sesión, el fondo es gris suave y las cajas de cada página van en
+              blanco encima, sin borde, como id-pos (Thony, 2026-11-09).
+            */}
+            <div className={cn("min-w-0", hasBottomNav && "pb-20 sm:pb-0", hasSidebar && "md:bg-muted")}>
               <Outlet />
             </div>
           </div>

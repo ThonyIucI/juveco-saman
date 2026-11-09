@@ -83,6 +83,9 @@ export const Route = createFileRoute("/_app/actividades/$activityId")({
 });
 
 /* Mientras carga la actividad todavía no se sabe su tipo. */
+/* Encabezado y cuerpo en escritorio: cajas blancas sobre el fondo gris, sin borde y con radio de 12 px; en celular, nada. */
+const DESKTOP_BOX_CLASS = "md:rounded-xl md:bg-card md:p-5";
+
 const FALLBACK_ITEM_LABEL = { singular: "venta", plural: "ventas" };
 
 /**
@@ -148,6 +151,10 @@ function ActivityPage() {
     .filter((item) => matchesItemFilters(item, filters))
     .sort(compareBySerial);
   /* KPIs, balance, premios y gastos van en su propia página (acordado 2026-11-07). */
+  const countLabel = (count: number) => `${count} ${count === 1 ? itemLabel.singular : itemLabel.plural}`;
+  /* Con búsqueda o filtros: cuántas quedan de cuántas hay. */
+  const shownCountLabel =
+    visible.length === items.length ? countLabel(items.length) : `${visible.length} de ${countLabel(items.length)}`;
   const openSummary = () => navigate({ to: "/actividades/$activityId/resumen", params: { activityId } });
 
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => setTerm(event.target.value);
@@ -204,6 +211,11 @@ function ActivityPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4 p-4">
+      {/*
+        Escritorio, como Clientes de id-pos (Thony, 2026-11-09): el encabezado y el cuerpo en
+        dos cajas separadas, con radio de 12 px. En celular no hay cajas.
+      */}
+      <div className={DESKTOP_BOX_CLASS}>
       {activity ? (
         <PageHeader
           title={activity.name}
@@ -215,7 +227,7 @@ function ActivityPage() {
               {/*
                 Resumen en gris, también en celular, donde ocupa el lugar de «Agregar»: agregar
                 pasa al botón flotante «+» y el título gana espacio (Thony, 2026-11-07).
-                `lg`: el mismo alto que el buscador (h-13), para que la fila se vea pareja.
+                `lg`: el mismo alto que el buscador (`h-control-lg`), para que la fila se vea pareja.
               */}
               {/* En celular, solo el ícono (Thony, 2026-11-07). */}
               <IconButton label="Resumen" size="lg" tone="neutral" isFilled className="md:hidden" onClick={openSummary}>
@@ -231,8 +243,6 @@ function ActivityPage() {
                 <ChartColumn />
                 Resumen
               </Button>
-              {/* En escritorio el buscador va junto al botón para ahorrar una fila. */}
-              {items.length > 0 && <div className="hidden w-72 md:block">{searchInput}</div>}
               <Button type="button" size="lg" className="hidden md:inline-flex" onClick={openCreate}>
                 <Plus />
                 Agregar
@@ -246,11 +256,16 @@ function ActivityPage() {
           <Skeleton className="h-4 w-40 rounded-md" />
         </div>
       )}
+      </div>
 
-      {/* Escritorio: los filtros directos, en su propia fila debajo del encabezado (acordado 2026-11-07). */}
+      <div className={cn(DESKTOP_BOX_CLASS, "space-y-4")}>
+      {/* Escritorio: el buscador a la izquierda y los tres filtros a la derecha, alineados abajo. */}
       {items.length > 0 && (
-        <div className="hidden max-w-4xl md:block">
-          <ActivityItemFilterFields filters={filters} sellers={sellersOf(items)} onChange={setFilters} isRow />
+        <div className="hidden items-end justify-between gap-4 md:flex">
+          <div className="w-full max-w-sm">{searchInput}</div>
+          <div className="w-full max-w-2xl">
+            <ActivityItemFilterFields filters={filters} sellers={sellersOf(items)} onChange={setFilters} isRow />
+          </div>
         </div>
       )}
 
@@ -292,7 +307,14 @@ function ActivityPage() {
       )}
 
       {(isLoading || visible.length > 0) && (
-        <>
+        /* El conteo pegado al listado: 6 px, no los 16 entre bloques. */
+        <div className="space-y-1.5">
+          {/* Cuántos se ven, en 12 px encima del listado (Thony, 2026-11-09). */}
+          {isLoading ? (
+            <Skeleton className="h-3.5 w-28 rounded-md" />
+          ) : (
+            <p className="text-xs text-muted-foreground">{shownCountLabel}</p>
+          )}
           <ActivityItemTable
             items={visible}
             isLoading={isLoading}
@@ -317,8 +339,9 @@ function ActivityPage() {
               onOpen={(item) => setDetailId(item.id)}
             />
           )}
-        </>
+        </div>
       )}
+      </div>
 
       {/* Encima del «+», del mismo tamaño y en gris, a 12 px: cambia entre cards y vista compacta. */}
       <FloatingActionButton

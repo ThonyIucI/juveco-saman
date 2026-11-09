@@ -57,12 +57,24 @@ no está acá no aplica (Laravel, yup, react-hook-form, `idbi-components`).
   en lugar del toast. Ojo con better-auth: si el servidor no responde, lanza en vez de
   llamar a `onError`, así que va en `try/catch`.
 - **Toda acción destructiva pide confirmación** en modal, con la opción del menú en rojo.
+  También las que sacan a la persona de lo que estaba haciendo, como cerrar sesión
+  (acordado 2026-11-09): un clic por error no puede costarle volver a entrar.
 - Ningún botón se deshabilita: al clic se muestra el error.
 - El texto de un botón nunca se parte en dos líneas.
 - Para enfocar un campo al abrir una modal, nunca `autoFocus`.
 - **Ahorrar clics es imperativo** (acordado 2026-11-09): una acción que se usa seguido
   (editar, cobrar…) va como ícono directo (`inline: true` en `IRowAction`) en tabla, card y
   detalle, nunca escondida en `⋯`. En `⋯` queda solo lo que se usa poco.
+  Excepción: en la vista compacta y en las cards de celular de cartillas se ahorra espacio y
+  lo directo es **cobrar**; editar queda en `⋯` y en el detalle.
+- **Altos de controles** (acordado 2026-11-09), definidos una sola vez en el tema
+  (`--spacing-control*`), nunca a mano:
+  - `h-control` / `size-control` (44 px): campos de formulario (input, select, teléfono,
+    fecha) y sus botones.
+  - `h-control-lg` / `size-control-lg` (52 px): la barra de la página (Agregar, Resumen,
+    buscador, filtros, IconButton al lado). Lo que va junto mide igual.
+- **Pesos y jerarquía**: no todo en negrita. Labels de campo en 14 px, peso 400 y gris
+  `--label` (#495057, como id-pos); títulos de página en 600.
 
 ### Formularios (acordado 2026-11-07)
 

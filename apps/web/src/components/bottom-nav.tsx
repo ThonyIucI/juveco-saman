@@ -40,11 +40,15 @@ export default function BottomNav() {
             <Link
               to={to}
               className={cn(
-                "flex flex-col items-center gap-1 px-2 py-2.5 font-heading text-xs font-semibold text-muted-foreground transition-colors",
-                "[&.active]:text-primary",
+                "group flex flex-col items-center gap-1 px-2 py-2 font-heading text-xs font-medium text-muted-foreground transition-colors",
+                /* La actual, además de la píldora, con el texto en color y más peso. */
+                "[&.active]:font-semibold [&.active]:text-primary",
               )}
             >
-              <Icon className="size-6" />
+              {/* Como WhatsApp o Telegram: la sección actual con una píldora de fondo (Thony, 2026-11-09). */}
+              <span className="flex h-8 w-14 items-center justify-center rounded-full transition-colors group-[.active]:bg-primary/12">
+                <Icon className="size-6" />
+              </span>
               {shortLabel}
             </Link>
           </li>

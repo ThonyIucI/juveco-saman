@@ -7,7 +7,8 @@ import { useEffect, useState } from "react";
 import { EASE_DRAWER } from "@/common/constants/motion";
 import { sidebarEntriesForRole } from "@/common/constants/routes";
 import { useSessionRole } from "@/common/hooks/use-session-role";
-import { useSignOut } from "@/common/hooks/use-sign-out";
+import SignOutConfirm from "@/common/components/sign-out-confirm";
+import { useBoolean } from "@/common/hooks/use-boolean";
 import { authClient } from "@/lib/auth-client";
 
 import SidebarNav from "./sidebar-nav";
@@ -26,7 +27,7 @@ function SidebarPanel({ onClose }: ISidebarPanelProps) {
   const { data: session } = authClient.useSession();
   const role = useSessionRole();
   const entries = sidebarEntriesForRole(role);
-  const signOut = useSignOut();
+  const confirmSignOut = useBoolean();
 
   return (
     <aside className="flex h-full w-72 flex-col bg-sidebar text-sidebar-foreground shadow-sheet md:w-64 md:border-r md:border-border md:shadow-none">
@@ -54,12 +55,13 @@ function SidebarPanel({ onClose }: ISidebarPanelProps) {
       <div className="px-3 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] shadow-edge-top">
         <button
           type="button"
-          onClick={signOut}
+          onClick={confirmSignOut.on}
           className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 font-heading text-sm font-semibold text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
         >
           <LogOut className="size-5" />
           Cerrar sesión
         </button>
+        <SignOutConfirm open={confirmSignOut.active} onCancel={confirmSignOut.off} />
       </div>
     </aside>
   );

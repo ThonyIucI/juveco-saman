@@ -158,7 +158,7 @@ export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, dis
   return (
     <div
       className={cn(
-        "flex h-13 w-full items-stretch rounded-lg border bg-field transition-colors",
+        "flex h-control w-full items-stretch rounded-lg border bg-field transition-colors",
         disabled && "cursor-not-allowed opacity-60",
         isInvalid
           ? "border-destructive ring-4 ring-destructive/20"

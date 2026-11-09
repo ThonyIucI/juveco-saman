@@ -26,8 +26,8 @@ const iconButtonCva = cva(
         /* Redondeo suave (8 px; 12 px en los grandes): con más, el botón se ve casi circular. */
         xs: "size-8 rounded-md [&_svg:not([class*='size-'])]:size-4",
         sm: "size-9 rounded-md [&_svg:not([class*='size-'])]:size-4",
-        md: "size-11 rounded-lg [&_svg:not([class*='size-'])]:size-5",
-        lg: "size-13 rounded-lg [&_svg:not([class*='size-'])]:size-6",
+        md: "size-control rounded-lg [&_svg:not([class*='size-'])]:size-5",
+        lg: "size-control-lg rounded-lg [&_svg:not([class*='size-'])]:size-6",
       },
       isBordered: {
         true: "border-border bg-card",

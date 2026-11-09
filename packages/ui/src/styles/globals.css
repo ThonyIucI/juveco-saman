@@ -39,6 +39,8 @@
 
   --muted: oklch(0.965 0.008 264);
   --muted-foreground: oklch(0.5 0.04 266);
+  /* Labels de campo como id-pos: gris oscuro #495057, 14 px y peso 400 (Thony, 2026-11-09). */
+  --label: #495057;
   --canvas: oklch(0.975 0.006 264);
   /* Fondo de los campos de texto. */
   --field: oklch(1 0 0);
@@ -130,6 +132,7 @@
 
   --muted: #172133;
   --muted-foreground: #94a3b8;
+  --label: #cbd5e1;
   --canvas: #080d19;
   --field: #172133;
   --accent: #1a253a;
@@ -191,8 +194,17 @@
   --font-heading: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
 
+  /*
+    Alto de los controles, en un solo lugar (Thony, 2026-11-09). `h-control` / `size-control`
+    (44 px): campos de formulario y sus botones. `h-control-lg` (52 px): la barra de una
+    página (Agregar, Resumen, buscador, filtros, IconButton al lado). Lo que va junto mide igual.
+  */
+  --spacing-control: 2.75rem;
+  --spacing-control-lg: 3.25rem;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-label: var(--label);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);

@@ -14,7 +14,7 @@ interface IFilterButtonProps {
 export default function FilterButton({ activeCount, onClick }: IFilterButtonProps) {
   return (
     <IconButton
-      /* El mismo alto que el buscador (`h-13`). */
+      /* El mismo alto que el buscador de la barra (`h-control-lg`). */
       size="lg"
       isBordered
       label={activeCount > 0 ? `Filtros (${activeCount} puestos)` : "Filtros"}
