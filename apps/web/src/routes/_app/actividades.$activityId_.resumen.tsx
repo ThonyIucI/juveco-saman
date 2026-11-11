@@ -173,11 +173,7 @@ function ActivitySummaryPage() {
 
       <PageBox className="space-y-4">
       {activity && (
-        <ActivityKpis
-          activityType={activity.type}
-          summary={GetActivitySummary.summary}
-          balance={GetActivityBalance.balance}
-        />
+        <ActivityKpis summary={GetActivitySummary.summary} balance={GetActivityBalance.balance} />
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-2">

@@ -15,6 +15,8 @@ const SKELETON_COUNT = 10;
 
 /* Serie · cliente · por cobrar · cobrar. El último ancho fijo: las filas sin cobro no se corren. */
 const ROW_GRID = "grid grid-cols-[2.5rem_minmax(0,1fr)_auto_2.25rem] items-center gap-2 px-3";
+/* Anuladas no tienen acción: sin la última columna, el nombre y el cambio ganan ese ancho. */
+const VOIDED_ROW_GRID = "grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-2 px-3";
 
 interface IActivityItemCompactListProps {
   items: IActivityItemResource[];
@@ -51,20 +53,23 @@ export default function ActivityItemCompactList({
   onChangeItem,
   onOpen,
 }: IActivityItemCompactListProps) {
+  const isVoidedTab = tab === "VOIDED";
+  const rowGrid = isVoidedTab ? VOIDED_ROW_GRID : ROW_GRID;
+
   return (
     <div className="overflow-hidden rounded-sm border border-border bg-card md:hidden">
       <div
         className={cn(
-          ROW_GRID,
+          rowGrid,
           "border-b border-border bg-muted py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase",
         )}
       >
         <span>Serie</span>
         <span>Cliente</span>
         <span className="text-right">
-          {tab === "PENDING" ? "Por cobrar" : tab === "VOIDED" && <span className="sr-only">Cambio</span>}
+          {tab === "PENDING" ? "Por cobrar" : isVoidedTab && <span className="sr-only">Cambio</span>}
         </span>
-        <span className="sr-only">Acción</span>
+        {!isVoidedTab && <span className="sr-only">Acción</span>}
       </div>
 
       {isLoading ? (
@@ -99,7 +104,7 @@ export default function ActivityItemCompactList({
                   }
                 }}
                 className={cn(
-                  ROW_GRID,
+                  rowGrid,
                   "cursor-pointer py-1.5 outline-none hover:bg-muted/60 focus-visible:bg-muted/60",
                 )}
               >
@@ -140,7 +145,7 @@ export default function ActivityItemCompactList({
                     <Repeat />
                   </IconButton>
                 ) : (
-                  <span />
+                  !isVoidedTab && <span />
                 )}
               </li>
             );

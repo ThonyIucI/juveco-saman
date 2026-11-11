@@ -18,7 +18,8 @@ export default function ItemChangeBadge({ item, relatedSerial }: IItemChangeBadg
     return (
       <Badge color="destructive" className="rounded-md tabular-nums">
         <Ban aria-hidden />
-        {relatedSerial ? `Cambiada por ${relatedSerial}` : "Anulada"}
+        {/* «Cambió a» y no «Cambiada por»: más corto (Thony, 2026-11-11). */}
+        {relatedSerial ? `Cambió a ${relatedSerial}` : "Anulada"}
       </Badge>
     );
   }
