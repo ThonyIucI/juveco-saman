@@ -7,11 +7,16 @@ import NeighborhoodBadge from "@/common/components/neighborhood-badge";
 import RowActions, { type IRowAction } from "@/common/components/row-actions";
 
 import CollectionBadge from "./collection-badge";
+import ItemChangeBadge from "./item-change-badge";
 
 interface IActivityItemCardProps {
   item: IActivityItemResource;
   /** Hay otro ítem con la misma serie en esta actividad. */
   isSerialRepeated: boolean;
+  /** En pagadas y anuladas, «Cambio» en lugar de «Por cobrar» (Thony, 2026-11-11). */
+  isChangeColumn: boolean;
+  /** La serie del otro lado de un cambio de cartilla, si la hay. */
+  relatedSerial: string | undefined;
   actions: IRowAction[];
   /** Abre el detalle con sus pagos. */
   onOpen: () => void;
@@ -26,7 +31,14 @@ interface IActivityItemCardProps {
  *   amarillo si pagó una parte y rojo si no pagó nada.
  * Solo en celular: en escritorio va la tabla.
  */
-export default function ActivityItemCard({ item, isSerialRepeated, actions, onOpen }: IActivityItemCardProps) {
+export default function ActivityItemCard({
+  item,
+  isSerialRepeated,
+  isChangeColumn,
+  relatedSerial,
+  actions,
+  onOpen,
+}: IActivityItemCardProps) {
   return (
     /* Borde gris y radio chico como el DetailCard de reportes de id-pos; sin sombra (Thony, 2026-11-07). */
     /* Toda la card abre el detalle; `⋯` y el acceso al pago frenan el clic (RowActions). */
@@ -79,8 +91,12 @@ export default function ActivityItemCard({ item, isSerialRepeated, actions, onOp
         </div>
         {/* A la derecha, para no dejar un hueco al costado del monto. */}
         <div className="flex flex-col items-end space-y-1">
-          <p className="text-sm font-medium text-muted-foreground">Por cobrar</p>
-          <CollectionBadge item={item} />
+          <p className="text-sm font-medium text-muted-foreground">{isChangeColumn ? "Cambio" : "Por cobrar"}</p>
+          {isChangeColumn ? (
+            <ItemChangeBadge item={item} relatedSerial={relatedSerial} />
+          ) : (
+            <CollectionBadge item={item} />
+          )}
         </div>
       </div>
     </article>

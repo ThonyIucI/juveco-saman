@@ -17,6 +17,7 @@ import RowActions, { type IRowAction } from "@/common/components/row-actions";
 import { FADE_IN_CLASS } from "@/common/constants/motion";
 
 import CollectionBadge from "./collection-badge";
+import ItemChangeBadge from "./item-change-badge";
 
 const SKELETON_COUNT = 6;
 const COLUMN_COUNT = 7;
@@ -26,6 +27,10 @@ interface IActivityItemTableProps {
   isLoading: boolean;
   /** Cuántos hay con cada serie en **toda** la actividad, no solo en lo filtrado. */
   serialCounts: Map<string, number>;
+  /** En pagadas y anuladas, «Cambio» en lugar de «Por cobrar» (Thony, 2026-11-11). */
+  isChangeColumn: boolean;
+  /** Ver `changedSerials`. */
+  relatedSerials: Map<string, string>;
   buildActions: (item: IActivityItemResource) => IRowAction[];
   onOpen: (item: IActivityItemResource) => void;
 }
@@ -39,6 +44,8 @@ export default function ActivityItemTable({
   items,
   isLoading,
   serialCounts,
+  isChangeColumn,
+  relatedSerials,
   buildActions,
   onOpen,
 }: IActivityItemTableProps) {
@@ -53,7 +60,7 @@ export default function ActivityItemTable({
             <TableHead>Barrio</TableHead>
             <TableHead>Vendedor</TableHead>
             <TableHead className="text-right">Precio</TableHead>
-            <TableHead className="text-right">Por cobrar</TableHead>
+            <TableHead className="text-right">{isChangeColumn ? "Cambio" : "Por cobrar"}</TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>
@@ -96,7 +103,11 @@ export default function ActivityItemTable({
                     <TableCell className="text-foreground">{fullName(item.seller)}</TableCell>
                     <TableCell className="text-right text-foreground tabular-nums">{formatSoles(item.price)}</TableCell>
                     <TableCell className="text-right">
-                      <CollectionBadge item={item} />
+                      {isChangeColumn ? (
+                        <ItemChangeBadge item={item} relatedSerial={relatedSerials.get(item.id)} />
+                      ) : (
+                        <CollectionBadge item={item} />
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end">

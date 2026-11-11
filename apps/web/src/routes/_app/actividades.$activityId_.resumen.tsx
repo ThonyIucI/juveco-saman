@@ -1,4 +1,3 @@
-import { Button } from "@juveco/ui/components/button";
 import { IconButton } from "@juveco/ui/components/icon-button";
 import { cn } from "@juveco/ui/lib/utils";
 import { activityItemLabels } from "@juveco/shared/activities";
@@ -6,7 +5,7 @@ import type { IActivityExpenseResource } from "@juveco/shared/activity-expenses"
 import type { IActivityPrizeResource } from "@juveco/shared/activity-prizes";
 import { formatSoles } from "@juveco/shared/money";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import ConfirmModal from "@/common/components/confirm-modal";
@@ -160,19 +159,13 @@ function ActivitySummaryPage() {
     <div className="mx-auto w-full max-w-7xl space-y-4 p-4">
       {/* Encabezado y cuerpo en cajas blancas sobre el fondo gris, como cartillas (Thony, 2026-11-09). */}
       <PageBox>
-        {/* Volver: solo el alto del ícono y la palabra (32 px), sin inflar el espacio de arriba. */}
-        <Button
-          variant="ghost"
-          size="xs"
-          className="mb-2 -ml-2.5 gap-1 font-heading"
-          onClick={() => navigate({ to: "/actividades/$activityId", params: { activityId } })}
-        >
-          <ChevronLeft />
-          {activity ? capitalize(activityItemLabels[activity.type].plural) : "Volver"}
-        </Button>
-
+        {/* Volver: solo el chevron a la izquierda del título, en celular y escritorio (Thony, 2026-11-11). */}
         <PageHeader
           title={activity ? `Resumen · ${activity.name}` : "Resumen"}
+          back={{
+            label: `Volver a ${activity ? activityItemLabels[activity.type].plural : "la actividad"}`,
+            onClick: () => navigate({ to: "/actividades/$activityId", params: { activityId } }),
+          }}
           titleAction={syncButton}
           subtitle={
             activity ? `${formatShortDate(activity.eventDate)} · ${formatSoles(activity.defaultPrice)}` : undefined
@@ -182,7 +175,13 @@ function ActivitySummaryPage() {
       </PageBox>
 
       <PageBox className="space-y-4">
-      {activity && <ActivityKpis activityType={activity.type} summary={GetActivitySummary.summary} />}
+      {activity && (
+        <ActivityKpis
+          activityType={activity.type}
+          summary={GetActivitySummary.summary}
+          balance={GetActivityBalance.balance}
+        />
+      )}
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <ActivityBalance balance={GetActivityBalance.balance} />
@@ -236,4 +235,3 @@ function ActivitySummaryPage() {
   );
 }
 
-const capitalize = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);

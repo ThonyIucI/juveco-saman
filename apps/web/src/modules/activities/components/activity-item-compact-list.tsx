@@ -9,6 +9,7 @@ import { FADE_IN_CLASS } from "@/common/constants/motion";
 import { collectionOf } from "@/modules/activities/utils/activity-items";
 
 import CollectionBadge from "./collection-badge";
+import ItemChangeBadge from "./item-change-badge";
 
 const SKELETON_COUNT = 10;
 
@@ -20,6 +21,10 @@ interface IActivityItemCompactListProps {
   isLoading: boolean;
   /** Cuántos hay con cada serie en **toda** la actividad, no solo en lo filtrado. */
   serialCounts: Map<string, number>;
+  /** En pagadas y anuladas, «Cambio» en lugar de «Por cobrar» (Thony, 2026-11-11). */
+  isChangeColumn: boolean;
+  /** Ver `changedSerials`. */
+  relatedSerials: Map<string, string>;
   onPay: (item: IActivityItemResource) => void;
   onOpen: (item: IActivityItemResource) => void;
 }
@@ -33,6 +38,8 @@ export default function ActivityItemCompactList({
   items,
   isLoading,
   serialCounts,
+  isChangeColumn,
+  relatedSerials,
   onPay,
   onOpen,
 }: IActivityItemCompactListProps) {
@@ -46,7 +53,7 @@ export default function ActivityItemCompactList({
       >
         <span>Serie</span>
         <span>Cliente</span>
-        <span className="text-right">Por cobrar</span>
+        <span className="text-right">{isChangeColumn ? "Cambio" : "Por cobrar"}</span>
         <span className="sr-only">Cobrar</span>
       </div>
 
@@ -65,7 +72,8 @@ export default function ActivityItemCompactList({
         <ul className={cn("divide-y divide-border", FADE_IN_CLASS)}>
           {items.map((item) => {
             const isSerialRepeated = (serialCounts.get(normalizeItemSerial(item.serial)) ?? 0) > 1;
-            const isPending = collectionOf(item).pending > 0;
+            /* Una anulada no se cobra: lo pagado pasó a la nueva. */
+            const isPending = !item.voidedAt && collectionOf(item).pending > 0;
 
             return (
               <li
@@ -96,7 +104,11 @@ export default function ActivityItemCompactList({
                   {isSerialRepeated && <span className="sr-only"> (serie repetida)</span>}
                 </span>
                 <span className="truncate text-sm font-medium text-foreground">{fullName(item.buyer)}</span>
-                <CollectionBadge item={item} />
+                {isChangeColumn ? (
+                  <ItemChangeBadge item={item} relatedSerial={relatedSerials.get(item.id)} />
+                ) : (
+                  <CollectionBadge item={item} />
+                )}
                 {isPending ? (
                   <IconButton
                     label={`Registrar pago de la serie ${item.serial}`}

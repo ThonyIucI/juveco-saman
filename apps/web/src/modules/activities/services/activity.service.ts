@@ -5,7 +5,12 @@ import type {
   IActivitySummary,
   IPaymentChange,
 } from "@juveco/shared/activity-item-payments";
-import type { IActivityItemInput, IActivityItemResource } from "@juveco/shared/activity-items";
+import type {
+  IActivityItemChangeInput,
+  IActivityItemChangeResult,
+  IActivityItemInput,
+  IActivityItemResource,
+} from "@juveco/shared/activity-items";
 
 import { apiRequest } from "@/lib/api";
 
@@ -40,6 +45,13 @@ export const updateActivityItemRequest = ({ activityId, itemId, payload }: IUpda
 
 export const deleteActivityItemRequest = (activityId: string, itemId: string) =>
   apiRequest<{ id: string }>(`/activities/${activityId}/items/${itemId}`, { method: "DELETE" });
+
+/** Cambio de cartilla: anula esta y crea otra con la serie nueva, que se lleva sus pagos. */
+export const changeActivityItemRequest = (activityId: string, itemId: string, payload: IActivityItemChangeInput) =>
+  apiRequest<IActivityItemChangeResult>(`/activities/${activityId}/items/${itemId}/change`, {
+    method: "POST",
+    body: payload,
+  });
 
 const paymentsPath = (activityId: string, itemId: string) =>
   `/activities/${activityId}/items/${itemId}/payments`;

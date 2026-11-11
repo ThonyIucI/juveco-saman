@@ -23,7 +23,7 @@ import {
   PRIZE_ORIGIN_REQUIRED_MESSAGE,
 } from "@juveco/shared/activity-prizes";
 import { roundSoles } from "@juveco/shared/money";
-import { type AnyColumn, and, asc, eq, sql } from "drizzle-orm";
+import { type AnyColumn, and, asc, eq, isNull, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -159,7 +159,8 @@ const buildBalance = async (db: TDb, activityId: string): Promise<IActivityBalan
     db
       .select({ total: sumOf(activityItems.price) })
       .from(activityItems)
-      .where(eq(activityItems.activityId, activityId))
+      /* Las anuladas por un cambio no se cobran: su reemplazo ya suma su precio. */
+      .where(and(eq(activityItems.activityId, activityId), isNull(activityItems.voidedAt)))
       .get(),
     db
       .select({ total: sumOf(activityItemPayments.amount) })

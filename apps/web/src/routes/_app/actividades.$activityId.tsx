@@ -3,7 +3,7 @@ import { IconButton } from "@juveco/ui/components/icon-button";
 import { Skeleton } from "@juveco/ui/components/skeleton";
 import { cn } from "@juveco/ui/lib/utils";
 import { activityItemLabels } from "@juveco/shared/activities";
-import type { IActivityItemResource } from "@juveco/shared/activity-items";
+import type { IActivityItemChangeResult, IActivityItemResource } from "@juveco/shared/activity-items";
 import { formatSoles } from "@juveco/shared/money";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
@@ -13,6 +13,7 @@ import {
   Pencil,
   Plus,
   RefreshCw,
+  Repeat,
   Rows3,
   Search,
   Ticket,
@@ -21,6 +22,7 @@ import {
 import { type ChangeEvent, useEffect, useState } from "react";
 
 import ConfirmModal from "@/common/components/confirm-modal";
+import CountTabs, { type ICountTabOption } from "@/common/components/count-tabs";
 import EmptyState from "@/common/components/empty-state";
 import FilterButton from "@/common/components/filter-button";
 import FloatingActionButton from "@/common/components/floating-action-button";
@@ -40,6 +42,7 @@ import {
 import ActivityItemCompactList from "@/modules/activities/components/activity-item-compact-list";
 import ActivityItemGrid from "@/modules/activities/components/activity-item-grid";
 import ActivityItemTable from "@/modules/activities/components/activity-item-table";
+import ItemChangeFormModal from "@/modules/activities/components/item-change-form-modal";
 import ItemPaymentFormModal from "@/modules/activities/components/item-payment-form-modal";
 import { useDeleteActivityItem } from "@/modules/activities/hooks/use-delete-activity-item";
 import { useGetActivity } from "@/modules/activities/hooks/use-get-activity";
@@ -47,12 +50,16 @@ import { useListActivityItems } from "@/modules/activities/hooks/use-list-activi
 import {
   EMPTY_ITEM_FILTERS,
   type IActivityItemFilters,
+  type TPaymentTab,
+  changedSerials,
   collectionOf,
   compareBySerial,
   countActiveFilters,
   countSerials,
   matchesActivityItemSearch,
   matchesItemFilters,
+  paymentTabLabels,
+  paymentTabOf,
   sellersOf,
 } from "@/modules/activities/utils/activity-items";
 import { useListUsers } from "@/modules/users/hooks/use-list-users";
@@ -106,9 +113,12 @@ function ActivityPage() {
   const [deleteTarget, setDeleteTarget] = useState<IActivityItemResource | null>(null);
   const [term, setTerm] = useState("");
   const [filters, setFilters] = useState<IActivityItemFilters>(EMPTY_ITEM_FILTERS);
+  /* Abre en «Por pagar»: es lo que queda por hacer. */
+  const [paymentTab, setPaymentTab] = useState<TPaymentTab>("PENDING");
   /* Por id y no el objeto: así el detalle y el pago ven el ítem al día tras cada cambio. */
   const [detailId, setDetailId] = useState<string | null>(null);
   const [payId, setPayId] = useState<string | null>(null);
+  const [changeId, setChangeId] = useState<string | null>(null);
   const [isCompactView, setIsCompactView] = useState(readCompactView);
 
   const toggleCompactView = () => {
@@ -140,19 +150,55 @@ function ActivityPage() {
 
   const detailItem = items.find((item) => item.id === detailId) ?? null;
   const payItem = items.find((item) => item.id === payId) ?? null;
+  const changeItem = items.find((item) => item.id === changeId) ?? null;
 
   const serialCounts = countSerials(items);
   const normalizedTerm = term.trim().toLowerCase();
   const activeFilterCount = countActiveFilters(filters);
-  const visible = items
+  /* Búsqueda y filtros primero: los contadores de los tabs cuentan sobre lo que queda. */
+  const matching = items
     .filter((item) => !normalizedTerm || matchesActivityItemSearch(item, normalizedTerm))
-    .filter((item) => matchesItemFilters(item, filters))
-    .sort(compareBySerial);
-  /* KPIs, balance, premios y gastos van en su propia página (acordado 2026-11-07). */
-  const countLabel = (count: number) => `${count} ${count === 1 ? itemLabel.singular : itemLabel.plural}`;
-  /* Con búsqueda o filtros: cuántas quedan de cuántas hay. */
-  const shownCountLabel =
-    visible.length === items.length ? countLabel(items.length) : `${visible.length} de ${countLabel(items.length)}`;
+    .filter((item) => matchesItemFilters(item, filters));
+  const tabCounts: Record<TPaymentTab, number> = { PAID: 0, PENDING: 0, VOIDED: 0 };
+  for (const item of matching) {
+    tabCounts[paymentTabOf(item)] += 1;
+  }
+  /* «Anuladas» solo aparece si hay alguna en la actividad (Thony, 2026-11-11). */
+  const hasVoided = items.some((item) => item.voidedAt);
+  const tabs: TPaymentTab[] = hasVoided ? ["PAID", "PENDING", "VOIDED"] : ["PAID", "PENDING"];
+  const currentTab: TPaymentTab = tabs.includes(paymentTab) ? paymentTab : "PENDING";
+  const visible = matching.filter((item) => paymentTabOf(item) === currentTab).sort(compareBySerial);
+  /* En pagadas y anuladas «Por cobrar» no dice nada: en su lugar va el cambio de cartilla. */
+  const isChangeColumn = currentTab !== "PENDING";
+  const relatedSerials = changedSerials(items);
+  /* Los contadores de los tabs reemplazan al «N de M» de encima del listado (Thony, 2026-11-11). */
+  const paymentTabOptions: ICountTabOption<TPaymentTab>[] = tabs.map((tab) => ({
+    value: tab,
+    label: paymentTabLabels[tab],
+    count: tabCounts[tab],
+  }));
+  /* Si en este tab no hay nada de lo buscado, el primer otro tab donde sí haya. */
+  const otherTabWithResults = tabs.find((tab) => tab !== currentTab && tabCounts[tab] > 0);
+  const paymentTabs = (className: string) => (
+    <CountTabs
+      label="Estado de pago"
+      options={paymentTabOptions}
+      value={currentTab}
+      onChange={setPaymentTab}
+      className={className}
+    />
+  );
+  /* Celular: el cambio de vista pasa del botón flotante a la barra, a la izquierda de los filtros. */
+  const viewToggle = (
+    <IconButton
+      size="lg"
+      isBordered
+      label={isCompactView ? "Ver en cards" : "Ver en vista compacta"}
+      onClick={toggleCompactView}
+    >
+      {isCompactView ? <LayoutGrid className="size-5" /> : <Rows3 className="size-5" />}
+    </IconButton>
+  );
   const openSummary = () => navigate({ to: "/actividades/$activityId/resumen", params: { activityId } });
 
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => setTerm(event.target.value);
@@ -178,14 +224,26 @@ function ActivityPage() {
     setDeleteTarget(null);
   };
 
-  /* El acceso directo al pago va suelto junto al `⋯`, solo mientras falte cobrar (acordado 2026-11-07). */
-  const buildActions = (item: IActivityItemResource): IRowAction[] => [
-    ...(collectionOf(item).pending > 0
-      ? [{ icon: HandCoins, label: "Registrar pago", inline: true, onClick: () => setPayId(item.id) }]
-      : []),
-    { icon: Pencil, label: "Editar", onClick: () => openEdit(item) },
-    { icon: Trash2, label: "Eliminar", variant: "destructive", onClick: () => setDeleteTarget(item) },
-  ];
+  const handleChanged = (result: IActivityItemChangeResult) => {
+    ListActivityItems.onUpsert(result.voided);
+    ListActivityItems.onUpsert(result.replacement);
+  };
+
+  /*
+    El acceso directo al pago va suelto junto al `⋯`, solo mientras falte cobrar (acordado
+    2026-11-07). Una anulada queda como está: sin acciones.
+  */
+  const buildActions = (item: IActivityItemResource): IRowAction[] =>
+    item.voidedAt
+      ? []
+      : [
+          ...(collectionOf(item).pending > 0
+            ? [{ icon: HandCoins, label: "Registrar pago", inline: true, onClick: () => setPayId(item.id) }]
+            : []),
+          { icon: Pencil, label: "Editar", onClick: () => openEdit(item) },
+          { icon: Repeat, label: "Cambiar cartilla", onClick: () => setChangeId(item.id) },
+          { icon: Trash2, label: "Eliminar", variant: "destructive", onClick: () => setDeleteTarget(item) },
+        ];
 
   /* Sin cuántos se vendieron: eso va en los KPIs (Thony, 2026-11-07). */
   const subtitle = activity
@@ -257,22 +315,35 @@ function ActivityPage() {
       </PageBox>
 
       <PageBox className="space-y-4">
-      {/* Escritorio: el buscador a la izquierda y los tres filtros a la derecha, alineados abajo. */}
+      {/*
+        Escritorio: el buscador a la izquierda; a la derecha, los dos filtros y los tabs de pago,
+        alineados abajo.
+      */}
       {items.length > 0 && (
         <div className="hidden items-end justify-between gap-4 md:flex">
           <div className="w-full max-w-sm">{searchInput}</div>
-          <div className="w-full max-w-2xl">
-            <ActivityItemFilterFields filters={filters} sellers={sellersOf(items)} onChange={setFilters} isRow />
+          <div className="flex min-w-0 items-end gap-3">
+            <div className="w-full max-w-md min-w-80">
+              <ActivityItemFilterFields filters={filters} sellers={sellersOf(items)} onChange={setFilters} isRow />
+            </div>
+            {paymentTabs("h-control-lg shrink-0")}
           </div>
         </div>
       )}
 
-      {/* Celular: el buscador en su barra fija y, a su derecha, el botón que abre los filtros. */}
+      {/*
+        Celular: en la barra fija, el buscador con el cambio de vista y los filtros a su derecha,
+        y debajo los tabs de pago, que también quedan fijos.
+      */}
       {items.length > 0 && (
         <StickyToolbar className="md:hidden">
-          <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1">{searchInput}</div>
-            <FilterButton activeCount={activeFilterCount} onClick={showFilters.on} />
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">{searchInput}</div>
+              {viewToggle}
+              <FilterButton activeCount={activeFilterCount} onClick={showFilters.on} />
+            </div>
+            {paymentTabs("w-full")}
           </div>
         </StickyToolbar>
       )}
@@ -293,30 +364,38 @@ function ActivityPage() {
       {!isLoading && items.length > 0 && visible.length === 0 && (
         <EmptyState
           icon={Search}
-          title={normalizedTerm ? `Sin resultados para "${term.trim()}"` : "Ninguna coincide con los filtros"}
+          title={
+            normalizedTerm
+              ? `Sin resultados para "${term.trim()}" en ${paymentTabLabels[currentTab]}`
+              : activeFilterCount > 0
+                ? `Ninguna en ${paymentTabLabels[currentTab]} coincide con los filtros`
+                : `Ninguna en ${paymentTabLabels[currentTab]}`
+          }
           action={
-            activeFilterCount > 0 && (
-              <Button type="button" variant="link" onClick={() => setFilters(EMPTY_ITEM_FILTERS)}>
-                Quitar filtros
+            /* Lo buscado puede estar en otro tab: se ofrece ir ahí antes que quitar filtros. */
+            otherTabWithResults && (normalizedTerm || activeFilterCount > 0) ? (
+              <Button type="button" variant="link" onClick={() => setPaymentTab(otherTabWithResults)}>
+                Ver {tabCounts[otherTabWithResults]} en {paymentTabLabels[otherTabWithResults]}
               </Button>
+            ) : (
+              activeFilterCount > 0 && (
+                <Button type="button" variant="link" onClick={() => setFilters(EMPTY_ITEM_FILTERS)}>
+                  Quitar filtros
+                </Button>
+              )
             )
           }
         />
       )}
 
       {(isLoading || visible.length > 0) && (
-        /* El conteo pegado al listado: 6 px, no los 16 entre bloques. */
-        <div className="space-y-1.5">
-          {/* Cuántos se ven, en 12 px encima del listado (Thony, 2026-11-09). */}
-          {isLoading ? (
-            <Skeleton className="h-3.5 w-28 rounded-md" />
-          ) : (
-            <p className="text-xs text-muted-foreground">{shownCountLabel}</p>
-          )}
+        <div>
           <ActivityItemTable
             items={visible}
             isLoading={isLoading}
             serialCounts={serialCounts}
+            isChangeColumn={isChangeColumn}
+            relatedSerials={relatedSerials}
             buildActions={buildActions}
             onOpen={(item) => setDetailId(item.id)}
           />
@@ -325,6 +404,8 @@ function ActivityPage() {
               items={visible}
               isLoading={isLoading}
               serialCounts={serialCounts}
+              isChangeColumn={isChangeColumn}
+              relatedSerials={relatedSerials}
               onPay={(item) => setPayId(item.id)}
               onOpen={(item) => setDetailId(item.id)}
             />
@@ -333,6 +414,8 @@ function ActivityPage() {
               items={visible}
               isLoading={isLoading}
               serialCounts={serialCounts}
+              isChangeColumn={isChangeColumn}
+              relatedSerials={relatedSerials}
               buildActions={buildActions}
               onOpen={(item) => setDetailId(item.id)}
             />
@@ -341,13 +424,6 @@ function ActivityPage() {
       )}
       </PageBox>
 
-      {/* Encima del «+», del mismo tamaño y en gris, a 12 px: cambia entre cards y vista compacta. */}
-      <FloatingActionButton
-        label={isCompactView ? "Ver en cards" : "Ver en vista compacta"}
-        icon={isCompactView ? LayoutGrid : Rows3}
-        onClick={toggleCompactView}
-        className="bottom-[calc(8.5rem+env(safe-area-inset-bottom))] border border-border bg-card text-foreground sm:bottom-[5.5rem]"
-      />
       {activity && <FloatingActionButton label={`Agregar ${itemLabel.singular}`} icon={Plus} onClick={openCreate} />}
 
       {activity && (
@@ -376,6 +452,7 @@ function ActivityPage() {
       <ActivityItemDetailPanel
         item={detailItem}
         backLabel={activity?.name ?? "Volver"}
+        relatedSerial={detailItem ? relatedSerials.get(detailItem.id) : undefined}
         buildActions={buildActions}
         onPay={(item) => setPayId(item.id)}
         onItemChanged={ListActivityItems.onUpsert}
@@ -388,6 +465,12 @@ function ActivityPage() {
         onClose={() => setPayId(null)}
       />
 
+      <ItemChangeFormModal
+        item={changeItem}
+        items={items}
+        onSaved={handleChanged}
+        onClose={() => setChangeId(null)}
+      />
 
       <ConfirmModal
         open={deleteTarget !== null}

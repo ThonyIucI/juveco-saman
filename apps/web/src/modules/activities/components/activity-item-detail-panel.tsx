@@ -36,6 +36,7 @@ import { useListItemPayments } from "@/modules/activities/hooks/use-list-item-pa
 import { collectionOf } from "@/modules/activities/utils/activity-items";
 
 import CollectionBadge from "./collection-badge";
+import ItemChangeBadge from "./item-change-badge";
 
 const METHOD_ICON: Record<TPaymentMethod, LucideIcon> = {
   [EPaymentMethod.YAPE]: Smartphone,
@@ -51,6 +52,8 @@ interface IActivityItemDetailPanelProps {
   item: IActivityItemResource | null;
   /** Nombre de la actividad, para volver («Bingo II - 2026»). */
   backLabel: string;
+  /** La serie del otro lado de un cambio de cartilla, si la hay (ver `changedSerials`). */
+  relatedSerial: string | undefined;
   /** Las mismas acciones del `⋯` de la card. */
   buildActions: (item: IActivityItemResource) => IRowAction[];
   onPay: (item: IActivityItemResource) => void;
@@ -66,6 +69,7 @@ interface IActivityItemDetailPanelProps {
 export default function ActivityItemDetailPanel({
   item,
   backLabel,
+  relatedSerial,
   buildActions,
   onPay,
   onItemChanged,
@@ -130,12 +134,20 @@ export default function ActivityItemDetailPanel({
           <div>
             <p className="font-mono text-sm font-semibold text-primary tabular-nums">N.º {current.serial}</p>
             <h2 className="truncate font-heading text-xl font-bold text-foreground">{fullName(current.buyer)}</h2>
+            {/* Si salió de un cambio de cartilla o se anuló por uno, se dice cuál es la otra. */}
+            {(current.voidedAt || relatedSerial) && (
+              <div className="pt-1.5">
+                <ItemChangeBadge item={current} relatedSerial={relatedSerial} />
+              </div>
+            )}
           </div>
 
           <DetailSection
             title="Pagos"
             isBordered
             action={
+              /* Una anulada no se cobra: lo pagado pasó a la nueva. */
+              !current.voidedAt &&
               collection.pending > 0 && (
                 <Button type="button" size="sm" variant="outline" onClick={() => onPay(current)}>
                   <HandCoins />
@@ -148,7 +160,7 @@ export default function ActivityItemDetailPanel({
               <p className="text-sm text-muted-foreground">
                 Pagado: <span className="font-semibold text-foreground tabular-nums">{formatSoles(current.paidAmount)}</span>
               </p>
-              <CollectionBadge item={current} label="Por cobrar" />
+              {!current.voidedAt && <CollectionBadge item={current} label="Por cobrar" />}
             </div>
 
             {isLoadingPayments && (

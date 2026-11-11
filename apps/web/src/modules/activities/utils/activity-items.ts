@@ -59,27 +59,52 @@ export const collectionOf = (item: IActivityItemResource): IItemCollection => {
   return { pending, status };
 };
 
-export const collectionStatusLabels: Record<TCollectionStatus, string> = {
-  PAID: "Pagó todo",
-  PARTIAL: "Pagó una parte",
-  UNPAID: "Sin pagar",
+/**
+ * Los tabs del listado, en lugar del filtro «Estado de pago» (Thony, 2026-11-11): pagadas
+ * son las cobradas al 100 %; por pagar, todas las que deben algo (a medias o sin pagar);
+ * anuladas, las que se cambiaron porque se perdieron (el tab solo aparece si hay alguna).
+ */
+export type TPaymentTab = "PAID" | "PENDING" | "VOIDED";
+
+export const paymentTabLabels: Record<TPaymentTab, string> = {
+  PAID: "Pagadas",
+  PENDING: "Por pagar",
+  VOIDED: "Anuladas",
+};
+
+export const paymentTabOf = (item: IActivityItemResource): TPaymentTab =>
+  item.voidedAt ? "VOIDED" : collectionOf(item).status === "PAID" ? "PAID" : "PENDING";
+
+/**
+ * Por cada ítem de un cambio de cartilla, la serie del otro: la anulada apunta a la que la
+ * reemplazó y la nueva a la que anuló. Los que no salieron de un cambio no están.
+ */
+export const changedSerials = (items: IActivityItemResource[]): Map<string, string> => {
+  const serialById = new Map(items.map((item) => [item.id, item.serial]));
+  const related = new Map<string, string>();
+  for (const item of items) {
+    const replacedSerial = item.replacesId ? serialById.get(item.replacesId) : undefined;
+    if (item.replacesId && replacedSerial) {
+      related.set(item.id, replacedSerial);
+      related.set(item.replacesId, item.serial);
+    }
+  }
+  return related;
 };
 
 /** Filtros del listado (acordado 2026-11-07). Vacío (`""`) es «todos». */
 export interface IActivityItemFilters {
-  status: TCollectionStatus | "";
   sellerId: string;
   neighborhoodId: string;
 }
 
-export const EMPTY_ITEM_FILTERS: IActivityItemFilters = { status: "", sellerId: "", neighborhoodId: "" };
+export const EMPTY_ITEM_FILTERS: IActivityItemFilters = { sellerId: "", neighborhoodId: "" };
 
 /** Cuántos filtros hay puestos, para el globo del botón de filtros. */
 export const countActiveFilters = (filters: IActivityItemFilters): number =>
   Object.values(filters).filter((value) => value !== "").length;
 
 export const matchesItemFilters = (item: IActivityItemResource, filters: IActivityItemFilters): boolean =>
-  (!filters.status || collectionOf(item).status === filters.status) &&
   (!filters.sellerId || item.seller.id === filters.sellerId) &&
   (!filters.neighborhoodId || item.buyer.neighborhood?.id === filters.neighborhoodId);
 

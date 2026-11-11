@@ -19,13 +19,14 @@ import {
   ACTIVITY_ITEM_SERIAL_MAX_LENGTH,
   ACTIVITY_ITEM_SELLER_REQUIRED_MESSAGE,
   ACTIVITY_ITEM_SERIAL_REQUIRED_MESSAGE,
+  ACTIVITY_ITEM_VOIDED_MESSAGE,
   type IActivityItemResource,
   padItemSerial,
 } from "@juveco/shared/activity-items";
 import { INVALID_SOLES_MESSAGE, formatSoles, hasAtMostTwoDecimals, roundSoles } from "@juveco/shared/money";
 import { neighborhoodOf } from "@juveco/shared/neighborhoods";
 import { EUserRole } from "@juveco/shared/roles";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -45,6 +46,7 @@ export const ACTIVITY_ROUTES = {
   ITEM: "/activities/:id/items/:itemId",
   PAYMENTS: "/activities/:id/items/:itemId/payments",
   PAYMENT: "/activities/:id/items/:itemId/payments/:paymentId",
+  ITEM_CHANGE: "/activities/:id/items/:itemId/change",
   SUMMARY: "/activities/:id/summary",
 } as const;
 
@@ -92,6 +94,8 @@ const updateItemSchema = createItemSchema
   .refine((body) => Object.values(body).some((value) => value !== undefined), {
     message: NO_CHANGES_MESSAGE,
   });
+
+const changeItemSchema = z.object({ serial: serialSchema });
 
 const createPaymentSchema = z.object({
   amount: priceSchema,
@@ -141,8 +145,20 @@ const toItemResource = ({ item, buyer, seller, paidAmount }: IItemRow): IActivit
   },
   seller: { id: seller.id, firstName: seller.firstName, lastName: seller.lastName },
   note: item.note,
+  voidedAt: item.voidedAt?.toISOString() ?? null,
+  replacesId: item.replacesId,
   createdAt: item.createdAt.toISOString(),
 });
+
+/* Una anulada queda como estaba: ni se edita, ni se cobra, ni se elimina. */
+const assertNotVoided = (row: IItemRow) => {
+  if (row.item.voidedAt) {
+    throw conflict(ACTIVITY_ITEM_VOIDED_MESSAGE);
+  }
+};
+
+/* Las anuladas no cuentan para ningún total. */
+const isActiveItem = isNull(activityItems.voidedAt);
 
 const selectItems = (db: TDb) =>
   db
@@ -302,6 +318,7 @@ export const activityRoutes = new Hono<TAppEnv>()
     const db = createDb();
 
     const current = await findItem(db, activityId, itemId);
+    assertNotVoided(current);
     if (body.price !== undefined && body.price < roundSoles(current.paidAmount)) {
       throw badRequest(
         `El precio no puede ser menor que lo que ya pagó: ${formatSoles(current.paidAmount)}.`,
@@ -335,6 +352,8 @@ export const activityRoutes = new Hono<TAppEnv>()
     const db = createDb();
 
     const current = await findItem(db, activityId, itemId);
+    /* Una anulada se guarda: es la prueba de que esa serie ya no vale el día del evento. */
+    assertNotVoided(current);
     /* Borrar el ítem se llevaría plata ya cobrada: primero se eliminan sus pagos. */
     if (current.paidAmount > 0) {
       throw conflict(`La serie «${current.item.serial}» tiene pagos: primero elimínalos desde su detalle.`);
@@ -342,6 +361,46 @@ export const activityRoutes = new Hono<TAppEnv>()
     await db.delete(activityItems).where(eq(activityItems.id, itemId));
 
     return ok(context, { id: itemId });
+  })
+
+  /*
+    Cambio de cartilla (Thony, 2026-11-11): el comprador perdió la suya. Se anula y se crea
+    otra con la serie nueva, mismo comprador, vendedor y precio, que se lleva sus pagos. Es
+    gratis. Todo en un `batch`: D1 lo aplica entero o nada.
+  */
+  .post(ACTIVITY_ROUTES.ITEM_CHANGE, requireAuth, validateJson(changeItemSchema), async (context) => {
+    const { serial } = context.req.valid("json");
+    const activityId = context.req.param("id");
+    const itemId = context.req.param("itemId");
+    const db = createDb();
+
+    const current = await findItem(db, activityId, itemId);
+    assertNotVoided(current);
+
+    const replacementId = newId();
+    await db.batch([
+      db.insert(activityItems).values({
+        id: replacementId,
+        activityId,
+        serial,
+        buyerId: current.item.buyerId,
+        sellerId: current.item.sellerId,
+        price: current.item.price,
+        note: current.item.note,
+        replacesId: current.item.id,
+      }),
+      db
+        .update(activityItemPayments)
+        .set({ itemId: replacementId })
+        .where(eq(activityItemPayments.itemId, current.item.id)),
+      db.update(activityItems).set({ voidedAt: new Date() }).where(eq(activityItems.id, current.item.id)),
+    ]);
+
+    const [voided, replacement] = await Promise.all([
+      findItem(db, activityId, itemId),
+      findItem(db, activityId, replacementId),
+    ]);
+    return ok(context, { voided: toItemResource(voided), replacement: toItemResource(replacement) }, 201);
   })
 
   .get(ACTIVITY_ROUTES.PAYMENTS, requireAuth, async (context) => {
@@ -361,6 +420,7 @@ export const activityRoutes = new Hono<TAppEnv>()
     const db = createDb();
 
     const current = await findItem(db, activityId, itemId);
+    assertNotVoided(current);
     const pending = pendingOf(current.item.price, current.paidAmount);
     if (pending === 0) {
       throw badRequest(PAYMENT_ALREADY_PAID_MESSAGE);
@@ -387,7 +447,7 @@ export const activityRoutes = new Hono<TAppEnv>()
     const itemId = context.req.param("itemId");
     const db = createDb();
 
-    await findItem(db, activityId, itemId);
+    assertNotVoided(await findItem(db, activityId, itemId));
     const payment = await findPayment(db, itemId, context.req.param("paymentId"));
     await db.delete(activityItemPayments).where(eq(activityItemPayments.id, payment.payment.id));
 
@@ -400,7 +460,7 @@ export const activityRoutes = new Hono<TAppEnv>()
     const activity = await findActivity(db, context.req.param("id"));
 
     const [items, byMethod] = await Promise.all([
-      selectItems(db).where(eq(activityItems.activityId, activity.id)),
+      selectItems(db).where(and(eq(activityItems.activityId, activity.id), isActiveItem)),
       db
         .select({
           method: activityItemPayments.method,

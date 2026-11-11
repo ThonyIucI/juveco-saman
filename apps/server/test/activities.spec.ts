@@ -25,6 +25,8 @@ interface IItemData {
   buyer: { id: string; firstName: string; neighborhood: { id: string; name: string } | null };
   seller: { id: string; firstName: string };
   note: string | null;
+  voidedAt: string | null;
+  replacesId: string | null;
 }
 
 interface IPaymentData {
@@ -245,11 +247,66 @@ describe("/activities", () => {
       expect(await errorOf(cheaper)).toBe("El precio no puede ser menor que lo que ya pagó: S/ 6.00.");
     });
 
-    it("el resumen suma lo vendido, lo recaudado por método y lo que falta", async () => {
+    describe("cambio de cartilla", () => {
+      const changeItem = (itemId: string, body: unknown) =>
+        postJson(`${itemsPath()}/${itemId}/change`, body, { cookie });
+
+      it("anula la vieja y la nueva se lleva sus pagos, comprador y precio", async () => {
+        // Arrange
+        const lost = await newItem("0800");
+        await pay(lost.id, { amount: 10, method: "YAPE" });
+
+        // Act
+        const response = await changeItem(lost.id, { serial: "801" });
+        const body = (await response.json<IBody<{ voided: IItemData; replacement: IItemData }>>()).data;
+
+        // Assert
+        expect(response.status).toBe(201);
+        expect(body.voided.voidedAt).not.toBeNull();
+        expect(body.voided.paidAmount).toBe(0);
+        expect(body.replacement).toMatchObject({
+          serial: "0801",
+          price: lost.price,
+          paidAmount: 10,
+          replacesId: lost.id,
+          voidedAt: null,
+          buyer: { id: buyerId },
+        });
+      });
+
+      it("una anulada no se edita, no se cobra, no se elimina ni se vuelve a cambiar", async () => {
+        // Arrange
+        const lost = await newItem("0810");
+        await changeItem(lost.id, { serial: "0811" });
+
+        // Act
+        const edited = await patchJson(`${itemsPath()}/${lost.id}`, { price: 12 }, { cookie });
+        const paid = await pay(lost.id, { amount: 1, method: "CASH" });
+        const deleted = await request(`${itemsPath()}/${lost.id}`, { method: "DELETE", headers: { cookie } });
+        const changedAgain = await changeItem(lost.id, { serial: "0812" });
+
+        // Assert
+        for (const response of [edited, paid, deleted, changedAgain]) {
+          expect(response.status).toBe(409);
+        }
+        expect(await errorOf(changedAgain)).toBe("Esa serie está anulada por un cambio: ya no se modifica.");
+      });
+
+      it("pide la serie nueva", async () => {
+        const lost = await newItem("0820");
+
+        const response = await changeItem(lost.id, { serial: " " });
+
+        expect(response.status).toBe(400);
+        expect(await errorOf(response)).toBe("Escribe la serie.");
+      });
+    });
+
+    it("el resumen suma lo vendido, lo recaudado por método y lo que falta, sin las anuladas", async () => {
       // Act
       const response = await request(`/api/v1/activities/${bingo.id}/summary`, { headers: { cookie } });
       const summary = (await response.json<IBody<ISummaryData>>()).data;
-      const items = await listItems();
+      const items = (await listItems()).filter((item) => item.voidedAt === null);
 
       // Assert
       expect(response.status).toBe(200);

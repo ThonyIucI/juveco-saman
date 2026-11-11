@@ -19,11 +19,23 @@ interface IActivityItemGridProps {
   isLoading: boolean;
   /** Cuántos hay con cada serie en **toda** la actividad, no solo en lo filtrado. */
   serialCounts: Map<string, number>;
+  /** En pagadas y anuladas, «Cambio» en lugar de «Por cobrar». */
+  isChangeColumn: boolean;
+  /** Ver `changedSerials`. */
+  relatedSerials: Map<string, string>;
   buildActions: (item: IActivityItemResource) => IRowAction[];
   onOpen: (item: IActivityItemResource) => void;
 }
 
-export default function ActivityItemGrid({ items, isLoading, serialCounts, buildActions, onOpen }: IActivityItemGridProps) {
+export default function ActivityItemGrid({
+  items,
+  isLoading,
+  serialCounts,
+  isChangeColumn,
+  relatedSerials,
+  buildActions,
+  onOpen,
+}: IActivityItemGridProps) {
   const prefersReducedMotion = useReducedMotion();
 
   if (isLoading) {
@@ -60,6 +72,8 @@ export default function ActivityItemGrid({ items, isLoading, serialCounts, build
               <ActivityItemCard
                 item={item}
                 isSerialRepeated={serialCount > 1}
+                isChangeColumn={isChangeColumn}
+                relatedSerial={relatedSerials.get(item.id)}
                 actions={buildActions(item)}
                 onOpen={() => onOpen(item)}
               />

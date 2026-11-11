@@ -11,15 +11,8 @@ import Select, { type IOption } from "@/common/components/select";
 import {
   EMPTY_ITEM_FILTERS,
   type IActivityItemFilters,
-  type TCollectionStatus,
-  collectionStatusLabels,
   countActiveFilters,
 } from "@/modules/activities/utils/activity-items";
-
-const STATUS_OPTIONS: IOption[] = (Object.keys(collectionStatusLabels) as TCollectionStatus[]).map((status) => ({
-  value: status,
-  label: collectionStatusLabels[status],
-}));
 
 /* Sin filtro elegido: solo «Todos», sin repetir el label. */
 const ALL_PLACEHOLDER = "Todos";
@@ -35,38 +28,22 @@ interface IFilterFieldsProps {
   isRow?: boolean;
 }
 
-/** Estado según pago, vendedor y barrio (acordado 2026-11-07). Vacío es «todos». */
+/**
+ * Vendedor y barrio (acordado 2026-11-07). Vacío es «todos». El estado de pago pasó a los
+ * tabs «Pagadas» / «Por pagar» (Thony, 2026-11-11).
+ */
 export function ActivityItemFilterFields({ filters, sellers, onChange, isRow = false }: IFilterFieldsProps) {
   /* La fila de escritorio y la modal pueden estar montadas a la vez: ids distintos. */
   const idPrefix = useId();
-  const ids = { status: `${idPrefix}-status`, seller: `${idPrefix}-seller`, neighborhood: `${idPrefix}-neighborhood` };
+  const ids = { seller: `${idPrefix}-seller`, neighborhood: `${idPrefix}-neighborhood` };
   const sellerOptions: IOption[] = sellers.map((seller) => ({ value: seller.id, label: fullName(seller) }));
   /* En la fila de escritorio, del alto del buscador de al lado; en la modal, del de un formulario. */
   const selectSize = isRow ? "lg" : "md";
   const valueOf = (options: IOption[], value: string) => options.find((option) => option.value === value) ?? null;
 
   return (
-    <div className={cn("grid gap-3", isRow ? "grid-cols-3" : "grid-cols-1")}>
+    <div className={cn("grid gap-3", isRow ? "grid-cols-2" : "grid-cols-1")}>
       {/* Con label también en escritorio, y el placeholder solo «Todos» (Thony, 2026-11-09). */}
-      <div className="space-y-2">
-        <Label htmlFor={ids.status}>
-          Estado de pago
-        </Label>
-        <Select
-          inputId={ids.status}
-          size={selectSize}
-          options={STATUS_OPTIONS}
-          placeholder={ALL_PLACEHOLDER}
-          isClearable
-          isSearchable={false}
-          isHighlighted={filters.status !== ""}
-          value={valueOf(STATUS_OPTIONS, filters.status)}
-          onChange={(option) =>
-            onChange({ ...filters, status: (option?.value as TCollectionStatus | undefined) ?? "" })
-          }
-        />
-      </div>
-
       <div className="space-y-2">
         <Label htmlFor={ids.seller}>
           Vendedor

@@ -37,8 +37,25 @@ export interface IActivityItemResource {
   /** El administrador que lo vendió: el que lo registró. */
   seller: IActivityItemPerson;
   note: string | null;
+  /** Cuándo se anuló por un cambio de cartilla; `null` si sigue vigente. */
+  voidedAt: string | null;
+  /** La anulada que esta reemplaza, si salió de un cambio. */
+  replacesId: string | null;
   createdAt: string;
 }
+
+/** Cambio de cartilla (Thony, 2026-11-11): la serie de la nueva. Es gratis. */
+export interface IActivityItemChangeInput {
+  serial: string;
+}
+
+/** Lo que devuelve un cambio: la anulada y la que la reemplaza. */
+export interface IActivityItemChangeResult {
+  voided: IActivityItemResource;
+  replacement: IActivityItemResource;
+}
+
+export const ACTIVITY_ITEM_VOIDED_MESSAGE = "Esa serie está anulada por un cambio: ya no se modifica.";
 
 /** Lo que se escribe al vender o editar un ítem. */
 export interface IActivityItemInput {

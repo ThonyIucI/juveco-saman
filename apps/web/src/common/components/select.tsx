@@ -120,7 +120,11 @@ const sharedSelectProps = (
       valueContainer: () => "gap-1",
       placeholder: () => "font-normal text-placeholder",
       singleValue: () => "text-foreground",
-      input: () => "text-foreground",
+      /*
+        El `<input>` de adentro traía su cursor de texto y tapaba la manita del control: al
+        pasar el mouse por el medio del select no se veía que se puede tocar (Thony, 2026-11-11).
+      */
+      input: () => "text-foreground [&_input]:cursor-pointer!",
       indicatorsContainer: () => "gap-1",
       /* El chevron sigue al borde: gris de borde en reposo, y cambia con él en hover, foco o con algo elegido (Thony, 2026-11-09). */
       dropdownIndicator: ({ isFocused }) =>
