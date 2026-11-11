@@ -15,6 +15,7 @@ import { TriangleAlert } from "lucide-react";
 import NeighborhoodBadge from "@/common/components/neighborhood-badge";
 import RowActions, { type IRowAction } from "@/common/components/row-actions";
 import { FADE_IN_CLASS } from "@/common/constants/motion";
+import type { TPaymentTab } from "@/modules/activities/utils/activity-items";
 
 import CollectionBadge from "./collection-badge";
 import ItemChangeBadge from "./item-change-badge";
@@ -27,8 +28,11 @@ interface IActivityItemTableProps {
   isLoading: boolean;
   /** Cuántos hay con cada serie en **toda** la actividad, no solo en lo filtrado. */
   serialCounts: Map<string, number>;
-  /** En pagadas y anuladas, «Cambio» en lugar de «Por cobrar» (Thony, 2026-11-11). */
-  isChangeColumn: boolean;
+  /**
+   * En pagadas y anuladas, el cambio de cartilla en lugar de «Por cobrar», en una columna sin
+   * título; en anuladas, además, sin columna de acciones (Thony, 2026-11-11).
+   */
+  tab: TPaymentTab;
   /** Ver `changedSerials`. */
   relatedSerials: Map<string, string>;
   buildActions: (item: IActivityItemResource) => IRowAction[];
@@ -44,11 +48,15 @@ export default function ActivityItemTable({
   items,
   isLoading,
   serialCounts,
-  isChangeColumn,
+  tab,
   relatedSerials,
   buildActions,
   onOpen,
 }: IActivityItemTableProps) {
+  const isChangeColumn = tab !== "PENDING";
+  const hasActions = tab !== "VOIDED";
+  const columnCount = hasActions ? COLUMN_COUNT : COLUMN_COUNT - 1;
+
   return (
     /* Borde gris y radio chico, como las cards (Thony, 2026-11-07). */
     <div className="hidden overflow-hidden rounded-sm border border-border bg-card md:block">
@@ -60,15 +68,17 @@ export default function ActivityItemTable({
             <TableHead>Barrio</TableHead>
             <TableHead>Vendedor</TableHead>
             <TableHead className="text-right">Precio</TableHead>
-            <TableHead className="text-right">{isChangeColumn ? "Cambio" : "Por cobrar"}</TableHead>
-            <TableHead />
+            <TableHead className="text-right">
+              {isChangeColumn ? <span className="sr-only">Cambio</span> : "Por cobrar"}
+            </TableHead>
+            {hasActions && <TableHead />}
           </TableRow>
         </TableHeader>
         <TableBody className={isLoading ? undefined : FADE_IN_CLASS}>
           {isLoading
             ? Array.from({ length: SKELETON_COUNT }, (_, index) => (
                 <TableRow key={index}>
-                  {Array.from({ length: COLUMN_COUNT }, (_, cell) => (
+                  {Array.from({ length: columnCount }, (_, cell) => (
                     <TableCell key={cell}>
                       <Skeleton className="h-5 w-full max-w-28 rounded-md" />
                     </TableCell>
@@ -109,11 +119,13 @@ export default function ActivityItemTable({
                         <CollectionBadge item={item} />
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end">
-                        <RowActions actions={buildActions(item)} isBordered />
-                      </div>
-                    </TableCell>
+                    {hasActions && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end">
+                          <RowActions actions={buildActions(item)} isBordered />
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}

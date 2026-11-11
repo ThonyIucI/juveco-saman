@@ -13,7 +13,7 @@ interface IActivityItemCardProps {
   item: IActivityItemResource;
   /** Hay otro ítem con la misma serie en esta actividad. */
   isSerialRepeated: boolean;
-  /** En pagadas y anuladas, «Cambio» en lugar de «Por cobrar» (Thony, 2026-11-11). */
+  /** En pagadas y anuladas, el cambio de cartilla en lugar de «Por cobrar» (Thony, 2026-11-11). */
   isChangeColumn: boolean;
   /** La serie del otro lado de un cambio de cartilla, si la hay. */
   relatedSerial: string | undefined;
@@ -89,15 +89,20 @@ export default function ActivityItemCard({
           <p className="text-sm font-medium text-muted-foreground">Vendedor</p>
           <p className="truncate text-sm font-normal text-foreground">{fullName(item.seller)}</p>
         </div>
-        {/* A la derecha, para no dejar un hueco al costado del monto. */}
-        <div className="flex flex-col items-end space-y-1">
-          <p className="text-sm font-medium text-muted-foreground">{isChangeColumn ? "Cambio" : "Por cobrar"}</p>
-          {isChangeColumn ? (
+        {/*
+          A la derecha, para no dejar un hueco al costado del monto. El cambio va sin título,
+          pegado abajo a la derecha (Thony, 2026-11-11).
+        */}
+        {isChangeColumn ? (
+          <div className="flex items-end justify-end">
             <ItemChangeBadge item={item} relatedSerial={relatedSerial} />
-          ) : (
+          </div>
+        ) : (
+          <div className="flex flex-col items-end space-y-1">
+            <p className="text-sm font-medium text-muted-foreground">Por cobrar</p>
             <CollectionBadge item={item} />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </article>
   );

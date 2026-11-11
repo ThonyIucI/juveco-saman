@@ -4,7 +4,7 @@ import { Skeleton } from "@juveco/ui/components/skeleton";
 import { cn } from "@juveco/ui/lib/utils";
 import { activityItemLabels } from "@juveco/shared/activities";
 import type { IActivityItemChangeResult, IActivityItemResource } from "@juveco/shared/activity-items";
-import { formatSoles } from "@juveco/shared/money";
+import { roundSoles } from "@juveco/shared/money";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   ChartColumn,
@@ -32,7 +32,6 @@ import type { IRowAction } from "@/common/components/row-actions";
 import SearchInput from "@/common/components/search-input";
 import StickyToolbar from "@/common/components/sticky-toolbar";
 import { useBoolean } from "@/common/hooks/use-boolean";
-import { formatShortDate } from "@/common/utils/format-date";
 import ActivityItemDetailPanel from "@/modules/activities/components/activity-item-detail-panel";
 import ActivityItemFormModal from "@/modules/activities/components/activity-item-form-modal";
 import {
@@ -42,10 +41,13 @@ import {
 import ActivityItemCompactList from "@/modules/activities/components/activity-item-compact-list";
 import ActivityItemGrid from "@/modules/activities/components/activity-item-grid";
 import ActivityItemTable from "@/modules/activities/components/activity-item-table";
+import ActivityItemTotals from "@/modules/activities/components/activity-item-totals";
+import ActivityMeta from "@/modules/activities/components/activity-meta";
 import ItemChangeFormModal from "@/modules/activities/components/item-change-form-modal";
 import ItemPaymentFormModal from "@/modules/activities/components/item-payment-form-modal";
 import { useDeleteActivityItem } from "@/modules/activities/hooks/use-delete-activity-item";
 import { useGetActivity } from "@/modules/activities/hooks/use-get-activity";
+import { useGetActivityBalance } from "@/modules/activities/hooks/use-get-activity-balance";
 import { useListActivityItems } from "@/modules/activities/hooks/use-list-activity-items";
 import {
   EMPTY_ITEM_FILTERS,
@@ -102,6 +104,7 @@ function ActivityPage() {
   const { activityId } = Route.useParams();
   const { user } = Route.useRouteContext();
   const GetActivity = useGetActivity();
+  const GetActivityBalance = useGetActivityBalance();
   const ListActivityItems = useListActivityItems();
   const ListUsers = useListUsers();
   const DeleteActivityItem = useDeleteActivityItem();
@@ -127,10 +130,14 @@ function ActivityPage() {
     saveCompactView(next);
   };
 
-  /* Las personas también: el comprador se elige de ahí y su barrio pudo cambiar. */
+  /*
+    Las personas también: el comprador se elige de ahí y su barrio pudo cambiar. El balance,
+    solo por lo gastado en premios y gastos (ver `profit`).
+  */
   const loadAll = (signal?: AbortSignal) =>
     Promise.all([
       GetActivity.handler(activityId, signal),
+      GetActivityBalance.handler(activityId, signal),
       ListActivityItems.handler(activityId, signal),
       ListUsers.handler(signal),
     ]);
@@ -146,7 +153,20 @@ function ActivityPage() {
   const { items } = ListActivityItems;
   const itemLabel = activity ? activityItemLabels[activity.type] : FALLBACK_ITEM_LABEL;
   const isLoading = ListActivityItems.loading && items.length === 0;
-  const isSyncing = GetActivity.loading || ListActivityItems.loading || ListUsers.loading;
+  const isSyncing =
+    GetActivity.loading || GetActivityBalance.loading || ListActivityItems.loading || ListUsers.loading;
+
+  /*
+    Cobrado y ganancia encima del listado (Thony, 2026-11-11). Lo cobrado sale de las cartillas
+    ya cargadas, así cada pago, cambio o eliminación lo actualiza sin volver a pedir nada; del
+    balance solo se toma lo gastado en premios y gastos, que no cambia en esta página. Las
+    anuladas no suman: sus pagos pasaron a la nueva.
+  */
+  const collected = roundSoles(
+    items.filter((item) => !item.voidedAt).reduce((sum, item) => sum + item.paidAmount, 0),
+  );
+  const { balance } = GetActivityBalance;
+  const profit = balance ? roundSoles(collected - balance.purchasedPrizes - balance.expenses) : null;
 
   const detailItem = items.find((item) => item.id === detailId) ?? null;
   const payItem = items.find((item) => item.id === payId) ?? null;
@@ -230,25 +250,27 @@ function ActivityPage() {
   };
 
   /*
-    El acceso directo al pago va suelto junto al `⋯`, solo mientras falte cobrar (acordado
-    2026-11-07). Una anulada queda como está: sin acciones.
+    La acción directa va suelta junto al `⋯` (acordado 2026-11-07): mientras falte cobrar,
+    registrar el pago; pagada, cambiar la cartilla, que es lo más probable en una pagada
+    (Thony, 2026-11-11). Una anulada queda como está: sin acciones.
   */
-  const buildActions = (item: IActivityItemResource): IRowAction[] =>
-    item.voidedAt
-      ? []
-      : [
-          ...(collectionOf(item).pending > 0
-            ? [{ icon: HandCoins, label: "Registrar pago", inline: true, onClick: () => setPayId(item.id) }]
-            : []),
-          { icon: Pencil, label: "Editar", onClick: () => openEdit(item) },
-          { icon: Repeat, label: "Cambiar cartilla", onClick: () => setChangeId(item.id) },
-          { icon: Trash2, label: "Eliminar", variant: "destructive", onClick: () => setDeleteTarget(item) },
-        ];
+  const buildActions = (item: IActivityItemResource): IRowAction[] => {
+    if (item.voidedAt) {
+      return [];
+    }
+    const isPending = collectionOf(item).pending > 0;
+    return [
+      ...(isPending
+        ? [{ icon: HandCoins, label: "Registrar pago", inline: true, onClick: () => setPayId(item.id) }]
+        : []),
+      { icon: Pencil, label: "Editar", onClick: () => openEdit(item) },
+      { icon: Repeat, label: "Cambiar cartilla", inline: !isPending, onClick: () => setChangeId(item.id) },
+      { icon: Trash2, label: "Eliminar", variant: "destructive", onClick: () => setDeleteTarget(item) },
+    ];
+  };
 
   /* Sin cuántos se vendieron: eso va en los KPIs (Thony, 2026-11-07). */
-  const subtitle = activity
-    ? `${formatShortDate(activity.eventDate)} · ${formatSoles(activity.defaultPrice)}`
-    : undefined;
+  const subtitle = activity ? <ActivityMeta activity={activity} /> : undefined;
 
   const searchInput = (
     <SearchInput
@@ -315,6 +337,9 @@ function ActivityPage() {
       </PageBox>
 
       <PageBox className="space-y-4">
+      {/* Encima de la barra: se van al bajar y la barra con los tabs sigue fija. */}
+      {items.length > 0 && <ActivityItemTotals collected={collected} profit={profit} />}
+
       {/*
         Escritorio: el buscador a la izquierda; a la derecha, los dos filtros y los tabs de pago,
         alineados abajo.
@@ -394,7 +419,7 @@ function ActivityPage() {
             items={visible}
             isLoading={isLoading}
             serialCounts={serialCounts}
-            isChangeColumn={isChangeColumn}
+            tab={currentTab}
             relatedSerials={relatedSerials}
             buildActions={buildActions}
             onOpen={(item) => setDetailId(item.id)}
@@ -404,9 +429,10 @@ function ActivityPage() {
               items={visible}
               isLoading={isLoading}
               serialCounts={serialCounts}
-              isChangeColumn={isChangeColumn}
+              tab={currentTab}
               relatedSerials={relatedSerials}
               onPay={(item) => setPayId(item.id)}
+              onChangeItem={(item) => setChangeId(item.id)}
               onOpen={(item) => setDetailId(item.id)}
             />
           ) : (

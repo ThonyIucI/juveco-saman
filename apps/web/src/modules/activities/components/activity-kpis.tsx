@@ -1,17 +1,17 @@
-import { Badge } from "@juveco/ui/components/badge";
 import { Skeleton } from "@juveco/ui/components/skeleton";
 import { cn } from "@juveco/ui/lib/utils";
 import { type TActivityType, activityItemLabels } from "@juveco/shared/activities";
 import type { IActivityBalance } from "@juveco/shared/activity-expenses";
 import type { IActivitySummary } from "@juveco/shared/activity-item-payments";
 import { formatSoles } from "@juveco/shared/money";
-import { Banknote, HandCoins, type LucideIcon, TrendingUp } from "lucide-react";
+import { Banknote, HandCoins, type LucideIcon, TrendingUp, Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 
 import YapeIcon from "@/common/components/icons/yape-icon";
 import { FADE_IN_CLASS } from "@/common/constants/motion";
+import { formatSignedSoles } from "@/modules/activities/utils/money";
 
-import { COLLECTION_BADGE } from "./collection-badge";
+import ItemStatusBreakdown from "./item-status-breakdown";
 
 interface IActivityKpisProps {
   activityType: TActivityType;
@@ -21,138 +21,151 @@ interface IActivityKpisProps {
   balance: IActivityBalance | null;
 }
 
-/** Con «−» delante y no «S/ -20.00»: al inicio, con premios ya comprados, es lo normal. */
-const formatSignedSoles = (value: number): string =>
-  value < 0 ? `− ${formatSoles(Math.abs(value))}` : formatSoles(value);
-
 /**
- * KPIs del resumen, como los de cuentas bancarias de domus (Thony, 2026-11-11): al entrar se
- * ve cuánto se va ganando. Dos banners: la ganancia (lleno, con cuántas se repartieron) y lo
- * que falta cobrar (suave, con la ganancia esperada). Debajo, lo recaudado por Yape y en
- * efectivo, y cómo van los pagos.
+ * KPIs del resumen, ordenados como la imagen de ejemplo de Thony (2026-11-11), pero sin
+ * «déficit temporal» ni frases que expliquen el número:
+ * 1. Ganancia (llena): el monto, cuántas se repartieron y lo que se fue en premios y gastos.
+ * 2. Por cobrar, con la ganancia esperada si todos pagan.
+ * 3. Recaudado, con el % cobrado y lo que entró por Yape y en efectivo.
+ * 4. Estado de las cartillas: barra y un cuadro por estado.
+ * En escritorio, la ganancia a la izquierda y 2 y 3 apilados a la derecha; el estado a lo ancho.
  */
 export default function ActivityKpis({ activityType, summary, balance }: IActivityKpisProps) {
   const labels = activityItemLabels[activityType];
 
   if (!summary || !balance) {
     return (
-      <div className="space-y-3">
-        <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
+        <Skeleton className="h-44 rounded-lg" />
+        <div className="space-y-3">
           <Skeleton className="h-20 rounded-lg" />
-          <Skeleton className="h-20 rounded-lg" />
+          <Skeleton className="h-36 rounded-lg" />
         </div>
-        <Skeleton className="h-14 rounded-sm" />
+        <Skeleton className="h-32 rounded-lg md:col-span-2" />
       </div>
     );
   }
 
-  /* «Repartidas» y no «vendidas»: vendida sonaba a ya pagada (Thony, 2026-11-11). */
-  const distributedLabel =
-    summary.itemCount === 1 ? `1 ${labels.singular} repartida` : `${summary.itemCount} ${labels.plural} repartidas`;
+  const spending = balance.purchasedPrizes + balance.expenses;
+  /* Sin nada que cobrar no hay porcentaje que mostrar. */
+  const collectedPercent = summary.expected > 0 ? Math.round((summary.collected / summary.expected) * 100) : null;
 
   return (
-    <div className={`space-y-3 ${FADE_IN_CLASS}`}>
-      <div className="grid gap-3 md:grid-cols-2">
-        <KpiBanner
-          isFilled
-          icon={TrendingUp}
-          label="Ganancia"
-          value={formatSignedSoles(balance.currentProfit)}
-          caption={distributedLabel}
-        />
-        <KpiBanner
-          icon={HandCoins}
-          label="Por cobrar"
-          value={formatSoles(summary.pending)}
-          caption={`Esperada ${formatSignedSoles(balance.expectedProfit)}`}
-        />
+    <div className={cn("grid gap-3 md:grid-cols-2", FADE_IN_CLASS)}>
+      {/* 1. Ganancia */}
+      <section className="flex flex-col rounded-lg bg-primary p-4 text-primary-foreground">
+        <div className="flex items-start justify-between gap-3">
+          <KpiLabel icon={TrendingUp} label="Ganancia" isOnFilled />
+          {/* «Repartidas» y no «vendidas»: vendida sonaba a ya pagada (Thony, 2026-11-11). */}
+          <p className="text-right text-xs text-primary-foreground/80">
+            <span className="block font-heading text-lg font-semibold text-primary-foreground tabular-nums">
+              {summary.itemCount}
+            </span>
+            {summary.itemCount === 1 ? `${labels.singular} repartida` : `${labels.plural} repartidas`}
+          </p>
+        </div>
+        <p className="mt-2 font-heading text-3xl font-bold tabular-nums">{formatSignedSoles(balance.currentProfit)}</p>
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-primary-foreground/20 pt-3 text-sm">
+          <span className="text-primary-foreground/80">Premios y gastos</span>
+          <span className="font-semibold tabular-nums">{formatSoles(spending)}</span>
+        </div>
+      </section>
+
+      <div className="space-y-3">
+        {/* 2. Por cobrar */}
+        <section className="flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/8 p-4">
+          <div className="min-w-0 space-y-1">
+            <KpiLabel icon={HandCoins} label="Por cobrar" />
+            <p className="font-heading text-2xl font-bold text-primary tabular-nums">{formatSoles(summary.pending)}</p>
+          </div>
+          {/* «Ganancia esperada» y no «Esperada» suelto: no es lo que se espera cobrar. */}
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <span className="text-xs text-muted-foreground">Ganancia esperada</span>
+            <span className="rounded-md border border-border bg-card px-2 py-0.5 text-sm font-semibold text-foreground tabular-nums">
+              {formatSignedSoles(balance.expectedProfit)}
+            </span>
+          </div>
+        </section>
+
+        {/* 3. Recaudado */}
+        <section className="space-y-3 rounded-lg border border-border bg-card p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <KpiLabel icon={Wallet} label="Recaudado" />
+              <p className="font-heading text-2xl font-bold text-foreground tabular-nums">
+                {formatSoles(summary.collected)}
+              </p>
+            </div>
+            {collectedPercent !== null && (
+              <span className="shrink-0 rounded-full bg-success/10 px-2.5 py-1 text-xs font-semibold text-success tabular-nums">
+                {collectedPercent} % cobrado
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <MethodBox
+              icon={<YapeIcon />}
+              label="Yape"
+              amount={summary.collectedByMethod.YAPE}
+              className="border-yape/20 bg-yape/5"
+            />
+            <MethodBox
+              icon={<Banknote aria-hidden className="size-5 shrink-0 text-success" />}
+              label="Efectivo"
+              amount={summary.collectedByMethod.CASH}
+              className="border-success/20 bg-success/5"
+            />
+          </div>
+        </section>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-sm border border-border bg-card p-3">
-          <p className="text-sm font-medium text-muted-foreground">
-            Recaudado <span className="font-semibold text-foreground tabular-nums">{formatSoles(summary.collected)}</span>
-          </p>
-          <MethodAmount icon={<YapeIcon />} label="Yape" amount={summary.collectedByMethod.YAPE} />
-          <MethodAmount
-            icon={<Banknote aria-hidden className="size-4 shrink-0 text-success" />}
-            label="Efectivo"
-            amount={summary.collectedByMethod.CASH}
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 rounded-sm border border-border bg-card p-3">
-          <StatusCount status="PAID" label="Pagaron todo" count={summary.paidCount} />
-          <StatusCount status="PARTIAL" label="Una parte" count={summary.partialCount} />
-          <StatusCount status="UNPAID" label="Sin pagar" count={summary.unpaidCount} />
-        </div>
+      {/* 4. Estado de las cartillas */}
+      <div className="md:col-span-2">
+        <ItemStatusBreakdown summary={summary} labels={labels} />
       </div>
     </div>
   );
 }
 
-interface IKpiBannerProps {
+interface IKpiLabelProps {
   icon: LucideIcon;
   label: string;
-  value: string;
-  caption: string;
-  /** Lleno en el color de marca: el dato principal. Sin esto, el fondo suave. */
-  isFilled?: boolean;
+  /** Sobre el fondo lleno de la ganancia. */
+  isOnFilled?: boolean;
 }
 
-/** Como `BankAccountKpi` de domus: ícono y etiqueta a la izquierda; monto y detalle a la derecha. */
-function KpiBanner({ icon: Icon, label, value, caption, isFilled = false }: IKpiBannerProps) {
+/** El ícono en su cuadrito y el nombre del dato. */
+function KpiLabel({ icon: Icon, label, isOnFilled = false }: IKpiLabelProps) {
   return (
-    <div
-      className={cn(
-        "flex items-center justify-between gap-3 rounded-lg border px-4 py-3.5",
-        isFilled ? "border-primary bg-primary text-primary-foreground" : "border-primary/20 bg-primary/8 text-foreground",
-      )}
-    >
-      <div className="flex min-w-0 flex-col gap-1">
-        <Icon aria-hidden className={cn("size-5", !isFilled && "text-primary")} />
-        <span className="text-sm font-medium">{label}</span>
-      </div>
-      <div className="flex min-w-0 flex-col items-end gap-0.5 text-right">
-        <span className={cn("font-heading text-2xl font-bold tabular-nums", !isFilled && "text-primary")}>
-          {value}
-        </span>
-        <span className={cn("text-xs tabular-nums", isFilled ? "text-primary-foreground/85" : "text-muted-foreground")}>
-          {caption}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-interface IMethodAmountProps {
-  icon: ReactNode;
-  label: string;
-  amount: number;
-}
-
-function MethodAmount({ icon, label, amount }: IMethodAmountProps) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-sm text-foreground tabular-nums" title={label}>
-      {icon}
-      <span className="sr-only">{label}</span>
-      {formatSoles(amount)}
+    <span className="inline-flex items-center gap-2 text-sm font-medium">
+      <span
+        className={cn(
+          "flex size-8 shrink-0 items-center justify-center rounded-md",
+          isOnFilled ? "bg-primary-foreground/15" : "bg-primary/10 text-primary",
+        )}
+      >
+        <Icon aria-hidden className="size-4" />
+      </span>
+      <span className={isOnFilled ? undefined : "text-muted-foreground"}>{label}</span>
     </span>
   );
 }
 
-interface IStatusCountProps {
-  status: keyof typeof COLLECTION_BADGE;
+interface IMethodBoxProps {
+  icon: ReactNode;
   label: string;
-  count: number;
+  amount: number;
+  className: string;
 }
 
-function StatusCount({ status, label, count }: IStatusCountProps) {
-  const { color, icon: Icon } = COLLECTION_BADGE[status];
+function MethodBox({ icon, label, amount, className }: IMethodBoxProps) {
   return (
-    <Badge color={color} size="lg" className="rounded-md">
-      <Icon aria-hidden />
-      {label}: {count}
-    </Badge>
+    <div className={cn("flex items-center gap-2.5 rounded-md border px-3 py-2", className)}>
+      {icon}
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-sm font-semibold text-foreground tabular-nums">{formatSoles(amount)}</p>
+      </div>
+    </div>
   );
 }

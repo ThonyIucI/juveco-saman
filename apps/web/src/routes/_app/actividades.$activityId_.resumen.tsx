@@ -3,7 +3,6 @@ import { cn } from "@juveco/ui/lib/utils";
 import { activityItemLabels } from "@juveco/shared/activities";
 import type { IActivityExpenseResource } from "@juveco/shared/activity-expenses";
 import type { IActivityPrizeResource } from "@juveco/shared/activity-prizes";
-import { formatSoles } from "@juveco/shared/money";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -12,9 +11,9 @@ import ConfirmModal from "@/common/components/confirm-modal";
 import PageBox from "@/common/components/page-box";
 import PageHeader from "@/common/components/page-header";
 import type { IRowAction } from "@/common/components/row-actions";
-import { formatShortDate } from "@/common/utils/format-date";
 import ActivityBalance from "@/modules/activities/components/activity-balance";
 import ActivityKpis from "@/modules/activities/components/activity-kpis";
+import ActivityMeta from "@/modules/activities/components/activity-meta";
 import ExpenseFormModal from "@/modules/activities/components/expense-form-modal";
 import ExpenseList from "@/modules/activities/components/expense-list";
 import PrizeFormModal from "@/modules/activities/components/prize-form-modal";
@@ -167,9 +166,7 @@ function ActivitySummaryPage() {
             onClick: () => navigate({ to: "/actividades/$activityId", params: { activityId } }),
           }}
           titleAction={syncButton}
-          subtitle={
-            activity ? `${formatShortDate(activity.eventDate)} · ${formatSoles(activity.defaultPrice)}` : undefined
-          }
+          subtitle={activity ? <ActivityMeta activity={activity} /> : undefined}
           isLoadingSubtitle={!activity}
         />
       </PageBox>

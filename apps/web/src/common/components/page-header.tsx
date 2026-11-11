@@ -9,8 +9,8 @@ interface IPageHeaderProps {
   title: string;
   /** Pegado al título (p. ej. el botón de sincronizar). */
   titleAction?: ReactNode;
-  /** Contadores del listado («3 negocios · 2 activos»). */
-  subtitle?: string;
+  /** Contadores del listado («3 negocios · 2 activos») o contenido con íconos (`ActivityMeta`). */
+  subtitle?: ReactNode;
   isLoadingSubtitle?: boolean;
   /** Acción principal, a la derecha (p. ej. «Crear»). */
   action?: ReactNode;
@@ -41,7 +41,7 @@ export default function PageHeader({ title, titleAction, subtitle, isLoadingSubt
           {isLoadingSubtitle ? (
             <Skeleton className="mt-1 h-4 w-32 rounded-md" />
           ) : (
-            subtitle && <p className={`mt-0.5 text-sm text-muted-foreground ${FADE_IN_CLASS}`}>{subtitle}</p>
+            subtitle && <div className={`mt-0.5 text-sm text-muted-foreground ${FADE_IN_CLASS}`}>{subtitle}</div>
           )}
         </div>
       </div>

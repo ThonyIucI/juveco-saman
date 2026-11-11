@@ -3,10 +3,10 @@ import { Skeleton } from "@juveco/ui/components/skeleton";
 import { cn } from "@juveco/ui/lib/utils";
 import { type IActivityItemResource, normalizeItemSerial } from "@juveco/shared/activity-items";
 import { fullName } from "@juveco/shared/people";
-import { HandCoins } from "lucide-react";
+import { HandCoins, Repeat } from "lucide-react";
 
 import { FADE_IN_CLASS } from "@/common/constants/motion";
-import { collectionOf } from "@/modules/activities/utils/activity-items";
+import { type TPaymentTab, collectionOf } from "@/modules/activities/utils/activity-items";
 
 import CollectionBadge from "./collection-badge";
 import ItemChangeBadge from "./item-change-badge";
@@ -21,11 +21,18 @@ interface IActivityItemCompactListProps {
   isLoading: boolean;
   /** Cuántos hay con cada serie en **toda** la actividad, no solo en lo filtrado. */
   serialCounts: Map<string, number>;
-  /** En pagadas y anuladas, «Cambio» en lugar de «Por cobrar» (Thony, 2026-11-11). */
-  isChangeColumn: boolean;
+  /**
+   * Qué va en las dos últimas columnas (Thony, 2026-11-11):
+   * - Por pagar: lo que falta cobrar y el botón de cobrar.
+   * - Pagadas: nada en la del monto (el cambio solo va en la card detallada) y el botón de
+   *   cambiar cartilla, lo más probable en una pagada.
+   * - Anuladas: por cuál se cambió, sin botón.
+   */
+  tab: TPaymentTab;
   /** Ver `changedSerials`. */
   relatedSerials: Map<string, string>;
   onPay: (item: IActivityItemResource) => void;
+  onChangeItem: (item: IActivityItemResource) => void;
   onOpen: (item: IActivityItemResource) => void;
 }
 
@@ -38,9 +45,10 @@ export default function ActivityItemCompactList({
   items,
   isLoading,
   serialCounts,
-  isChangeColumn,
+  tab,
   relatedSerials,
   onPay,
+  onChangeItem,
   onOpen,
 }: IActivityItemCompactListProps) {
   return (
@@ -53,8 +61,10 @@ export default function ActivityItemCompactList({
       >
         <span>Serie</span>
         <span>Cliente</span>
-        <span className="text-right">{isChangeColumn ? "Cambio" : "Por cobrar"}</span>
-        <span className="sr-only">Cobrar</span>
+        <span className="text-right">
+          {tab === "PENDING" ? "Por cobrar" : tab === "VOIDED" && <span className="sr-only">Cambio</span>}
+        </span>
+        <span className="sr-only">Acción</span>
       </div>
 
       {isLoading ? (
@@ -104,11 +114,9 @@ export default function ActivityItemCompactList({
                   {isSerialRepeated && <span className="sr-only"> (serie repetida)</span>}
                 </span>
                 <span className="truncate text-sm font-medium text-foreground">{fullName(item.buyer)}</span>
-                {isChangeColumn ? (
-                  <ItemChangeBadge item={item} relatedSerial={relatedSerials.get(item.id)} />
-                ) : (
-                  <CollectionBadge item={item} />
-                )}
+                {tab === "PENDING" && <CollectionBadge item={item} />}
+                {tab === "PAID" && <span />}
+                {tab === "VOIDED" && <ItemChangeBadge item={item} relatedSerial={relatedSerials.get(item.id)} />}
                 {isPending ? (
                   <IconButton
                     label={`Registrar pago de la serie ${item.serial}`}
@@ -119,6 +127,17 @@ export default function ActivityItemCompactList({
                     }}
                   >
                     <HandCoins />
+                  </IconButton>
+                ) : tab === "PAID" ? (
+                  <IconButton
+                    label={`Cambiar la cartilla ${item.serial}`}
+                    isBordered
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onChangeItem(item);
+                    }}
+                  >
+                    <Repeat />
                   </IconButton>
                 ) : (
                   <span />
