@@ -4,6 +4,7 @@ import { PartyPopper } from "lucide-react";
 import { useEffect } from "react";
 
 import EmptyState from "@/common/components/empty-state";
+import Loadable from "@/common/components/loadable";
 import PageBox from "@/common/components/page-box";
 import PageContainer from "@/common/components/page-container";
 import PageHeader from "@/common/components/page-header";
@@ -40,12 +41,11 @@ function ActivitiesPage() {
       <PageBox>
         <PageHeader title="Actividades" />
       </PageBox>
+      {/* Con actividades nunca termina de «cargar»: se pasa a la primera antes. */}
       <PageBox isFill>
-        {hasNoActivities ? (
+        <Loadable isLoading={!hasNoActivities} skeleton={<Skeleton className="h-28 w-full rounded-2xl" />}>
           <EmptyState icon={PartyPopper} title="Todavía no hay actividades" />
-        ) : (
-          <Skeleton className="h-28 w-full rounded-2xl" />
-        )}
+        </Loadable>
       </PageBox>
     </PageContainer>
   );

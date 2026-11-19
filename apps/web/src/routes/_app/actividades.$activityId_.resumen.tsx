@@ -8,6 +8,7 @@ import { Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import ConfirmModal from "@/common/components/confirm-modal";
+import Loadable from "@/common/components/loadable";
 import PageBox from "@/common/components/page-box";
 import PageContainer from "@/common/components/page-container";
 import PageHeader from "@/common/components/page-header";
@@ -87,6 +88,8 @@ function ActivitySummaryPage() {
   const refreshBalance = () => GetActivityBalance.handler(activityId);
 
   const { activity } = GetActivity;
+  /* Solo la primera carga: al sincronizar, los datos anteriores siguen a la vista. */
+  const isLoadingSummary = !activity || !GetActivitySummary.summary || !GetActivityBalance.balance;
   const isSyncing =
     GetActivity.loading ||
     GetActivitySummary.loading ||
@@ -172,10 +175,28 @@ function ActivitySummaryPage() {
         />
       </PageBox>
 
-      <PageBox isFill className="space-y-4">
-      {activity && (
-        <ActivityKpis summary={GetActivitySummary.summary} balance={GetActivityBalance.balance} />
-      )}
+      <PageBox isFill>
+      {/*
+        Esperan los KPIs y el balance, que son lo primero que se ve; premios y gastos llegan en
+        la misma tanda y, si tardan, muestran su propio esqueleto.
+      */}
+      <Loadable
+        isLoading={isLoadingSummary}
+        className="space-y-4"
+        skeleton={
+          <div className="space-y-4">
+            <ActivityKpis summary={null} balance={null} />
+            <div className="grid items-start gap-4 lg:grid-cols-2">
+              <ActivityBalance balance={null} />
+              <div className="space-y-4">
+                <PrizeList prizes={[]} isLoading buildActions={buildPrizeActions} onCreate={() => undefined} />
+                <ExpenseList expenses={[]} isLoading buildActions={buildExpenseActions} onCreate={() => undefined} />
+              </div>
+            </div>
+          </div>
+        }
+      >
+      <ActivityKpis summary={GetActivitySummary.summary} balance={GetActivityBalance.balance} />
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <ActivityBalance balance={GetActivityBalance.balance} />
@@ -195,6 +216,7 @@ function ActivitySummaryPage() {
           />
         </div>
       </div>
+      </Loadable>
       </PageBox>
 
       <PrizeFormModal

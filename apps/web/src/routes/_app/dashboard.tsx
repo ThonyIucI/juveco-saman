@@ -5,9 +5,9 @@ import { PartyPopper, UsersRound } from "lucide-react";
 import { useEffect } from "react";
 
 import EmptyState from "@/common/components/empty-state";
+import Loadable from "@/common/components/loadable";
 import PageBox from "@/common/components/page-box";
 import PageContainer from "@/common/components/page-container";
-import { FADE_IN_CLASS } from "@/common/constants/motion";
 import ActivityOverviewCard from "@/modules/activities/components/activity-overview-card";
 import { useListActivities } from "@/modules/activities/hooks/use-list-activities";
 import { useListUsers } from "@/modules/users/hooks/use-list-users";
@@ -20,6 +20,37 @@ const SKELETON_CARDS = 2;
 
 /* El equipo son quienes entran a la app (acordado 2026-11-07). */
 const TEAM_ROLES = new Set<string>([EUserRole.ADMIN, EUserRole.SUPERADMIN]);
+
+function TeamIcon() {
+  return (
+    <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+      <UsersRound aria-hidden className="size-5" />
+    </span>
+  );
+}
+
+/* La misma forma que el contenido: la card del equipo, el título y las cards de actividades. */
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 rounded-sm border border-border bg-card p-3 sm:max-w-xs">
+        <TeamIcon />
+        <div className="min-w-0 space-y-1.5">
+          <Skeleton className="h-4 w-16 rounded-md" />
+          <Skeleton className="h-6 w-32 rounded-md" />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <Skeleton className="h-6 w-28 rounded-md" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: SKELETON_CARDS }, (_, index) => (
+            <Skeleton key={index} className="h-28 rounded-sm" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Inicio: el saludo, cuántos son en el equipo (los administradores) y las actividades, cada
@@ -41,8 +72,7 @@ function DashboardPage() {
 
   /* `null` hasta que llega la primera respuesta. */
   const activities = ListActivities.activities ?? [];
-  const isLoadingActivities = ListActivities.activities === null;
-  const isLoadingTeam = ListUsers.loading && ListUsers.users.length === 0;
+  const isLoading = ListActivities.activities === null || (ListUsers.loading && ListUsers.users.length === 0);
   const teamCount = ListUsers.users.filter((person) => TEAM_ROLES.has(person.role)).length;
 
   return (
@@ -56,54 +86,43 @@ function DashboardPage() {
         <p className="mt-0.5 text-sm text-muted-foreground">{userRoleLabels[user.role]}</p>
       </PageBox>
 
-      <PageBox isFill className="space-y-6">
+      <PageBox isFill>
+        <Loadable isLoading={isLoading} skeleton={<DashboardSkeleton />} className="space-y-6">
+          <section aria-labelledby="team-title">
+            <div className="flex items-center gap-3 rounded-sm border border-border bg-card p-3 sm:max-w-xs">
+              <TeamIcon />
+              <div className="min-w-0">
+                <p id="team-title" className="text-sm font-medium text-muted-foreground">
+                  Equipo
+                </p>
+                <p className="font-heading text-lg font-bold text-foreground">
+                  {teamCount === 1 ? "1 administrador" : `${teamCount} administradores`}
+                </p>
+              </div>
+            </div>
+          </section>
 
-      <section aria-labelledby="team-title">
-        <div className="flex items-center gap-3 rounded-sm border border-border bg-card p-3 sm:max-w-xs">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <UsersRound aria-hidden className="size-5" />
-          </span>
-          <div className="min-w-0">
-            <p id="team-title" className="text-sm font-medium text-muted-foreground">
-              Equipo
-            </p>
-            {isLoadingTeam ? (
-              <Skeleton className="mt-1 h-6 w-32 rounded-md" />
+          <section aria-labelledby="activities-title" className="space-y-3">
+            <h2 id="activities-title" className="font-heading text-lg font-semibold text-foreground">
+              Actividades
+            </h2>
+
+            {activities.length === 0 ? (
+              <EmptyState icon={PartyPopper} title="Todavía no hay actividades" />
             ) : (
-              <p className={`font-heading text-lg font-bold text-foreground ${FADE_IN_CLASS}`}>
-                {teamCount === 1 ? "1 administrador" : `${teamCount} administradores`}
-              </p>
+              <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {activities.map((activity) => (
+                  <li key={activity.id}>
+                    <ActivityOverviewCard
+                      activity={activity}
+                      onOpen={() => navigate({ to: "/actividades/$activityId", params: { activityId: activity.id } })}
+                    />
+                  </li>
+                ))}
+              </ul>
             )}
-          </div>
-        </div>
-      </section>
-
-      <section aria-labelledby="activities-title" className="space-y-3">
-        <h2 id="activities-title" className="font-heading text-lg font-semibold text-foreground">
-          Actividades
-        </h2>
-
-        {isLoadingActivities ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: SKELETON_CARDS }, (_, index) => (
-              <Skeleton key={index} className="h-28 rounded-sm" />
-            ))}
-          </div>
-        ) : activities.length === 0 ? (
-          <EmptyState icon={PartyPopper} title="Todavía no hay actividades" />
-        ) : (
-          <ul className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-3 ${FADE_IN_CLASS}`}>
-            {activities.map((activity) => (
-              <li key={activity.id}>
-                <ActivityOverviewCard
-                  activity={activity}
-                  onOpen={() => navigate({ to: "/actividades/$activityId", params: { activityId: activity.id } })}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+          </section>
+        </Loadable>
       </PageBox>
     </PageContainer>
   );

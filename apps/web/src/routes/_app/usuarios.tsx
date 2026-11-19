@@ -10,6 +10,7 @@ import ConfirmModal from "@/common/components/confirm-modal";
 import EmptyState from "@/common/components/empty-state";
 import FilterButton from "@/common/components/filter-button";
 import ListPagination, { ResultsCounter } from "@/common/components/list-pagination";
+import Loadable from "@/common/components/loadable";
 import PageBox from "@/common/components/page-box";
 import PageContainer from "@/common/components/page-container";
 import PageHeader from "@/common/components/page-header";
@@ -194,7 +195,18 @@ function UsersPage() {
         />
       </PageBox>
 
-      <PageBox isFill className="space-y-4">
+      <PageBox isFill>
+        <Loadable
+          isLoading={isLoading}
+          className="space-y-4"
+          skeleton={
+            <div className="space-y-1.5">
+              <ResultsCounter from={0} to={0} total={0} isLoading className="text-xs" />
+              <UserTable users={[]} isLoading buildActions={buildActions} onOpen={openDetail} />
+              <UserMobileList users={[]} isLoading buildActions={buildActions} onOpen={openDetail} />
+            </div>
+          }
+        >
         {/* Escritorio: el buscador a la izquierda y los filtros a la derecha, alineados abajo. */}
         {users.length > 0 && (
           <div className="hidden items-end justify-between gap-4 md:flex">
@@ -242,34 +254,32 @@ function UsersPage() {
           />
         )}
 
-        {(isLoading || visible.length > 0) && (
+        {hasContent && (
           /* El conteo pegado al listado. */
           <div className="space-y-1.5">
             <ResultsCounter
               from={pager.rangeStart}
               to={pager.rangeEnd}
               total={pager.totalItems}
-              isLoading={isLoading}
               className="text-xs"
             />
             <UserTable
               users={pager.pagedItems}
-              isLoading={isLoading}
+              isLoading={false}
               buildActions={buildActions}
               onOpen={openDetail}
-              footer={hasContent ? pagination : undefined}
+              footer={pagination}
             />
             <UserMobileList
               users={pager.pagedItems}
-              isLoading={isLoading}
+              isLoading={false}
               buildActions={buildActions}
               onOpen={openDetail}
             />
-            {hasContent && (
-              <div className="rounded-xl bg-card px-4 py-3 shadow-card md:hidden">{pagination}</div>
-            )}
+            <div className="rounded-xl bg-card px-4 py-3 shadow-card md:hidden">{pagination}</div>
           </div>
         )}
+        </Loadable>
       </PageBox>
 
       <UserFiltersModal

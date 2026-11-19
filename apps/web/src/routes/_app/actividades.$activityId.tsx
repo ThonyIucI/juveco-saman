@@ -26,6 +26,7 @@ import CountTabs, { type ICountTabOption } from "@/common/components/count-tabs"
 import EmptyState from "@/common/components/empty-state";
 import FilterButton from "@/common/components/filter-button";
 import FloatingActionButton from "@/common/components/floating-action-button";
+import Loadable from "@/common/components/loadable";
 import PageBox from "@/common/components/page-box";
 import PageContainer from "@/common/components/page-container";
 import PageHeader from "@/common/components/page-header";
@@ -337,7 +338,46 @@ function ActivityPage() {
       )}
       </PageBox>
 
-      <PageBox isFill className="space-y-4">
+      <PageBox isFill>
+      <Loadable
+        isLoading={isLoading}
+        className="space-y-4"
+        skeleton={
+          <>
+            <ActivityItemTable
+              items={[]}
+              isLoading
+              serialCounts={serialCounts}
+              tab={currentTab}
+              relatedSerials={relatedSerials}
+              buildActions={buildActions}
+              onOpen={() => undefined}
+            />
+            {isCompactView ? (
+              <ActivityItemCompactList
+                items={[]}
+                isLoading
+                serialCounts={serialCounts}
+                tab={currentTab}
+                relatedSerials={relatedSerials}
+                onPay={() => undefined}
+                onChangeItem={() => undefined}
+                onOpen={() => undefined}
+              />
+            ) : (
+              <ActivityItemGrid
+                items={[]}
+                isLoading
+                serialCounts={serialCounts}
+                isChangeColumn={isChangeColumn}
+                relatedSerials={relatedSerials}
+                buildActions={buildActions}
+                onOpen={() => undefined}
+              />
+            )}
+          </>
+        }
+      >
       {/* Encima de la barra: se van al bajar y la barra con los tabs sigue fija. */}
       {items.length > 0 && <ActivityItemTotals collected={collected} profit={profit} />}
 
@@ -414,11 +454,11 @@ function ActivityPage() {
         />
       )}
 
-      {(isLoading || visible.length > 0) && (
+      {visible.length > 0 && (
         <div>
           <ActivityItemTable
             items={visible}
-            isLoading={isLoading}
+            isLoading={false}
             serialCounts={serialCounts}
             tab={currentTab}
             relatedSerials={relatedSerials}
@@ -428,7 +468,7 @@ function ActivityPage() {
           {isCompactView ? (
             <ActivityItemCompactList
               items={visible}
-              isLoading={isLoading}
+              isLoading={false}
               serialCounts={serialCounts}
               tab={currentTab}
               relatedSerials={relatedSerials}
@@ -439,7 +479,7 @@ function ActivityPage() {
           ) : (
             <ActivityItemGrid
               items={visible}
-              isLoading={isLoading}
+              isLoading={false}
               serialCounts={serialCounts}
               isChangeColumn={isChangeColumn}
               relatedSerials={relatedSerials}
@@ -449,6 +489,7 @@ function ActivityPage() {
           )}
         </div>
       )}
+      </Loadable>
       </PageBox>
 
       {activity && <FloatingActionButton label={`Agregar ${itemLabel.singular}`} icon={Plus} onClick={openCreate} />}

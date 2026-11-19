@@ -29,13 +29,7 @@
 
 **Verificado por Thony:** `pnpm install`, `pnpm check-types` y `pnpm test` pasan.
 
-## En curso: despliegue a Cloudflare
-
-Ver los pasos en [tecnico/despliegue.md](tecnico/despliegue.md).
-
-- API en `juveco-api.gaiamundo.com` y web en `juveco-saman.gaiamundo.com`.
-- El front mostraba `Failed to fetch` al cargar la sesión: la API solo permitía el origen `juveco.gaiamundo.com`. Se corrigió `CORS_ORIGIN` a `juveco-saman.gaiamundo.com`; **falta redesplegar la API** (`pnpm deploy:server`) y confirmar que el login carga.
-- Falta crear el superadmin en producción con el seed y, después, quitar el secret `SEED_TOKEN`.
+**Despliegue en Cloudflare** (pasos en [tecnico/despliegue.md](tecnico/despliegue.md)): API en `juveco-api.gaiamundo.com` y web en `juveco-saman.gaiamundo.com`. El superadmin ya está creado y la app está en uso.
 
 ## En curso: Bingo II - 2026 (evento el 21 nov 2026)
 
