@@ -7,6 +7,7 @@ import { useEffect } from "react";
 
 import EmptyState from "@/common/components/empty-state";
 import PageBox from "@/common/components/page-box";
+import PageContainer from "@/common/components/page-container";
 import PageHeader from "@/common/components/page-header";
 import { useBoolean } from "@/common/hooks/use-boolean";
 import ProjectCard from "@/modules/projects/components/project-card";
@@ -37,8 +38,7 @@ function ProjectsPage() {
     navigate({ to: "/proyectos/$projectId", params: { projectId: project.id } });
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-4 p-4">
-      {/* El cuerpo llega hasta abajo: si no, la caja blanca parece recortada (Thony, 2026-11-17). */}
+    <PageContainer>
       <PageBox>
         <PageHeader
           title="Proyectos"
@@ -53,7 +53,7 @@ function ProjectsPage() {
         />
       </PageBox>
 
-      <PageBox className="md:flex-1">
+      <PageBox isFill>
         {isLoading ? (
           <Skeleton className="h-28 w-full rounded-2xl" />
         ) : projects.length === 0 ? (
@@ -81,6 +81,6 @@ function ProjectsPage() {
         onClose={showForm.off}
         onSaved={openProject}
       />
-    </div>
+    </PageContainer>
   );
 }

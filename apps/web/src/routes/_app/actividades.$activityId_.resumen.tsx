@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 
 import ConfirmModal from "@/common/components/confirm-modal";
 import PageBox from "@/common/components/page-box";
+import PageContainer from "@/common/components/page-container";
 import PageHeader from "@/common/components/page-header";
 import type { IRowAction } from "@/common/components/row-actions";
 import ActivityBalance from "@/modules/activities/components/activity-balance";
@@ -155,7 +156,7 @@ function ActivitySummaryPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 p-4">
+    <PageContainer>
       {/* Encabezado y cuerpo en cajas blancas sobre el fondo gris, como cartillas (Thony, 2026-11-09). */}
       <PageBox>
         {/* Volver: solo el chevron a la izquierda del título, en celular y escritorio (Thony, 2026-11-11). */}
@@ -171,7 +172,7 @@ function ActivitySummaryPage() {
         />
       </PageBox>
 
-      <PageBox className="space-y-4">
+      <PageBox isFill className="space-y-4">
       {activity && (
         <ActivityKpis summary={GetActivitySummary.summary} balance={GetActivityBalance.balance} />
       )}
@@ -224,7 +225,7 @@ function ActivitySummaryPage() {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
-    </div>
+    </PageContainer>
   );
 }
 

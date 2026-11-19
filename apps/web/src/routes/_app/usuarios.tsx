@@ -11,6 +11,7 @@ import EmptyState from "@/common/components/empty-state";
 import FilterButton from "@/common/components/filter-button";
 import ListPagination, { ResultsCounter } from "@/common/components/list-pagination";
 import PageBox from "@/common/components/page-box";
+import PageContainer from "@/common/components/page-container";
 import PageHeader from "@/common/components/page-header";
 import type { IRowAction } from "@/common/components/row-actions";
 import SearchInput from "@/common/components/search-input";
@@ -176,7 +177,7 @@ function UsersPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 p-4">
+    <PageContainer>
       {/* Como cartillas (Thony, 2026-11-09): encabezado y cuerpo en cajas sobre el fondo gris. */}
       <PageBox>
         <PageHeader
@@ -193,7 +194,7 @@ function UsersPage() {
         />
       </PageBox>
 
-      <PageBox className="space-y-4">
+      <PageBox isFill className="space-y-4">
         {/* Escritorio: el buscador a la izquierda y los filtros a la derecha, alineados abajo. */}
         {users.length > 0 && (
           <div className="hidden items-end justify-between gap-4 md:flex">
@@ -306,6 +307,6 @@ function UsersPage() {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
-    </div>
+    </PageContainer>
   );
 }

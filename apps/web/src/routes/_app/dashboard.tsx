@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import EmptyState from "@/common/components/empty-state";
 import PageBox from "@/common/components/page-box";
+import PageContainer from "@/common/components/page-container";
 import { FADE_IN_CLASS } from "@/common/constants/motion";
 import ActivityOverviewCard from "@/modules/activities/components/activity-overview-card";
 import { useListActivities } from "@/modules/activities/hooks/use-list-activities";
@@ -45,7 +46,7 @@ function DashboardPage() {
   const teamCount = ListUsers.users.filter((person) => TEAM_ROLES.has(person.role)).length;
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6">
+    <PageContainer className="max-w-5xl py-6">
       {/*
         Encabezado y cuerpo en cajas blancas sobre el fondo gris (Thony, 2026-11-09): sin eso,
         el encabezado gris de las cards se confundía con el fondo.
@@ -55,7 +56,7 @@ function DashboardPage() {
         <p className="mt-0.5 text-sm text-muted-foreground">{userRoleLabels[user.role]}</p>
       </PageBox>
 
-      <PageBox className="space-y-6">
+      <PageBox isFill className="space-y-6">
 
       <section aria-labelledby="team-title">
         <div className="flex items-center gap-3 rounded-sm border border-border bg-card p-3 sm:max-w-xs">
@@ -104,6 +105,6 @@ function DashboardPage() {
         )}
       </section>
       </PageBox>
-    </div>
+    </PageContainer>
   );
 }

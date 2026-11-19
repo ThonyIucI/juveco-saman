@@ -27,6 +27,7 @@ import EmptyState from "@/common/components/empty-state";
 import FilterButton from "@/common/components/filter-button";
 import FloatingActionButton from "@/common/components/floating-action-button";
 import PageBox from "@/common/components/page-box";
+import PageContainer from "@/common/components/page-container";
 import PageHeader from "@/common/components/page-header";
 import type { IRowAction } from "@/common/components/row-actions";
 import SearchInput from "@/common/components/search-input";
@@ -288,7 +289,7 @@ function ActivityPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 p-4">
+    <PageContainer>
       {/*
         Escritorio, como Clientes de id-pos (Thony, 2026-11-09): el encabezado y el cuerpo en
         dos cajas separadas, con radio de 12 px. En celular no hay cajas.
@@ -336,7 +337,7 @@ function ActivityPage() {
       )}
       </PageBox>
 
-      <PageBox className="space-y-4">
+      <PageBox isFill className="space-y-4">
       {/* Encima de la barra: se van al bajar y la barra con los tabs sigue fija. */}
       {items.length > 0 && <ActivityItemTotals collected={collected} profit={profit} />}
 
@@ -508,6 +509,6 @@ function ActivityPage() {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
-    </div>
+    </PageContainer>
   );
 }

@@ -4,6 +4,9 @@ import { PartyPopper } from "lucide-react";
 import { useEffect } from "react";
 
 import EmptyState from "@/common/components/empty-state";
+import PageBox from "@/common/components/page-box";
+import PageContainer from "@/common/components/page-container";
+import PageHeader from "@/common/components/page-header";
 import { useListActivities } from "@/modules/activities/hooks/use-list-activities";
 
 export const Route = createFileRoute("/_app/actividades/")({
@@ -33,13 +36,17 @@ function ActivitiesPage() {
   const hasNoActivities = ListActivities.activities?.length === 0;
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 p-4">
-      <h1 className="font-heading text-xl font-bold text-foreground">Actividades</h1>
-      {hasNoActivities ? (
-        <EmptyState icon={PartyPopper} title="Todavía no hay actividades" />
-      ) : (
-        <Skeleton className="h-28 w-full rounded-2xl" />
-      )}
-    </div>
+    <PageContainer>
+      <PageBox>
+        <PageHeader title="Actividades" />
+      </PageBox>
+      <PageBox isFill>
+        {hasNoActivities ? (
+          <EmptyState icon={PartyPopper} title="Todavía no hay actividades" />
+        ) : (
+          <Skeleton className="h-28 w-full rounded-2xl" />
+        )}
+      </PageBox>
+    </PageContainer>
   );
 }

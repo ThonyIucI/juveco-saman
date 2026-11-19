@@ -12,6 +12,7 @@ import { useEffect } from "react";
 import ConfirmModal from "@/common/components/confirm-modal";
 import EmptyState from "@/common/components/empty-state";
 import PageBox from "@/common/components/page-box";
+import PageContainer from "@/common/components/page-container";
 import PageHeader from "@/common/components/page-header";
 import { useBoolean } from "@/common/hooks/use-boolean";
 import { formatDayMonth, formatShortDate } from "@/common/utils/format-date";
@@ -73,8 +74,7 @@ function ProjectDetailPage() {
   const canToggle = project !== null && (!isClosed || isSuperadmin);
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-4 p-4">
-      {/* El cuerpo llega hasta abajo: si no, la caja blanca parece recortada (Thony, 2026-11-17). */}
+    <PageContainer>
       <PageBox>
         <PageHeader
           title={project?.name ?? "Proyecto"}
@@ -132,7 +132,7 @@ function ProjectDetailPage() {
         {project?.description && <p className="mt-3 text-sm text-foreground">{project.description}</p>}
       </PageBox>
 
-      <PageBox className="space-y-4 md:flex-1">
+      <PageBox isFill className="space-y-4">
         {!detail ? (
           <Skeleton className="h-40 w-full rounded-2xl" />
         ) : (
@@ -200,6 +200,6 @@ function ProjectDetailPage() {
         onConfirm={confirmToggle}
         onCancel={showConfirm.off}
       />
-    </div>
+    </PageContainer>
   );
 }
