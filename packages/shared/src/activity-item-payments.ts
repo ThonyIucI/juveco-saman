@@ -23,6 +23,8 @@ export const paymentMethodLabels: Record<TPaymentMethod, string> = {
 export const PAYMENT_METHOD_REQUIRED_MESSAGE = "Elige cómo pagó.";
 export const PAYMENT_ALREADY_PAID_MESSAGE = "Ya está pagado: no hay nada por cobrar.";
 
+export const PAYMENT_COLLECTOR_REQUIRED_MESSAGE = "Elige quién cobró.";
+
 /** El pago no puede pasar de lo que falta cobrar. */
 export const paymentOverPendingMessage = (pending: string): string =>
   `El pago no puede pasar de lo que falta cobrar: ${pending}.`;
@@ -43,6 +45,8 @@ export interface IActivityItemPaymentResource {
 export interface IActivityItemPaymentInput {
   amount: number;
   method: TPaymentMethod;
+  /** Quien cobró, si no fue el admin de la sesión. */
+  collectorId?: string;
 }
 
 /** El ítem queda con otro «pagado»: la API lo devuelve junto con el pago. */

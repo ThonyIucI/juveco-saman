@@ -529,6 +529,8 @@ function ActivityPage() {
 
       <ItemPaymentFormModal
         item={payItem}
+        currentUserId={user.personId}
+        users={ListUsers.users}
         onSaved={(change) => ListActivityItems.onUpsert(change.item)}
         onClose={() => setPayId(null)}
       />

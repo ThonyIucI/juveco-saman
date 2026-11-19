@@ -70,7 +70,12 @@ Campos de `projects`:
 
 ### Entregable 2: corregir quién cobró
 
-Al subirlo, el formulario de pago trae «Cobrado por» con el admin de la sesión puesto, y se puede cambiar por otro ADMIN o SUPERADMIN. En el detalle de la cartilla, cada pago tiene una acción para cambiar quién lo cobró. Con eso se corrigen los de la señora Francisca.
+Al subirlo, el formulario de pago trae «Cobrado por» con el admin de la sesión puesto, y se puede cambiar por otro ADMIN o SUPERADMIN.
+
+Acordado el 2026-11-19:
+- Se usa el mismo `POST` de pagos, con un `collectorId` opcional. No hay endpoint para editar.
+- Un pago mal puesto, sea por el monto, el método o quién cobró, se elimina y se registra de nuevo. Así se corrigen los de la señora Francisca.
+- En el formulario, el monto y el método van en una fila, con Yape y Efectivo como grupo de botones. Debajo va «Cobrado por».
 
 No cambia la base: el campo ya existe.
 
@@ -120,7 +125,8 @@ Mientras no exista este entregable, sigue lo acordado: cualquier admin cierra y 
 - El Bingo II aparece dentro de la Chocolatada 2026 y su ganancia coincide con la del resumen del bingo.
 - Cerrar un proyecto: ya no deja registrar cartillas ni pagos en sus actividades. El superadmin lo reabre.
 - Registrar un pago eligiendo a otro admin como «Cobrado por». El detalle muestra a esa persona.
-- Corregir quién cobró un pago antiguo. El servidor rechaza a una persona con rol Usuario.
+- El servidor rechaza como «Cobrado por» a una persona con rol Usuario.
+- Para corregir un pago antiguo, se elimina y se registra de nuevo con quien lo cobró.
 
 </details>
 

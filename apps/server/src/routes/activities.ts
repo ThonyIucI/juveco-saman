@@ -9,6 +9,7 @@ import {
   type IActivityItemPaymentResource,
   type IActivitySummary,
   PAYMENT_ALREADY_PAID_MESSAGE,
+  PAYMENT_COLLECTOR_REQUIRED_MESSAGE,
   PAYMENT_METHODS,
   PAYMENT_METHOD_REQUIRED_MESSAGE,
   paymentOverPendingMessage,
@@ -55,6 +56,7 @@ const ACTIVITY_NOT_FOUND = "No encontramos esa actividad.";
 const ITEM_NOT_FOUND = "No encontramos esa venta.";
 const BUYER_NOT_FOUND = "No encontramos a quien lo compró.";
 const SELLER_NOT_FOUND = "El vendedor tiene que ser un administrador.";
+const COLLECTOR_NOT_FOUND = "Quien cobró tiene que ser un administrador.";
 const NO_CHANGES_MESSAGE = "No hay cambios para guardar.";
 const PAYMENT_NOT_FOUND = "No encontramos ese pago.";
 
@@ -101,6 +103,10 @@ const changeItemSchema = z.object({ serial: serialSchema });
 const createPaymentSchema = z.object({
   amount: priceSchema,
   method: z.enum(PAYMENT_METHODS, PAYMENT_METHOD_REQUIRED_MESSAGE),
+  collectorId: z
+    .string(PAYMENT_COLLECTOR_REQUIRED_MESSAGE)
+    .min(1, PAYMENT_COLLECTOR_REQUIRED_MESSAGE)
+    .optional(),
 });
 
 export type TDb = ReturnType<typeof createDb>;
@@ -256,11 +262,14 @@ const assertBuyerExists = async (db: TDb, buyerId: string) => {
   }
 };
 
-/* Vende un administrador o el superadmin (Thony, 2026-11-07): una persona común no. */
-const assertSellerIsAdmin = async (db: TDb, sellerId: string) => {
-  const seller = await db.select({ role: users.role }).from(users).where(eq(users.id, sellerId)).get();
-  if (!seller || (seller.role !== EUserRole.ADMIN && seller.role !== EUserRole.SUPERADMIN)) {
-    throw badRequest(SELLER_NOT_FOUND);
+/*
+  Vende y cobra un administrador o el superadmin (Thony, 2026-11-07): una persona común no
+  maneja plata. `message` dice cuál de los dos falló.
+*/
+const assertIsAdmin = async (db: TDb, userId: string, message: string) => {
+  const person = await db.select({ role: users.role }).from(users).where(eq(users.id, userId)).get();
+  if (!person || (person.role !== EUserRole.ADMIN && person.role !== EUserRole.SUPERADMIN)) {
+    throw badRequest(message);
   }
 };
 
@@ -296,7 +305,7 @@ export const activityRoutes = new Hono<TAppEnv>()
     await assertActivityOpen(db, activity);
     await assertBuyerExists(db, body.buyerId);
     if (body.sellerId !== undefined) {
-      await assertSellerIsAdmin(db, body.sellerId);
+      await assertIsAdmin(db, body.sellerId, SELLER_NOT_FOUND);
     }
 
     const id = newId();
@@ -332,7 +341,7 @@ export const activityRoutes = new Hono<TAppEnv>()
       await assertBuyerExists(db, body.buyerId);
     }
     if (body.sellerId !== undefined) {
-      await assertSellerIsAdmin(db, body.sellerId);
+      await assertIsAdmin(db, body.sellerId, SELLER_NOT_FOUND);
     }
 
     await db
@@ -418,7 +427,10 @@ export const activityRoutes = new Hono<TAppEnv>()
     return ok(context, rows.map(toPaymentResource));
   })
 
-  /* Cobra el administrador de la sesión. Nunca más de lo que falta cobrar. */
+  /*
+    Cobra el administrador de la sesión, salvo que se elija otro (gestión de fondos, documento 1).
+    Nunca más de lo que falta cobrar. Un pago mal puesto se elimina y se registra de nuevo.
+  */
   .post(ACTIVITY_ROUTES.PAYMENTS, requireAuth, validateJson(createPaymentSchema), async (context) => {
     const body = context.req.valid("json");
     const activityId = context.req.param("id");
@@ -426,6 +438,9 @@ export const activityRoutes = new Hono<TAppEnv>()
     const db = createDb();
 
     await assertActivityOpen(db, await findActivity(db, activityId));
+    if (body.collectorId !== undefined) {
+      await assertIsAdmin(db, body.collectorId, COLLECTOR_NOT_FOUND);
+    }
     const current = await findItem(db, activityId, itemId);
     assertNotVoided(current);
     const pending = pendingOf(current.item.price, current.paidAmount);
@@ -442,7 +457,7 @@ export const activityRoutes = new Hono<TAppEnv>()
       itemId,
       amount: body.amount,
       method: body.method,
-      collectorId: context.var.user.id,
+      collectorId: body.collectorId ?? context.var.user.id,
     });
 
     const [payment, item] = await Promise.all([findPayment(db, itemId, id), findItem(db, activityId, itemId)]);

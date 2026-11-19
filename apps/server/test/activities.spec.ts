@@ -215,6 +215,38 @@ describe("/activities", () => {
       expect(await errorOf(response)).toBe("Elige cómo pagó.");
     });
 
+    it("registra el pago a nombre del administrador elegido como «Cobrado por»", async () => {
+      // Arrange
+      const admin = await postJson(
+        "/api/v1/users",
+        { firstName: "Francisca", access: { email: "francisca@test.local", password: "password123" } },
+        { cookie },
+      );
+      const collectorId = (await admin.json<IBody<{ id: string }>>()).data.id;
+      const item = await newItem("0750");
+
+      // Act
+      const response = await pay(item.id, { amount: 10, method: "CASH", collectorId });
+      const body = await response.json<IBody<{ payment: IPaymentData }>>();
+
+      // Assert
+      expect(response.status).toBe(201);
+      expect(body.data.payment.collector).toMatchObject({ firstName: "Francisca" });
+    });
+
+    it("no deja que cobre una persona sin rol de administrador", async () => {
+      // Arrange
+      const item = await newItem("0760");
+
+      // Act
+      const response = await pay(item.id, { amount: 10, method: "YAPE", collectorId: buyerId });
+
+      // Assert
+      expect(response.status).toBe(400);
+      expect(await errorOf(response)).toBe("Quien cobró tiene que ser un administrador.");
+      expect((await listItems()).find((entry) => entry.id === item.id)?.paidAmount).toBe(0);
+    });
+
     it("elimina un pago y vuelve a quedar por cobrar", async () => {
       // Arrange
       const item = await newItem("0730");
