@@ -1,4 +1,4 @@
-import { LayoutDashboard, PartyPopper, Users } from "lucide-react";
+import { FolderKanban, LayoutDashboard, PartyPopper, Users } from "lucide-react";
 import type { ComponentType } from "react";
 
 import type { TUserRole } from "@juveco/shared/roles";
@@ -7,7 +7,7 @@ import type { TUserRole } from "@juveco/shared/roles";
  * Las rutas se listan como literales y no como `string` porque el `to` de TanStack Router
  * está tipado: un enlace a una ruta inexistente tiene que romper el build, no la página.
  */
-export type TNavPath = "/dashboard" | "/usuarios" | "/actividades";
+export type TNavPath = "/dashboard" | "/usuarios" | "/actividades" | "/proyectos";
 
 export interface INavItem {
   to: TNavPath;
@@ -30,6 +30,7 @@ export const isNavGroup = (entry: TSidebarEntry): entry is INavGroup => "items" 
 
 const DASHBOARD: INavItem = { to: "/dashboard", label: "Panel", shortLabel: "Panel", icon: LayoutDashboard };
 const USERS: INavItem = { to: "/usuarios", label: "Usuarios", shortLabel: "Usuarios", icon: Users };
+const PROJECTS: INavItem = { to: "/proyectos", label: "Proyectos", shortLabel: "Proyectos", icon: FolderKanban };
 const ACTIVITIES: INavItem = {
   to: "/actividades",
   label: "Actividades",
@@ -38,7 +39,7 @@ const ACTIVITIES: INavItem = {
 };
 
 /* Por ahora todos los roles ven lo mismo; dar acceso lo frena la pantalla (y el server). */
-const APP_NAV: readonly INavItem[] = [DASHBOARD, ACTIVITIES, USERS];
+const APP_NAV: readonly INavItem[] = [DASHBOARD, PROJECTS, ACTIVITIES, USERS];
 
 /** Los enlaces de la sesión. Sin sesión, ninguno. */
 export const navItemsForRole = (role: TUserRole | null): readonly INavItem[] => (role ? APP_NAV : []);

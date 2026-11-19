@@ -9,6 +9,21 @@ interface ISolesInputProps {
   onChange: (value: string) => void;
 }
 
+/**
+ * Deja escribir solo un monto (Thony, 2026-11-17): dígitos, un separador (punto o coma) y
+ * hasta dos decimales. Una letra o un segundo separador no entran.
+ */
+export const sanitizeSolesInput = (text: string): string => {
+  const cleaned = text.replace(/[^\d.,]/g, "");
+  const separatorIndex = cleaned.search(/[.,]/);
+  if (separatorIndex === -1) {
+    return cleaned;
+  }
+  const whole = cleaned.slice(0, separatorIndex);
+  const decimals = cleaned.slice(separatorIndex + 1).replace(/[.,]/g, "").slice(0, 2);
+  return `${whole}${cleaned[separatorIndex]}${decimals}`;
+};
+
 /** Un monto en soles: «S/» a la izquierda y teclado decimal en el celular. */
 export default function SolesInput({ id, value, placeholder, isInvalid, onBlur, onChange }: ISolesInputProps) {
   return (
@@ -28,7 +43,7 @@ export default function SolesInput({ id, value, placeholder, isInvalid, onBlur, 
         aria-invalid={isInvalid}
         value={value}
         onBlur={onBlur}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => onChange(sanitizeSolesInput(event.target.value))}
         className="pl-11 tabular-nums"
       />
     </div>

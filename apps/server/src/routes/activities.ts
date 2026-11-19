@@ -35,6 +35,7 @@ import type { TAppEnv } from "../lib/app-env";
 import { badRequest, conflict, notFound } from "../lib/errors";
 import { newId } from "../lib/ids";
 import { noteSchema } from "../lib/person-input";
+import { assertActivityOpen } from "../lib/project-guards";
 import { ok } from "../lib/response";
 import { validateJson } from "../lib/validator";
 import { requireAuth } from "../middleware/require-role";
@@ -116,8 +117,9 @@ const paidAmountSql = sql<number>`coalesce((select sum(${activityItemPayments.am
 /** Lo que falta cobrar, sin decimales de más por la suma de `real`. */
 const pendingOf = (price: number, paidAmount: number): number => Math.max(roundSoles(price - paidAmount), 0);
 
-const toActivityResource = (row: TActivityRow): IActivityResource => ({
+export const toActivityResource = (row: TActivityRow): IActivityResource => ({
   id: row.id,
+  projectId: row.projectId,
   name: row.name,
   type: row.type,
   eventDate: row.eventDate,
@@ -291,6 +293,7 @@ export const activityRoutes = new Hono<TAppEnv>()
     const db = createDb();
 
     const activity = await findActivity(db, context.req.param("id"));
+    await assertActivityOpen(db, activity);
     await assertBuyerExists(db, body.buyerId);
     if (body.sellerId !== undefined) {
       await assertSellerIsAdmin(db, body.sellerId);
@@ -317,6 +320,7 @@ export const activityRoutes = new Hono<TAppEnv>()
     const itemId = context.req.param("itemId");
     const db = createDb();
 
+    await assertActivityOpen(db, await findActivity(db, activityId));
     const current = await findItem(db, activityId, itemId);
     assertNotVoided(current);
     if (body.price !== undefined && body.price < roundSoles(current.paidAmount)) {
@@ -351,6 +355,7 @@ export const activityRoutes = new Hono<TAppEnv>()
     const itemId = context.req.param("itemId");
     const db = createDb();
 
+    await assertActivityOpen(db, await findActivity(db, activityId));
     const current = await findItem(db, activityId, itemId);
     /* Una anulada se guarda: es la prueba de que esa serie ya no vale el día del evento. */
     assertNotVoided(current);
@@ -374,6 +379,7 @@ export const activityRoutes = new Hono<TAppEnv>()
     const itemId = context.req.param("itemId");
     const db = createDb();
 
+    await assertActivityOpen(db, await findActivity(db, activityId));
     const current = await findItem(db, activityId, itemId);
     assertNotVoided(current);
 
@@ -419,6 +425,7 @@ export const activityRoutes = new Hono<TAppEnv>()
     const itemId = context.req.param("itemId");
     const db = createDb();
 
+    await assertActivityOpen(db, await findActivity(db, activityId));
     const current = await findItem(db, activityId, itemId);
     assertNotVoided(current);
     const pending = pendingOf(current.item.price, current.paidAmount);
@@ -447,6 +454,7 @@ export const activityRoutes = new Hono<TAppEnv>()
     const itemId = context.req.param("itemId");
     const db = createDb();
 
+    await assertActivityOpen(db, await findActivity(db, activityId));
     assertNotVoided(await findItem(db, activityId, itemId));
     const payment = await findPayment(db, itemId, context.req.param("paymentId"));
     await db.delete(activityItemPayments).where(eq(activityItemPayments.id, payment.payment.id));

@@ -5,4 +5,5 @@ export * from "./activity-prizes";
 export * from "./activity-items";
 export * from "./auth";
 export * from "./neighborhoods";
+export * from "./projects";
 export * from "./users";

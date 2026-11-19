@@ -17,6 +17,7 @@ import { activityFinanceRoutes } from "./routes/activity-finances";
 import { healthRoutes } from "./routes/health";
 import { internalRoutes } from "./routes/internal";
 import { meRoutes } from "./routes/me";
+import { projectRoutes } from "./routes/projects";
 import { userRoutes } from "./routes/users";
 
 const AUTH_PATH = "/api/auth";
@@ -60,6 +61,7 @@ app
   .route("/", healthRoutes)
   .route("/", meRoutes)
   .route("/", userRoutes)
+  .route("/", projectRoutes)
   .route("/", activityRoutes)
   .route("/", activityFinanceRoutes)
   .route("/", internalRoutes);

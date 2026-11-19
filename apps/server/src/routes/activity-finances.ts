@@ -31,6 +31,7 @@ import type { TAppEnv } from "../lib/app-env";
 import { badRequest, notFound } from "../lib/errors";
 import { newId } from "../lib/ids";
 import { noteSchema } from "../lib/person-input";
+import { assertActivityOpen } from "../lib/project-guards";
 import { ok } from "../lib/response";
 import { validateJson } from "../lib/validator";
 import { requireAuth } from "../middleware/require-role";
@@ -154,7 +155,7 @@ const assertDonorExists = async (db: TDb, donorId: string | null) => {
 const sumOf = (column: AnyColumn) => sql<number>`coalesce(sum(${column}), 0)`.mapWith(Number);
 
 /** Lo que entra (cobrado y esperado) menos premios comprados y gastos. */
-const buildBalance = async (db: TDb, activityId: string): Promise<IActivityBalance> => {
+export const buildBalance = async (db: TDb, activityId: string): Promise<IActivityBalance> => {
   const [expectedRow, collectedRow, purchasedRow, donatedRow, expensesRow] = await Promise.all([
     db
       .select({ total: sumOf(activityItems.price) })
@@ -219,6 +220,7 @@ export const activityFinanceRoutes = new Hono<TAppEnv>()
     const body = context.req.valid("json");
     const db = createDb();
     const activity = await findActivity(db, context.req.param("id"));
+    await assertActivityOpen(db, activity);
     await assertDonorExists(db, body.donorId);
 
     const id = newId();
@@ -234,6 +236,7 @@ export const activityFinanceRoutes = new Hono<TAppEnv>()
     const prizeId = context.req.param("prizeId");
     const db = createDb();
 
+    await assertActivityOpen(db, await findActivity(db, activityId));
     await findPrize(db, activityId, prizeId);
     await assertDonorExists(db, body.donorId);
     await db.update(activityPrizes).set(body).where(eq(activityPrizes.id, prizeId));
@@ -246,6 +249,7 @@ export const activityFinanceRoutes = new Hono<TAppEnv>()
     const prizeId = context.req.param("prizeId");
     const db = createDb();
 
+    await assertActivityOpen(db, await findActivity(db, activityId));
     await findPrize(db, activityId, prizeId);
     await db.delete(activityPrizes).where(eq(activityPrizes.id, prizeId));
 
@@ -267,6 +271,7 @@ export const activityFinanceRoutes = new Hono<TAppEnv>()
     const body = context.req.valid("json");
     const db = createDb();
     const activity = await findActivity(db, context.req.param("id"));
+    await assertActivityOpen(db, activity);
 
     const id = newId();
     await db.insert(activityExpenses).values({
@@ -286,6 +291,7 @@ export const activityFinanceRoutes = new Hono<TAppEnv>()
     const expenseId = context.req.param("expenseId");
     const db = createDb();
 
+    await assertActivityOpen(db, await findActivity(db, activityId));
     await findExpense(db, activityId, expenseId);
     await db
       .update(activityExpenses)
@@ -300,6 +306,7 @@ export const activityFinanceRoutes = new Hono<TAppEnv>()
     const expenseId = context.req.param("expenseId");
     const db = createDb();
 
+    await assertActivityOpen(db, await findActivity(db, activityId));
     await findExpense(db, activityId, expenseId);
     await db.delete(activityExpenses).where(eq(activityExpenses.id, expenseId));
 

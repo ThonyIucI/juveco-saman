@@ -64,6 +64,20 @@
       "when": 1794403936993,
       "tag": "0008_rapid_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1794933775409,
+      "tag": "0009_classy_spencer_smythe",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1794933792791,
+      "tag": "0010_seed_chocolatada_2026",
+      "breakpoints": true
     }
   ]
 }

@@ -29,6 +29,8 @@ export const activityItemLabels: Record<TActivityType, IActivityItemLabel> = {
 /** Una actividad tal como la devuelve la API. */
 export interface IActivityResource {
   id: string;
+  /** Evento o proyecto al que pertenece. */
+  projectId: string | null;
   name: string;
   type: TActivityType;
   /** «2026-11-21», sin hora (ver `dates.ts`). */
