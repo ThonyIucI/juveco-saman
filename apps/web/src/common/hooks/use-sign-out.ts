@@ -2,6 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
+import { clearCachedSession } from "@/lib/session-cache";
 
 const SIGN_OUT_FAILED_MESSAGE = "No pudimos cerrar la sesión. Inténtalo de nuevo.";
 
@@ -14,6 +15,7 @@ export const useSignOut = () => {
       await authClient.signOut({
         fetchOptions: {
           onSuccess: () => {
+            clearCachedSession();
             navigate({ to: "/login" });
           },
           onError: () => {

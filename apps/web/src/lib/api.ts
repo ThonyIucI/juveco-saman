@@ -1,6 +1,10 @@
 import { API_PREFIX, type IApiResponse } from "@juveco/shared/api";
 
 import { getServerOrigin } from "./auth-client";
+import { clearCachedSession } from "./session-cache";
+
+const UNAUTHORIZED_STATUS = 401;
+const LOGIN_PATH = "/login";
 
 /** Error con el mensaje en español que mandó el server, listo para mostrar en un toast. */
 export class ApiError extends Error {
@@ -56,6 +60,15 @@ export const apiRequest = async <TData>(
   }
 
   const payload = (await response.json().catch(() => null)) as IApiResponse<TData> | null;
+
+  /*
+    La sesión guardada en memoria venció o la cerraron en otro lado: se borra y se vuelve al
+    login con una recarga completa, que también limpia el estado de las pantallas.
+  */
+  if (response.status === UNAUTHORIZED_STATUS) {
+    clearCachedSession();
+    window.location.assign(LOGIN_PATH);
+  }
 
   if (!response.ok || !payload?.success) {
     throw new ApiError(payload?.error ?? messageForStatus(response.status), response.status);

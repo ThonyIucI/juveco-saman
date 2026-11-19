@@ -1,5 +1,4 @@
 import { Button } from "@juveco/ui/components/button";
-import { Skeleton } from "@juveco/ui/components/skeleton";
 import { type IProjectResource, projectDateLabels, projectTypeLabels } from "@juveco/shared/projects";
 import { IconButton } from "@juveco/ui/components/icon-button";
 import { activityTypeLabels } from "@juveco/shared/activities";
@@ -11,6 +10,7 @@ import { useEffect } from "react";
 
 import ConfirmModal from "@/common/components/confirm-modal";
 import EmptyState from "@/common/components/empty-state";
+import Loadable from "@/common/components/loadable";
 import PageBox from "@/common/components/page-box";
 import PageContainer from "@/common/components/page-container";
 import PageHeader from "@/common/components/page-header";
@@ -18,6 +18,7 @@ import { useBoolean } from "@/common/hooks/use-boolean";
 import { formatDayMonth, formatShortDate } from "@/common/utils/format-date";
 import ProjectFormModal from "@/modules/projects/components/project-form-modal";
 import ProjectProgressCard from "@/modules/projects/components/project-progress-card";
+import { ProjectDetailSkeleton } from "@/modules/projects/components/project-skeletons";
 import ProjectStatusBadge from "@/modules/projects/components/project-status-badge";
 import { useGetProject } from "@/modules/projects/hooks/use-get-project";
 import { useSetProjectClosed } from "@/modules/projects/hooks/use-set-project-closed";
@@ -132,11 +133,10 @@ function ProjectDetailPage() {
         {project?.description && <p className="mt-3 text-sm text-foreground">{project.description}</p>}
       </PageBox>
 
-      <PageBox isFill className="space-y-4">
-        {!detail ? (
-          <Skeleton className="h-40 w-full rounded-2xl" />
-        ) : (
-          <>
+      <PageBox isFill>
+        <Loadable isLoading={!detail} skeleton={<ProjectDetailSkeleton />} className="space-y-4">
+          {detail && (
+            <>
             <ProjectProgressCard project={detail.project} progress={detail.progress} />
 
             <h2 className="font-heading text-base font-semibold text-foreground">Actividades</h2>
@@ -173,8 +173,9 @@ function ProjectDetailPage() {
                 ))}
               </div>
             )}
-          </>
-        )}
+            </>
+          )}
+        </Loadable>
       </PageBox>
 
       {project && (

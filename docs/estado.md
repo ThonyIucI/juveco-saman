@@ -57,6 +57,7 @@ Ver los pasos en [tecnico/despliegue.md](tecnico/despliegue.md).
 
 1. **Ganadores** de los premios (más adelante).
 2. **Contenido de Juveco**: proyectos, quiénes somos y demás secciones públicas.
+3. **Datos en caché al volver a una vista** (mapeado 2026-11-18, por detallar): hoy cada vista vuelve a pedir todo y muestra el esqueleto otra vez. La idea es mostrar al instante lo que ya se tenía y actualizar por detrás, migrando `useRequest` a TanStack Query. Toca todos los hooks de `modules/*/hooks`: se propone y estima antes de empezar.
 
 ## Decisiones abiertas
 

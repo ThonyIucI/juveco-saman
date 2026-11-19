@@ -1,17 +1,18 @@
 import { Button } from "@juveco/ui/components/button";
-import { Skeleton } from "@juveco/ui/components/skeleton";
 import type { IProjectResource } from "@juveco/shared/projects";
 import { createFileRoute } from "@tanstack/react-router";
 import { FolderKanban, Plus } from "lucide-react";
 import { useEffect } from "react";
 
 import EmptyState from "@/common/components/empty-state";
+import Loadable from "@/common/components/loadable";
 import PageBox from "@/common/components/page-box";
 import PageContainer from "@/common/components/page-container";
 import PageHeader from "@/common/components/page-header";
 import { useBoolean } from "@/common/hooks/use-boolean";
 import ProjectCard from "@/modules/projects/components/project-card";
 import ProjectFormModal from "@/modules/projects/components/project-form-modal";
+import { ProjectGridSkeleton } from "@/modules/projects/components/project-skeletons";
 import { useListProjects } from "@/modules/projects/hooks/use-list-projects";
 
 export const Route = createFileRoute("/_app/proyectos/")({
@@ -54,9 +55,8 @@ function ProjectsPage() {
       </PageBox>
 
       <PageBox isFill>
-        {isLoading ? (
-          <Skeleton className="h-28 w-full rounded-2xl" />
-        ) : projects.length === 0 ? (
+        <Loadable isLoading={isLoading} skeleton={<ProjectGridSkeleton />}>
+        {projects.length === 0 ? (
           <EmptyState
             icon={FolderKanban}
             title="Todavía no hay eventos ni proyectos"
@@ -74,6 +74,7 @@ function ProjectsPage() {
             ))}
           </div>
         )}
+        </Loadable>
       </PageBox>
 
       <ProjectFormModal

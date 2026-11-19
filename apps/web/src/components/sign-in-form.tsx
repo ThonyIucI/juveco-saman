@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import z from "zod";
 
 import { authClient } from "@/lib/auth-client";
+import { clearCachedSession } from "@/lib/session-cache";
 
 const MIN_PASSWORD_LENGTH = 8;
 const SIGN_IN_FAILED_MESSAGE = "No se pudo iniciar sesión.";
@@ -30,6 +31,8 @@ export default function SignInForm() {
           { email: value.email, password: value.password },
           {
             onSuccess: () => {
+              /* La sesión nueva se pide al entrar al panel, no se usa la vacía de antes. */
+              clearCachedSession();
               navigate({ to: "/dashboard" });
               toast.success("Sesión iniciada");
             },

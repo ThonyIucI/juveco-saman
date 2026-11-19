@@ -2,21 +2,24 @@ import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 
 import { parseUserRole } from "@juveco/shared/roles";
 
-import { authClient } from "@/lib/auth-client";
+import { getCachedSession } from "@/lib/session-cache";
 
-/** Layout de todas las pantallas con sesión. Sin sesión → /login. */
+/**
+ * Layout de todas las pantallas con sesión. Sin sesión → /login. La sesión sale de memoria
+ * (`getCachedSession`): cambiar de vista no espera al servidor.
+ */
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
   beforeLoad: async () => {
-    const session = await authClient.getSession();
+    const session = await getCachedSession();
 
-    if (!session.data) {
+    if (!session) {
       throw redirect({ to: "/login" });
     }
 
-    const role = parseUserRole(session.data.user.role);
+    const role = parseUserRole(session.user.role);
     /* `user.id` es el del login; la persona (la que vende y cobra) es `userId`. */
-    return { user: { ...session.data.user, role, personId: session.data.user.userId ?? "" } };
+    return { user: { ...session.user, role, personId: session.user.userId ?? "" } };
   },
 });
 

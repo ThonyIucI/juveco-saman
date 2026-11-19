@@ -2,14 +2,14 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { ModeToggle } from "@/components/mode-toggle";
 import SignInForm from "@/components/sign-in-form";
-import { authClient } from "@/lib/auth-client";
+import { getCachedSession } from "@/lib/session-cache";
 
 export const Route = createFileRoute("/login")({
   /* Quien ya tiene sesión no ve el formulario. */
   beforeLoad: async () => {
-    const session = await authClient.getSession();
+    const session = await getCachedSession();
 
-    if (session.data) {
+    if (session) {
       throw redirect({ to: "/dashboard" });
     }
   },
