@@ -47,7 +47,9 @@ describe("premios, gastos y balance de una actividad", () => {
     cookie = (await signInAsSuperadmin()).cookie;
 
     const activities = await request("/api/v1/activities", { headers: { cookie } });
-    [{ id: activityId }] = (await dataOf<{ id: string }[]>(activities)) as [{ id: string }];
+    /* El bingo por tipo: el campeonato de la seed también está en la lista. */
+    const all = await dataOf<{ id: string; type: string }[]>(activities);
+    activityId = all.find((activity) => activity.type === "BINGO")?.id ?? "";
 
     const donor = await postJson("/api/v1/users", { firstName: "Rosa", lastName: "Donante" }, { cookie });
     donorId = (await dataOf<{ id: string }>(donor)).id;

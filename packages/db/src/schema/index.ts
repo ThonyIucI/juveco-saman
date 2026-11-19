@@ -3,6 +3,7 @@ export * from "./activity-expenses";
 export * from "./activity-item-payments";
 export * from "./activity-prizes";
 export * from "./activity-items";
+export * from "./activity-teams";
 export * from "./auth";
 export * from "./neighborhoods";
 export * from "./projects";

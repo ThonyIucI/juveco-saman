@@ -29,16 +29,20 @@ export const PAYMENT_COLLECTOR_REQUIRED_MESSAGE = "Elige quién cobró.";
 export const paymentOverPendingMessage = (pending: string): string =>
   `El pago no puede pasar de lo que falta cobrar: ${pending}.`;
 
-/** Un pago tal como lo devuelve la API. */
-export interface IActivityItemPaymentResource {
+/** Lo común a todo pago, sea de una cartilla o de la inscripción de un equipo. */
+export interface IPaymentResource {
   id: string;
-  itemId: string;
   /** En soles con dos decimales (ver `money.ts`). */
   amount: number;
   method: TPaymentMethod;
   /** El administrador que lo cobró. */
   collector: IActivityItemPerson;
   createdAt: string;
+}
+
+/** Un pago de un ítem tal como lo devuelve la API. */
+export interface IActivityItemPaymentResource extends IPaymentResource {
+  itemId: string;
 }
 
 /** Lo que se escribe al registrar un pago. */
@@ -50,8 +54,8 @@ export interface IActivityItemPaymentInput {
 }
 
 /** El ítem queda con otro «pagado»: la API lo devuelve junto con el pago. */
-export interface IPaymentChange<TItem> {
-  payment: IActivityItemPaymentResource;
+export interface IPaymentChange<TItem, TPayment extends IPaymentResource = IActivityItemPaymentResource> {
+  payment: TPayment;
   item: TItem;
 }
 

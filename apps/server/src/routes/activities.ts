@@ -56,7 +56,7 @@ const ACTIVITY_NOT_FOUND = "No encontramos esa actividad.";
 const ITEM_NOT_FOUND = "No encontramos esa venta.";
 const BUYER_NOT_FOUND = "No encontramos a quien lo compró.";
 const SELLER_NOT_FOUND = "El vendedor tiene que ser un administrador.";
-const COLLECTOR_NOT_FOUND = "Quien cobró tiene que ser un administrador.";
+export const COLLECTOR_NOT_FOUND = "Quien cobró tiene que ser un administrador.";
 const NO_CHANGES_MESSAGE = "No hay cambios para guardar.";
 const PAYMENT_NOT_FOUND = "No encontramos ese pago.";
 
@@ -100,7 +100,8 @@ const updateItemSchema = createItemSchema
 
 const changeItemSchema = z.object({ serial: serialSchema });
 
-const createPaymentSchema = z.object({
+/* El mismo pago para cartillas e inscripciones de equipos. */
+export const createPaymentSchema = z.object({
   amount: priceSchema,
   method: z.enum(PAYMENT_METHODS, PAYMENT_METHOD_REQUIRED_MESSAGE),
   collectorId: z
@@ -121,7 +122,7 @@ const sellers = alias(users, "sellers");
 const paidAmountSql = sql<number>`coalesce((select sum(${activityItemPayments.amount}) from ${activityItemPayments} where ${activityItemPayments.itemId} = ${activityItems.id}), 0)`.mapWith(Number);
 
 /** Lo que falta cobrar, sin decimales de más por la suma de `real`. */
-const pendingOf = (price: number, paidAmount: number): number => Math.max(roundSoles(price - paidAmount), 0);
+export const pendingOf = (price: number, paidAmount: number): number => Math.max(roundSoles(price - paidAmount), 0);
 
 export const toActivityResource = (row: TActivityRow): IActivityResource => ({
   id: row.id,
@@ -266,7 +267,7 @@ const assertBuyerExists = async (db: TDb, buyerId: string) => {
   Vende y cobra un administrador o el superadmin (Thony, 2026-11-07): una persona común no
   maneja plata. `message` dice cuál de los dos falló.
 */
-const assertIsAdmin = async (db: TDb, userId: string, message: string) => {
+export const assertIsAdmin = async (db: TDb, userId: string, message: string) => {
   const person = await db.select({ role: users.role }).from(users).where(eq(users.id, userId)).get();
   if (!person || (person.role !== EUserRole.ADMIN && person.role !== EUserRole.SUPERADMIN)) {
     throw badRequest(message);

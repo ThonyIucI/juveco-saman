@@ -3,6 +3,7 @@ import { activityExpenses } from "@juveco/db/schema/activity-expenses";
 import { activityItemPayments } from "@juveco/db/schema/activity-item-payments";
 import { activityItems } from "@juveco/db/schema/activity-items";
 import { activityPrizes } from "@juveco/db/schema/activity-prizes";
+import { activityTeamPayments, activityTeams } from "@juveco/db/schema/activity-teams";
 import { users } from "@juveco/db/schema/users";
 import {
   EXPENSE_CONCEPT_LENGTH_MESSAGE,
@@ -154,9 +155,20 @@ const assertDonorExists = async (db: TDb, donorId: string | null) => {
 
 const sumOf = (column: AnyColumn) => sql<number>`coalesce(sum(${column}), 0)`.mapWith(Number);
 
-/** Lo que entra (cobrado y esperado) menos premios comprados y gastos. */
+/**
+ * Lo que entra (cobrado y esperado) menos premios comprados y gastos. Lo que entra suma lo
+ * vendido (cartillas) y las inscripciones de los equipos: una actividad tiene uno u otro.
+ */
 export const buildBalance = async (db: TDb, activityId: string): Promise<IActivityBalance> => {
-  const [expectedRow, collectedRow, purchasedRow, donatedRow, expensesRow] = await Promise.all([
+  const [
+    expectedRow,
+    collectedRow,
+    purchasedRow,
+    donatedRow,
+    expensesRow,
+    teamsExpectedRow,
+    teamsCollectedRow,
+  ] = await Promise.all([
     db
       .select({ total: sumOf(activityItems.price) })
       .from(activityItems)
@@ -184,10 +196,21 @@ export const buildBalance = async (db: TDb, activityId: string): Promise<IActivi
       .from(activityExpenses)
       .where(eq(activityExpenses.activityId, activityId))
       .get(),
+    db
+      .select({ total: sumOf(activityTeams.price) })
+      .from(activityTeams)
+      .where(eq(activityTeams.activityId, activityId))
+      .get(),
+    db
+      .select({ total: sumOf(activityTeamPayments.amount) })
+      .from(activityTeamPayments)
+      .innerJoin(activityTeams, eq(activityTeams.id, activityTeamPayments.teamId))
+      .where(eq(activityTeams.activityId, activityId))
+      .get(),
   ]);
 
-  const expected = roundSoles(expectedRow?.total ?? 0);
-  const collected = roundSoles(collectedRow?.total ?? 0);
+  const expected = roundSoles((expectedRow?.total ?? 0) + (teamsExpectedRow?.total ?? 0));
+  const collected = roundSoles((collectedRow?.total ?? 0) + (teamsCollectedRow?.total ?? 0));
   const purchasedPrizes = roundSoles(purchasedRow?.total ?? 0);
   const expenses = roundSoles(expensesRow?.total ?? 0);
 

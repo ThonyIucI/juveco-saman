@@ -51,8 +51,11 @@ export interface IItemCollection {
   status: TCollectionStatus;
 }
 
+/** Lo que se cobra por partes: una cartilla o la inscripción de un equipo. */
+export type TCollectable = Pick<IActivityItemResource, "price" | "paidAmount">;
+
 /** Lo que falta cobrar y su estado: 0 si pagó todo, el precio entero si no pagó nada. */
-export const collectionOf = (item: IActivityItemResource): IItemCollection => {
+export const collectionOf = (item: TCollectable): IItemCollection => {
   const paid = item.paidAmount;
   const pending = Math.max(roundSoles(item.price - paid), 0);
   const status: TCollectionStatus = pending === 0 ? "PAID" : paid > 0 ? "PARTIAL" : "UNPAID";

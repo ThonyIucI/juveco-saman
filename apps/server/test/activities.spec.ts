@@ -70,7 +70,10 @@ describe("/activities", () => {
     cookie = (await signInAsSuperadmin()).cookie;
 
     const activities = await request("/api/v1/activities", { headers: { cookie } });
-    [bingo] = (await activities.json<IBody<IActivityData[]>>()).data as [IActivityData];
+    /* Por tipo y no por posición: el campeonato de la seed también está en la lista. */
+    bingo = (await activities.json<IBody<IActivityData[]>>()).data.find(
+      (activity) => activity.type === "BINGO",
+    ) as IActivityData;
 
     const buyer = await postJson(
       "/api/v1/users",

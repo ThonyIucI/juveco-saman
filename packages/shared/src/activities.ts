@@ -1,16 +1,19 @@
 /**
- * Actividades de Juveco (acordado 2026-11-07): por ahora solo bingos. Cada una tiene su fecha
- * y su precio por defecto; la primera, «Bingo II - 2026», la crea una migración.
+ * Actividades de Juveco (acordado 2026-11-07): bingos y, desde el 2026-11-19, campeonatos.
+ * Cada una tiene su fecha y su precio por defecto (en un bingo, la cartilla; en un campeonato,
+ * la inscripción de cada equipo). Las crea una migración: no hay pantalla para crearlas.
  */
 
 export enum EActivityType {
   BINGO = "BINGO",
+  CHAMPIONSHIP = "CHAMPIONSHIP",
 }
 
 export type TActivityType = `${EActivityType}`;
 
 export const activityTypeLabels: Record<TActivityType, string> = {
   [EActivityType.BINGO]: "Bingo",
+  [EActivityType.CHAMPIONSHIP]: "Campeonato",
 };
 
 interface IActivityItemLabel {
@@ -24,6 +27,8 @@ interface IActivityItemLabel {
  */
 export const activityItemLabels: Record<TActivityType, IActivityItemLabel> = {
   [EActivityType.BINGO]: { singular: "cartilla", plural: "cartillas" },
+  /* En un campeonato lo que se cobra son las inscripciones de los equipos, no ventas sueltas. */
+  [EActivityType.CHAMPIONSHIP]: { singular: "venta", plural: "ventas" },
 };
 
 /** Una actividad tal como la devuelve la API. */

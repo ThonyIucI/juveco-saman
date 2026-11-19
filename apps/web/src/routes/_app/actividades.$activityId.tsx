@@ -2,7 +2,7 @@ import { Button } from "@juveco/ui/components/button";
 import { IconButton } from "@juveco/ui/components/icon-button";
 import { Skeleton } from "@juveco/ui/components/skeleton";
 import { cn } from "@juveco/ui/lib/utils";
-import { activityItemLabels } from "@juveco/shared/activities";
+import { EActivityType, activityItemLabels } from "@juveco/shared/activities";
 import type { IActivityItemChangeResult, IActivityItemResource } from "@juveco/shared/activity-items";
 import { roundSoles } from "@juveco/shared/money";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -45,6 +45,7 @@ import ActivityItemGrid from "@/modules/activities/components/activity-item-grid
 import ActivityItemTable from "@/modules/activities/components/activity-item-table";
 import ActivityItemTotals from "@/modules/activities/components/activity-item-totals";
 import ActivityMeta from "@/modules/activities/components/activity-meta";
+import ChampionshipView from "@/modules/activities/components/championship-view";
 import ItemChangeFormModal from "@/modules/activities/components/item-change-form-modal";
 import ItemPaymentFormModal from "@/modules/activities/components/item-payment-form-modal";
 import { useDeleteActivityItem } from "@/modules/activities/hooks/use-delete-activity-item";
@@ -154,7 +155,11 @@ function ActivityPage() {
   const { activity } = GetActivity;
   const { items } = ListActivityItems;
   const itemLabel = activity ? activityItemLabels[activity.type] : FALLBACK_ITEM_LABEL;
-  const isLoading = ListActivityItems.loading && items.length === 0;
+  /*
+    Hasta saber el tipo de la actividad, esqueleto: un campeonato no tiene cartillas y no debe
+    asomar «Todavía no hay cartillas» antes de cambiar a su vista.
+  */
+  const isLoading = (ListActivityItems.loading && items.length === 0) || !activity;
   const isSyncing =
     GetActivity.loading || GetActivityBalance.loading || ListActivityItems.loading || ListUsers.loading;
 
@@ -224,6 +229,11 @@ function ActivityPage() {
   const openSummary = () => navigate({ to: "/actividades/$activityId/resumen", params: { activityId } });
 
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => setTerm(event.target.value);
+
+  /* Un campeonato lleva equipos, no cartillas: tiene su propia vista (acordado 2026-11-19). */
+  if (activity?.type === EActivityType.CHAMPIONSHIP) {
+    return <ChampionshipView activity={activity} currentUserId={user.personId} />;
+  }
 
   const openCreate = () => {
     setEditTarget(undefined);

@@ -1,10 +1,9 @@
 import { Badge } from "@juveco/ui/components/badge";
-import type { IActivityItemResource } from "@juveco/shared/activity-items";
 import { formatSoles } from "@juveco/shared/money";
 import { CircleCheck, CircleX, Clock, type LucideIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 
-import { type TCollectionStatus, collectionOf } from "@/modules/activities/utils/activity-items";
+import { type TCollectable, type TCollectionStatus, collectionOf } from "@/modules/activities/utils/activity-items";
 
 /* Como el «A cobrar» de la card de reportes de ventas de id-pos (acordado 2026-11-07). */
 export const COLLECTION_BADGE: Record<
@@ -17,7 +16,8 @@ export const COLLECTION_BADGE: Record<
 };
 
 interface ICollectionBadgeProps {
-  item: IActivityItemResource;
+  /** Una cartilla o la inscripción de un equipo. */
+  item: TCollectable;
   /** Texto antes del monto («Por cobrar»); sin él, solo el monto. */
   label?: string;
 }

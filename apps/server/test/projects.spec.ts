@@ -23,8 +23,12 @@ interface IProjectData {
 
 interface IActivityData {
   id: string;
+  type: string;
   projectId: string | null;
 }
+
+/* El bingo por tipo: el campeonato de la seed también está en la lista. */
+const bingoOf = (activities: IActivityData[]) => activities.find((activity) => activity.type === "BINGO");
 
 const PROJECTS_PATH = "/api/v1/projects";
 
@@ -148,7 +152,7 @@ describe("/projects", () => {
 
   it("un proyecto cerrado bloquea cartillas, pagos y gastos de su actividad", async () => {
     const activities = await request("/api/v1/activities", { headers: { cookie } });
-    const [bingo] = (await activities.json<IBody<IActivityData[]>>()).data;
+    const bingo = bingoOf((await activities.json<IBody<IActivityData[]>>()).data);
     /* La seed asigna el Bingo II a la Chocolatada 2026: si falla acá, falta esa migración. */
     expect(bingo?.projectId).toBeTruthy();
     if (!bingo?.projectId) {
@@ -168,7 +172,7 @@ describe("/projects", () => {
 
   it("el detalle trae las actividades con su balance y lo ganado", async () => {
     const activities = await request("/api/v1/activities", { headers: { cookie } });
-    const [bingo] = (await activities.json<IBody<IActivityData[]>>()).data;
+    const bingo = bingoOf((await activities.json<IBody<IActivityData[]>>()).data);
     expect(bingo?.projectId).toBeTruthy();
     if (!bingo?.projectId) {
       return;
@@ -178,12 +182,13 @@ describe("/projects", () => {
     const { data } = await response.json<
       IBody<{ project: IProjectData; progress: { currentProfit: number }; activities: { id: string; balance: { currentProfit: number } }[] }>
     >();
-    expect(data.project.activityCount).toBe(1);
+    /* El Bingo II y el Campeonato Relámpago, los dos de la seed. */
+    expect(data.project.activityCount).toBe(2);
 
     /* La lista cuenta lo mismo que el detalle (antes decía 0). */
     const list = await request(PROJECTS_PATH, { headers: { cookie } });
     const listed = (await list.json<IBody<IProjectData[]>>()).data.find((project) => project.id === bingo.projectId);
-    expect(listed?.activityCount).toBe(1);
+    expect(listed?.activityCount).toBe(2);
     expect(data.activities.map((activity) => activity.id)).toContain(bingo.id);
     expect(data.progress.currentProfit).toBe(
       data.activities.reduce((total, activity) => total + activity.balance.currentProfit, 0),

@@ -1,28 +1,9 @@
 import { Button } from "@juveco/ui/components/button";
-import { IconButton } from "@juveco/ui/components/icon-button";
-import { Skeleton } from "@juveco/ui/components/skeleton";
-import {
-  EPaymentMethod,
-  type IActivityItemPaymentResource,
-  type IPaymentChange,
-  type TPaymentMethod,
-  paymentMethodLabels,
-} from "@juveco/shared/activity-item-payments";
+import type { IActivityItemPaymentResource, IPaymentChange } from "@juveco/shared/activity-item-payments";
 import type { IActivityItemResource } from "@juveco/shared/activity-items";
 import { formatSoles } from "@juveco/shared/money";
 import { fullName } from "@juveco/shared/people";
-import {
-  Banknote,
-  CalendarDays,
-  HandCoins,
-  type LucideIcon,
-  MapPin,
-  MessageSquareText,
-  Smartphone,
-  Tag,
-  Trash2,
-  UserRound,
-} from "lucide-react";
+import { CalendarDays, HandCoins, MapPin, MessageSquareText, Tag, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import ConfirmModal from "@/common/components/confirm-modal";
@@ -37,11 +18,7 @@ import { collectionOf } from "@/modules/activities/utils/activity-items";
 
 import CollectionBadge from "./collection-badge";
 import ItemChangeBadge from "./item-change-badge";
-
-const METHOD_ICON: Record<TPaymentMethod, LucideIcon> = {
-  [EPaymentMethod.YAPE]: Smartphone,
-  [EPaymentMethod.CASH]: Banknote,
-};
+import PaymentList from "./payment-list";
 
 /* En el detalle, editar y eliminar van directo como íconos, sin menú (Thony, 2026-11-08). */
 const toInlineActions = (actions: IRowAction[]): IRowAction[] =>
@@ -163,46 +140,7 @@ export default function ActivityItemDetailPanel({
               {!current.voidedAt && <CollectionBadge item={current} label="Por cobrar" />}
             </div>
 
-            {isLoadingPayments && (
-              <div className="space-y-2 border-t border-border pt-3">
-                <Skeleton className="h-10 w-full rounded-md" />
-                <Skeleton className="h-10 w-full rounded-md" />
-              </div>
-            )}
-
-            {!isLoadingPayments && payments.length === 0 && (
-              <p className="border-t border-border pt-3 text-sm text-muted-foreground">Todavía no hay pagos.</p>
-            )}
-
-            {!isLoadingPayments && payments.length > 0 && (
-              <ul className="divide-y divide-border border-t border-border">
-                {payments.map((payment) => {
-                  const MethodIcon = METHOD_ICON[payment.method];
-                  return (
-                    <li key={payment.id} className="flex items-center gap-3 py-2.5">
-                      <MethodIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-foreground tabular-nums">
-                          {formatSoles(payment.amount)}
-                          <span className="font-normal text-muted-foreground"> · {paymentMethodLabels[payment.method]}</span>
-                        </p>
-                        <p className="truncate text-sm text-muted-foreground">
-                          {formatShortDate(payment.createdAt)} · cobró {fullName(payment.collector)}
-                        </p>
-                      </div>
-                      <IconButton
-                        label="Eliminar pago"
-                        tone="destructive"
-                        isBordered
-                        onClick={() => setDeleteTarget(payment)}
-                      >
-                        <Trash2 />
-                      </IconButton>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            <PaymentList payments={payments} isLoading={isLoadingPayments} onDelete={setDeleteTarget} />
           </DetailSection>
 
           <DetailSection title="Datos" isBordered>

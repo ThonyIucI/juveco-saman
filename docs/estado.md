@@ -47,6 +47,16 @@
 - Gastos (`activity_expenses`): concepto, monto y nota (impresión de cartillas, alquileres…). Lo gastado en premios comprados no se repite acá.
 - Balance: ingresos − premios comprados − gastos = ganancia, con lo ya cobrado («Actual») y si todos pagan. Los donados no restan, solo se cuentan.
 
+## En curso: Campeonato Relámpago 2026 (22 y 29 nov 2026)
+
+Acuerdos, reglas y fases en [propuestas/campeonatos/README.md](propuestas/campeonatos/README.md).
+
+- **Fase 1, hecha el 2026-11-19 y en prueba:**
+  - equipos con delegado y hasta 15 jugadores;
+  - cobro de la inscripción por partes;
+  - vista propia del campeonato en `/actividades/$activityId`.
+- **Fases 2 y 3:** resultados, posiciones, link público, ventas y Movimientos.
+
 ## Pendiente (en este orden; cada parte se prueba antes de seguir)
 
 1. **Ganadores** de los premios (más adelante).
