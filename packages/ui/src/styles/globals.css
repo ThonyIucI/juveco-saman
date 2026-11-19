@@ -44,6 +44,12 @@
   /* Placeholders más claros que el label: se nota que es una sugerencia, no un dato (Thony, 2026-11-09). */
   --placeholder: #9aa1ab;
   --canvas: oklch(0.975 0.006 264);
+  /* El fondo de la página detrás de las cajas, en escritorio. Propio y no `--muted`: en oscuro tiene que poder ser lo más oscuro. */
+  --page: oklch(0.965 0.008 264);
+  /* Botón de ícono con borde: en claro, igual que una card; en oscuro, más claro que donde va. */
+  --raised: oklch(1 0 0);
+  --raised-border: oklch(0.91 0.015 264);
+  --raised-hover: oklch(0.95 0.02 264);
   /* Fondo de los campos de texto. */
   --field: oklch(1 0 0);
   --accent: oklch(0.95 0.02 264);
@@ -118,27 +124,36 @@
 }
 
 .dark {
-  /* Diseño de Stitch: página #0B1120, fondo hundido #080D19, cards #111726. */
-  --background: #0b1120;
+  /*
+    Por capas, como la referencia de Stitch (Thony, 2026-11-19): el fondo casi negro y lo que
+    va encima, cada vez más claro (cajas, encabezados de card, botones). Así se ve dónde
+    empieza y termina cada cosa sin depender de sombras, que en oscuro no se notan.
+  */
+  --background: #0a0e17;
   --foreground: #f1f5f9;
-  --card: #111726;
+  --card: #131a29;
   --card-foreground: #f1f5f9;
-  --popover: #111726;
+  --popover: #131a29;
   --popover-foreground: #f1f5f9;
 
   /* Botón principal: blue-700 con texto blanco, como el «Iniciar sesión» de Stitch. */
   --primary: #1d4ed8;
   --primary-foreground: #ffffff;
-  --secondary: #1a2234;
+  --secondary: #1a2335;
   --secondary-foreground: #cbd5e1;
 
-  --muted: #172133;
+  --muted: #1a2335;
   --muted-foreground: #94a3b8;
   --label: #cbd5e1;
   --placeholder: #64748b;
   --canvas: #080d19;
-  --field: #172133;
-  --accent: #1a253a;
+  --page: #0a0e17;
+  /* Los campos, hundidos: más oscuros que la caja que los contiene. */
+  --field: #0f1522;
+  --accent: #1e2840;
+  --raised: #232e44;
+  --raised-border: #34425c;
+  --raised-hover: #2b3852;
   --accent-foreground: #f1f5f9;
 
   --gold: oklch(0.82 0.13 85);
@@ -162,8 +177,8 @@
   --cash: oklch(0.8 0.16 148);
   --cash-foreground: oklch(0.22 0.05 150);
 
-  --border: #232f48;
-  --input: #27354d;
+  --border: #222c3f;
+  --input: #263247;
   --ring: #3b82f6;
 
   --shadow-sticker: 0 2px 0 oklch(0 0 0 / 0.45);
@@ -177,7 +192,7 @@
 
   --glow: rgb(29 78 216 / 0.15);
 
-  --sidebar: #0b1120;
+  --sidebar: #0a0e17;
   --sidebar-foreground: #f1f5f9;
   --sidebar-primary: #3b82f6;
   --sidebar-primary-foreground: #ffffff;
@@ -220,6 +235,10 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-canvas: var(--canvas);
+  --color-page: var(--page);
+  --color-raised: var(--raised);
+  --color-raised-border: var(--raised-border);
+  --color-raised-hover: var(--raised-hover);
   --color-field: var(--field);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);

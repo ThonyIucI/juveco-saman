@@ -30,7 +30,8 @@ const iconButtonCva = cva(
         lg: "size-control-lg rounded-lg [&_svg:not([class*='size-'])]:size-6",
       },
       isBordered: {
-        true: "border-border bg-card",
+        /* Más claro que donde va en oscuro, para que se lea como botón y no como hueco (2026-11-19). */
+        true: "border-raised-border bg-raised dark:hover:bg-raised-hover",
         false: "",
       },
       isFilled: {

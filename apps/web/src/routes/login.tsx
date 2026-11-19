@@ -27,7 +27,7 @@ function LoginPage() {
         <ModeToggle />
       </div>
 
-      <div className="relative w-full max-w-[430px]">
+      <div className="relative w-full max-w-107.5">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <img src="/logo.png" alt="Logo de Juveco Samán" className="size-28 drop-shadow-xl" />
           <div>
