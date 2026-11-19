@@ -115,7 +115,7 @@ const sharedSelectProps = (
               : isHighlighted
                 ? "border-primary"
                 : /* Al pasar el mouse el borde se oscurece: se nota que se puede tocar (Thony, 2026-11-09). */
-                  "border-border hover:border-primary/50",
+                  "border-field-border hover:border-primary/50",
         ),
       valueContainer: () => "gap-1",
       placeholder: () => "font-normal text-placeholder",
@@ -130,7 +130,7 @@ const sharedSelectProps = (
       dropdownIndicator: ({ isFocused }) =>
         cn(
           "transition-colors",
-          isFocused ? "text-ring" : isHighlighted ? "text-primary" : "text-border group-hover:text-primary/50",
+          isFocused ? "text-ring" : isHighlighted ? "text-primary" : "text-field-border group-hover:text-primary/50",
         ),
       clearIndicator: () => "text-muted-foreground hover:text-foreground",
       menu: () => "mt-2 overflow-hidden rounded-2xl bg-popover p-1.5 shadow-elevated",

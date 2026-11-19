@@ -44,7 +44,7 @@ export default function ButtonGroup<TValue extends string>({
               "relative flex min-w-0 flex-1 items-center justify-center gap-1.5 border px-3 font-heading text-sm font-semibold transition-colors duration-150 ease-out outline-none not-first:-ml-px first:rounded-l-lg last:rounded-r-lg focus-visible:z-20 focus-visible:ring-4 focus-visible:ring-ring/30",
               isSelected
                 ? "z-10 border-primary bg-primary/10 text-primary"
-                : "border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground",
+                : "border-field-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground",
             )}
           >
             {/* En celular, a media fila, solo entra el texto. */}

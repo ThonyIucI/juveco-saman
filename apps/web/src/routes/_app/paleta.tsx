@@ -1,11 +1,14 @@
 import { Badge } from "@juveco/ui/components/badge";
 import { Button } from "@juveco/ui/components/button";
+import { Input } from "@juveco/ui/components/input";
+import { Label } from "@juveco/ui/components/label";
 import { IconButton } from "@juveco/ui/components/icon-button";
 import { NEIGHBORHOODS, NEIGHBORHOOD_IDS } from "@juveco/shared/neighborhoods";
 import { EUserRole } from "@juveco/shared/roles";
 import { cn } from "@juveco/ui/lib/utils";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import {
+  Banknote,
   BarChart3,
   CircleCheck,
   CircleX,
@@ -15,16 +18,21 @@ import {
   MapPin,
   Plus,
   Search,
+  Smartphone,
   TrendingDown,
   User,
   Wallet,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import ButtonGroup from "@/common/components/button-group";
 import NeighborhoodBadge from "@/common/components/neighborhood-badge";
 import PageBox from "@/common/components/page-box";
 import PageContainer from "@/common/components/page-container";
 import PageHeader from "@/common/components/page-header";
+import Select from "@/common/components/select";
+import SolesInput from "@/common/components/soles-input";
 
 /**
  * Documentación de la paleta oscura (decidida por Thony el 2026-11-19). Solo para el
@@ -39,6 +47,9 @@ import PageHeader from "@/common/components/page-header";
  * Cada tab pinta **toda la app** (menú, encabezado y fondo) pisando los tokens en `<html>`,
  * solo en modo oscuro: en claro todo se ve como siempre. Al salir de la página se restaura.
  * La estructura es la real: tabla en escritorio y cards en celular.
+ *
+ * El tab «Campos» (decidido el 2026-11-19) compara el fondo, el borde y el texto de ayuda de los
+ * campos en oscuro: el formulario de pago con los campos elegidos al lado de los de antes.
  */
 export const Route = createFileRoute("/_app/paleta")({
   beforeLoad: ({ context }) => {
@@ -62,6 +73,9 @@ const PREVIOUS_TOKENS: TTokens = {
   "--secondary": "#1a2234",
   "--accent": "#1a253a",
   "--field": "#172133",
+  /* Los campos usaban el borde general y el texto de ayuda de antes. */
+  "--field-border": "#232f48",
+  "--placeholder": "#64748b",
   "--border": "#232f48",
   "--input": "#27354d",
   /* El botón de ícono con borde era del color de la card. */
@@ -88,7 +102,7 @@ const SOFT_NEIGHBORHOOD_CLASS: Record<string, string> = {
   [NEIGHBORHOOD_IDS.SANTA_ROSA]: "bg-[#FFE6EF] text-[#994E69] dark:bg-[#994E69]/25 dark:text-[#d4b0be]",
 };
 
-type TVariantId = "chosen" | "chosenSoft" | "previous" | "previousSoft";
+type TVariantId = "chosen" | "chosenSoft" | "previous" | "previousSoft" | "fields";
 
 interface IVariant {
   id: TVariantId;
@@ -134,6 +148,26 @@ const VARIANTS: IVariant[] = [
     tokens: { ...PREVIOUS_TOKENS, ...SOFT_STATUS_TOKENS },
     hasBoxBorder: false,
   },
+  {
+    id: "fields",
+    label: "Campos",
+    description:
+      "Decidido el 2026-11-19, como en Telegram: en oscuro, el campo con el mismo fondo que la modal, un borde claro que lo marca y el texto de ayuda más legible. Antes iban hundidos, más oscuros que la modal, y se veían toscos. En claro no cambió nada.",
+    isSoft: false,
+    tokens: {},
+    hasBoxBorder: true,
+  },
+];
+
+/*
+  Los campos de antes (hasta 2026-11-19), solo en oscuro y solo dentro de donde va esta clase:
+  los tokens son variables CSS y `@theme inline` las lee donde se usan.
+*/
+const FIELD_PREVIOUS_CLASS = "dark:[--field:#0f1522] dark:[--field-border:#222c3f] dark:[--placeholder:#64748b]";
+
+const COLLECTOR_OPTIONS = [
+  { value: "thony", label: "Thony DEV" },
+  { value: "francisca", label: "Francisca Sandoval Gonzales" },
 ];
 
 const ROWS = [
@@ -213,6 +247,97 @@ function StatusBadge({ status, label }: { status: keyof typeof STATUS_BADGE; lab
   );
 }
 
+type TMethod = "YAPE" | "CASH";
+
+const METHOD_OPTIONS = [
+  { value: "YAPE" as const, label: "Yape", icon: Smartphone },
+  { value: "CASH" as const, label: "Efectivo", icon: Banknote },
+];
+
+interface IPaymentFormMockProps {
+  title: string;
+  /** Pisa los tokens de los campos; sin clase, los de la app. */
+  fieldsClassName?: string;
+}
+
+/** El formulario de pago real (mismos componentes), dentro de un panel como el de la modal. */
+function PaymentFormMock({ title, fieldsClassName }: IPaymentFormMockProps) {
+  const [amount, setAmount] = useState("10.00");
+  const [method, setMethod] = useState<TMethod>("YAPE");
+  const [collector, setCollector] = useState("thony");
+  const [note, setNote] = useState("");
+  const idPrefix = fieldsClassName ? "previous" : "current";
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-semibold text-muted-foreground">{title}</p>
+      <div className="overflow-hidden rounded-3xl bg-card shadow-sheet dark:border dark:border-border">
+        <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3">
+          <div className="min-w-0">
+            <p className="font-heading text-xl font-bold text-foreground">Registrar pago</p>
+            <p className="truncate text-sm text-muted-foreground">N.º 0001 · Hilda Farías Farías</p>
+          </div>
+          <IconButton label="Cerrar" tone="muted">
+            <X />
+          </IconButton>
+        </div>
+        <div className={cn("space-y-4 px-5 pb-5", fieldsClassName)}>
+          <p className="text-sm text-muted-foreground">
+            Por cobrar: <span className="font-semibold text-foreground tabular-nums">S/ 10.00</span>
+          </p>
+          <div className="grid grid-cols-2 items-start gap-3">
+            <div className="space-y-2">
+              <Label htmlFor={`${idPrefix}-amount`}>Monto</Label>
+              <SolesInput id={`${idPrefix}-amount`} placeholder="Ingresa el monto" value={amount} onChange={setAmount} />
+            </div>
+            <div className="space-y-2">
+              <Label id={`${idPrefix}-method`}>Cómo pagó</Label>
+              <ButtonGroup labelledBy={`${idPrefix}-method`} options={METHOD_OPTIONS} value={method} onChange={setMethod} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`${idPrefix}-collector`}>Cobrado por</Label>
+            <Select
+              inputId={`${idPrefix}-collector`}
+              options={COLLECTOR_OPTIONS}
+              placeholder="Elige quién cobró"
+              value={COLLECTOR_OPTIONS.find((option) => option.value === collector) ?? null}
+              onChange={(option) => setCollector(option?.value ?? "")}
+            />
+          </div>
+          {/* Vacío a propósito: para ver el texto de ayuda. */}
+          <div className="space-y-2">
+            <Label htmlFor={`${idPrefix}-note`}>Nota (opcional)</Label>
+            <Input
+              id={`${idPrefix}-note`}
+              placeholder="Ingresa una nota"
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+            />
+          </div>
+        </div>
+        <div className="flex justify-end bg-card px-5 pt-3 pb-4 shadow-edge-top">
+          <Button type="button" size="lg" className="w-full sm:w-auto">
+            Registrar pago
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Los campos elegidos y los de antes, uno al lado del otro (uno debajo del otro en celular). */
+function FieldsComparison() {
+  return (
+    <PageBox isFill>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <PaymentFormMock title="Elegidos" />
+        <PaymentFormMock title="Antes" fieldsClassName={FIELD_PREVIOUS_CLASS} />
+      </div>
+    </PageBox>
+  );
+}
+
 interface IVariantTabsProps {
   value: TVariantId;
   onChange: (value: TVariantId) => void;
@@ -261,6 +386,10 @@ function PalettePreviewPage() {
         <p className="text-sm text-muted-foreground">{variant.description}</p>
       </PageBox>
 
+      {variantId === "fields" ? (
+        <FieldsComparison />
+      ) : (
+        <>
       <PageBox className={boxBorder}>
         <PageHeader
           title="Bingo II - 2026"
@@ -383,6 +512,8 @@ function PalettePreviewPage() {
           ))}
         </ul>
       </PageBox>
+        </>
+      )}
     </PageContainer>
   );
 }

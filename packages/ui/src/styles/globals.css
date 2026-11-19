@@ -52,6 +52,8 @@
   --raised-hover: oklch(0.95 0.02 264);
   /* Fondo de los campos de texto. */
   --field: oklch(1 0 0);
+  /* Borde de los campos: en claro, el mismo de siempre. */
+  --field-border: oklch(0.91 0.015 264);
   --accent: oklch(0.95 0.02 264);
   --accent-foreground: oklch(0.24 0.08 266);
 
@@ -145,11 +147,16 @@
   --muted: #1a2335;
   --muted-foreground: #94a3b8;
   --label: #cbd5e1;
-  --placeholder: #64748b;
+  /* Más claro que antes (2026-11-19): se lee sin competir con lo escrito. */
+  --placeholder: #7c8799;
   --canvas: #080d19;
   --page: #0a0e17;
-  /* Los campos, hundidos: más oscuros que la caja que los contiene. */
-  --field: #0f1522;
+  /*
+    Los campos, como en Telegram (Thony, 2026-11-19): el mismo fondo que la caja o la modal y
+    un borde claro que los marca. Antes iban hundidos (#0f1522) y se veían toscos.
+  */
+  --field: #131a29;
+  --field-border: #34425c;
   --accent: #1e2840;
   --raised: #232e44;
   --raised-border: #34425c;
@@ -240,6 +247,7 @@
   --color-raised-border: var(--raised-border);
   --color-raised-hover: var(--raised-hover);
   --color-field: var(--field);
+  --color-field-border: var(--field-border);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-gold: var(--gold);

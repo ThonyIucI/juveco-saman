@@ -45,7 +45,7 @@ export default function OptionCards<TValue extends string>({
               "flex h-control cursor-pointer items-center justify-center gap-2 rounded-lg border text-sm font-semibold transition-colors outline-none focus-visible:ring-4 focus-visible:ring-ring/30",
               isSelected
                 ? "border-primary bg-primary/10 text-primary"
-                : "border-input bg-field text-foreground hover:bg-muted",
+                : "border-field-border bg-field text-foreground hover:bg-muted",
             )}
           >
             <Icon aria-hidden className="size-5" />

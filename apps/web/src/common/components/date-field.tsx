@@ -48,7 +48,7 @@ export default function DateField({
               aria-invalid={isInvalid}
               className={cn(
                 "flex h-control w-full cursor-pointer items-center gap-2.5 rounded-lg border bg-field px-4 text-left text-sm font-medium transition-colors outline-none focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/30",
-                isInvalid ? "border-destructive ring-4 ring-destructive/20" : "border-border hover:border-primary/50",
+                isInvalid ? "border-destructive ring-4 ring-destructive/20" : "border-field-border hover:border-primary/50",
                 onClear && value && "pr-11",
               )}
             />
