@@ -2,21 +2,30 @@ import { createDb } from "@juveco/db";
 import { activities } from "@juveco/db/schema/activities";
 import { activityExpenses } from "@juveco/db/schema/activity-expenses";
 import { activityIncomes } from "@juveco/db/schema/activity-incomes";
-import { activityItems } from "@juveco/db/schema/activity-items";
 import { activityPrizes } from "@juveco/db/schema/activity-prizes";
 import { projects } from "@juveco/db/schema/projects";
-import { type TActivityType, activityItemLabels } from "@juveco/shared/activities";
-import { EPrizeOrigin } from "@juveco/shared/activity-prizes";
+import { EActivityType, type TActivityType } from "@juveco/shared/activities";
+import type { IActivityBalance } from "@juveco/shared/activity-expenses";
+import { roundSoles } from "@juveco/shared/money";
 import { fullName } from "@juveco/shared/people";
-import type { IPublicActivity, IPublicHome, IPublicPrize, IPublicProject } from "@juveco/shared/public";
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import {
+  EPublicIncomeSource,
+  type IPublicAccountLine,
+  type IPublicAccounts,
+  type IPublicActivity,
+  type IPublicHome,
+  type IPublicIncomeLine,
+  type IPublicPrize,
+  type IPublicProject,
+} from "@juveco/shared/public";
+import { asc, desc, eq, inArray } from "drizzle-orm";
 import { Hono } from "hono";
 
 import type { TAppEnv } from "../lib/app-env";
 import { ok } from "../lib/response";
 
 import type { TDb } from "./activities";
-import { selectPrizes, toPrizeResource } from "./activity-finances";
+import { buildBalance, selectPrizes, toPrizeResource } from "./activity-finances";
 
 export const PUBLIC_ROUTES = {
   HOME: "/public/home",
@@ -26,8 +35,16 @@ export const PUBLIC_ROUTES = {
 const CACHE_CONTROL = "public, max-age=60";
 
 const PURCHASED_PRIZES_CONCEPT = "Compra de premios";
+const DONATIONS_CONCEPT = "Donaciones y apoyos";
+const BINGO_SALES_CONCEPT = "Venta de cartillas";
+const OTHER_SALES_CONCEPT = "Ventas";
 
-const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+/*
+  Un ingreso anotado a mano como donación o aporte puede llevar el nombre de quien lo dio en
+  el concepto («Donación de Juan»). Todos esos se suman en un solo renglón: nunca se muestra
+  cuánto dio cada persona.
+*/
+const DONATION_CONCEPT_PATTERN = /donaci|aporte|apoyo|colabora/i;
 
 /** Sin repetir, sin importar mayúsculas, en el orden en que aparecen. */
 const uniqueConcepts = (concepts: string[]): string[] => {
@@ -50,16 +67,6 @@ const groupBy = <TRow>(rows: TRow[], keyOf: (row: TRow) => string): Map<string, 
   return groups;
 };
 
-/** Actividades que vendieron algo (cartillas): eso ya es un concepto de ingreso. */
-const activitiesWithSales = async (db: TDb, activityIds: string[]): Promise<Set<string>> => {
-  const rows = await db
-    .select({ activityId: activityItems.activityId, count: sql<number>`count(*)`.mapWith(Number) })
-    .from(activityItems)
-    .where(and(inArray(activityItems.activityId, activityIds), isNull(activityItems.voidedAt)))
-    .groupBy(activityItems.activityId);
-  return new Set(rows.filter((row) => row.count > 0).map((row) => row.activityId));
-};
-
 const loadActivities = async (db: TDb, projectId: string) => {
   const rows = await db
     .select()
@@ -68,37 +75,90 @@ const loadActivities = async (db: TDb, projectId: string) => {
     .orderBy(asc(activities.eventDate), asc(activities.createdAt));
   const ids = rows.map((row) => row.id);
   if (ids.length === 0) {
-    return { rows, prizes: [], incomes: [], expenses: [], withSales: new Set<string>() };
+    return { rows, prizes: [], incomes: [], expenses: [], balances: [] };
   }
 
-  const [prizes, incomes, expenses, withSales] = await Promise.all([
+  const [prizes, incomes, expenses, balances] = await Promise.all([
     selectPrizes(db).where(inArray(activityPrizes.activityId, ids)).orderBy(asc(activityPrizes.createdAt)),
     db
-      .select({ activityId: activityIncomes.activityId, concept: activityIncomes.concept })
+      .select({ concept: activityIncomes.concept, amount: activityIncomes.amount })
       .from(activityIncomes)
-      .where(inArray(activityIncomes.activityId, ids))
-      .orderBy(asc(activityIncomes.createdAt)),
+      .where(inArray(activityIncomes.activityId, ids)),
     db
-      .select({ activityId: activityExpenses.activityId, concept: activityExpenses.concept })
+      .select({ concept: activityExpenses.concept, amount: activityExpenses.amount })
       .from(activityExpenses)
-      .where(inArray(activityExpenses.activityId, ids))
-      .orderBy(asc(activityExpenses.createdAt)),
-    activitiesWithSales(db, ids),
+      .where(inArray(activityExpenses.activityId, ids)),
+    /* El mismo balance del panel: así la portada y la directiva nunca muestran cifras distintas. */
+    Promise.all(rows.map(async (row) => ({ type: row.type, balance: await buildBalance(db, row.id) }))),
   ]);
-  return { rows, prizes: prizes.map(toPrizeResource), incomes, expenses, withSales };
+  return { rows, prizes: prizes.map(toPrizeResource), incomes, expenses, balances };
 };
 
-const salesConcept = (type: TActivityType) => `Venta de ${activityItemLabels[type].plural}`;
+interface IAmountRow {
+  concept: string;
+  amount: number;
+}
+
+/** Suma los renglones del mismo concepto (sin importar mayúsculas), de mayor a menor monto. */
+const sumByConcept = (rows: IAmountRow[]): IPublicAccountLine[] => {
+  const totals = new Map<string, IPublicAccountLine>();
+  for (const { concept, amount } of rows) {
+    const label = concept.trim();
+    const key = label.toLocaleLowerCase("es");
+    totals.set(key, { label: totals.get(key)?.label ?? label, amount: (totals.get(key)?.amount ?? 0) + amount });
+  }
+  return [...totals.values()]
+    .map((line) => ({ ...line, amount: roundSoles(line.amount) }))
+    .filter((line) => line.amount > 0)
+    .sort((first, second) => second.amount - first.amount);
+};
+
+const otherIncomeLines = (incomes: IAmountRow[]): IPublicIncomeLine[] => {
+  const isDonation = ({ concept }: IAmountRow) => DONATION_CONCEPT_PATTERN.test(concept);
+  const donated = roundSoles(incomes.filter(isDonation).reduce((total, income) => total + income.amount, 0));
+  return [
+    ...sumByConcept(incomes.filter((income) => !isDonation(income))).map((line) => ({
+      ...line,
+      source: EPublicIncomeSource.OTHER,
+    })),
+    ...(donated > 0 ? [{ label: DONATIONS_CONCEPT, amount: donated, source: EPublicIncomeSource.DONATIONS }] : []),
+  ];
+};
+
+type TActivityBalances = { type: TActivityType; balance: IActivityBalance }[];
+
+/**
+ * Cuentas claras del proyecto con montos **por concepto**, nunca por persona. Los totales salen
+ * de `buildBalance`: lo cobrado de cartillas es `collected - incomes` (los pagos de los equipos
+ * no cuentan; las inscripciones entran como ingresos anotados a mano).
+ */
+const buildAccounts = (incomes: IAmountRow[], expenses: IAmountRow[], balances: TActivityBalances): IPublicAccounts => {
+  const salesLines = sumByConcept(
+    balances.map(({ type, balance }) => ({
+      concept: type === EActivityType.BINGO ? BINGO_SALES_CONCEPT : OTHER_SALES_CONCEPT,
+      amount: balance.collected - balance.incomes,
+    })),
+  ).map((line) => ({ ...line, source: EPublicIncomeSource.SALES }));
+  const purchasedPrizes = roundSoles(balances.reduce((total, { balance }) => total + balance.purchasedPrizes, 0));
+
+  const collected = roundSoles(balances.reduce((total, { balance }) => total + balance.collected, 0));
+  const spent = roundSoles(balances.reduce((total, { balance }) => total + balance.purchasedPrizes + balance.expenses, 0));
+
+  return {
+    collected,
+    spent,
+    remaining: roundSoles(collected - spent),
+    incomes: [...salesLines, ...otherIncomeLines(incomes)].sort((first, second) => second.amount - first.amount),
+    expenses: sumByConcept([...(purchasedPrizes > 0 ? [{ concept: PURCHASED_PRIZES_CONCEPT, amount: purchasedPrizes }] : []), ...expenses]),
+  };
+};
 
 const toPublicProject = async (db: TDb, project: typeof projects.$inferSelect): Promise<IPublicProject> => {
-  const { rows, prizes, incomes, expenses, withSales } = await loadActivities(db, project.id);
+  const { rows, prizes, incomes, expenses, balances } = await loadActivities(db, project.id);
   const prizesByActivity = groupBy(prizes, (prize) => prize.activityId);
-  const incomesByActivity = groupBy(incomes, (income) => income.activityId);
-  const expensesByActivity = groupBy(expenses, (expense) => expense.activityId);
 
   const publicActivities = rows.map((row): IPublicActivity => {
     const ownPrizes = prizesByActivity.get(row.id) ?? [];
-    const hasPurchased = ownPrizes.some((prize) => prize.origin === EPrizeOrigin.PURCHASED);
     return {
       id: row.id,
       name: row.name,
@@ -111,14 +171,6 @@ const toPublicProject = async (db: TDb, project: typeof projects.$inferSelect): 
           winner: prize.winner ? { serial: prize.winner.serial, name: fullName(prize.winner.buyer) } : null,
         }),
       ),
-      incomeConcepts: uniqueConcepts([
-        ...(withSales.has(row.id) ? [capitalize(salesConcept(row.type))] : []),
-        ...(incomesByActivity.get(row.id) ?? []).map((income) => income.concept),
-      ]),
-      expenseConcepts: uniqueConcepts([
-        ...(hasPurchased ? [PURCHASED_PRIZES_CONCEPT] : []),
-        ...(expensesByActivity.get(row.id) ?? []).map((expense) => expense.concept),
-      ]),
     };
   });
 
@@ -136,13 +188,15 @@ const toPublicProject = async (db: TDb, project: typeof projects.$inferSelect): 
     beneficiaryCount: project.beneficiaryCount,
     isClosed: project.closedAt !== null,
     activities: publicActivities,
+    accounts: buildAccounts(incomes, expenses, balances),
     supporters,
   };
 };
 
 /**
  * La portada pública (acordado 2026-11-25), sin sesión: el evento o proyecto más reciente con
- * sus actividades, premios (con donante y ganador) y los conceptos de su balance **sin montos**.
+ * sus actividades, premios (con donante y ganador) y sus cuentas claras con montos por concepto
+ * (Thony, 2026-11-25), nunca por persona: quienes apoyaron van aparte, solo con el nombre.
  */
 export const publicRoutes = new Hono<TAppEnv>().get(PUBLIC_ROUTES.HOME, async (context) => {
   const db = createDb();

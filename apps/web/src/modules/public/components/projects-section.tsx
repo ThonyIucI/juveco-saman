@@ -41,19 +41,27 @@ function ProjectCard({ project }: { project: ISiteProject }) {
             loading="lazy"
             decoding="async"
             onError={() => setHasPhoto(false)}
+            style={{ objectPosition: project.objectPosition }}
             className="size-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
           />
         </div>
       )}
       <div className="p-4">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-base font-medium text-foreground">{project.name}</h3>
-          {project.status && (
-            <Badge color={project.status === "DONE" ? "success" : "primary"} className="shrink-0 rounded-md">
-              {siteProjectStatusLabels[project.status]}
-            </Badge>
-          )}
-        </div>
+        <h3 className="text-base font-medium text-foreground">{project.name}</h3>
+        {(project.status || project.tag) && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {project.status && (
+              <Badge color={project.status === "DONE" ? "success" : "primary"} className="rounded-md">
+                {siteProjectStatusLabels[project.status]}
+              </Badge>
+            )}
+            {project.tag && (
+              <Badge color="neutral" className="rounded-md">
+                {project.tag}
+              </Badge>
+            )}
+          </div>
+        )}
         {project.description && <p className="mt-1 text-sm text-muted-foreground">{project.description}</p>}
       </div>
     </article>

@@ -3,6 +3,7 @@ import type { IPublicActivity } from "@juveco/shared/public";
 
 import { formatLongDate } from "@/common/utils/format-date";
 import { CHAMPIONSHIP_NAME, MATCH_DAYS } from "@/modules/public/data/relampago-2026";
+import { daysUntil } from "@/modules/public/utils/event-dates";
 
 /* La palabra con la que empieza el nombre de cada tipo: no se repite en la dirección. */
 const TYPE_PREFIX: Record<TActivityType, string> = {
@@ -40,11 +41,31 @@ export const hasPublishedResults = (activity: Pick<IPublicActivity, "name" | "ty
   activity.type === EActivityType.CHAMPIONSHIP && activity.name === CHAMPIONSHIP_NAME;
 
 /* El Relámpago se juega en dos fechas: salen de sus resultados, no de la actividad. */
+const activityDateListOf = (activity: IPublicActivity): string[] =>
+  hasPublishedResults(activity) ? MATCH_DAYS.map((day) => day.date) : [activity.eventDate];
+
 export const activityDatesOf = (activity: IPublicActivity): string =>
-  hasPublishedResults(activity)
-    ? MATCH_DAYS.map((day) => formatLongDate(day.date)).join(" y ")
-    : formatLongDate(activity.eventDate);
+  activityDateListOf(activity).map(formatLongDate).join(" y ");
 
 /** La primera fecha, para ordenar las actividades. */
 export const activityFirstDateOf = (activity: IPublicActivity): string =>
-  hasPublishedResults(activity) ? (MATCH_DAYS[0]?.date ?? activity.eventDate) : activity.eventDate;
+  activityDateListOf(activity)[0] ?? activity.eventDate;
+
+/** La próxima fecha que aún no pasa (hoy cuenta); `null` si ya se jugó todo. */
+export const activityNextDateOf = (activity: IPublicActivity): string | null =>
+  activityDateListOf(activity).find((date) => daysUntil(date) >= 0) ?? null;
+
+/** La fecha que se muestra: la próxima o, si ya pasaron todas, la última. */
+export const activityShownDateOf = (activity: IPublicActivity): string => {
+  const dates = activityDateListOf(activity);
+  return activityNextDateOf(activity) ?? dates[dates.length - 1] ?? activity.eventDate;
+};
+
+/** La actividad cuya próxima fecha está más cerca; `null` si ninguna tiene fecha por venir. */
+export const nextActivityOf = (activities: IPublicActivity[]): { activity: IPublicActivity; date: string } | null => {
+  const upcoming = activities.flatMap((activity) => {
+    const date = activityNextDateOf(activity);
+    return date ? [{ activity, date }] : [];
+  });
+  return [...upcoming].sort((first, second) => first.date.localeCompare(second.date))[0] ?? null;
+};

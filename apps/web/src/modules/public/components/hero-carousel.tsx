@@ -17,7 +17,7 @@ const PARALLAX_PX = 120;
  * un zoom lento, y la foto se queda atrás al bajar (parallax). Se pausa con el mouse o el foco encima
  * o con la pestaña oculta; con «menos movimiento», queda en la primera foto sin efectos.
  *
- * Una foto que todavía no está en `public/portada/` se salta; sin ninguna, queda el azul liso.
+ * Una foto que todavía no está en `public/portada/` se salta; sin ninguna, queda el azul liso. Las fotos verticales se anclan con `objectPosition`.
  */
 export default function HeroCarousel({ hasEvent = true }: { hasEvent?: boolean }) {
   const isReduced = useReducedMotion() ?? false;
@@ -65,6 +65,7 @@ export default function HeroCarousel({ hasEvent = true }: { hasEvent?: boolean }
               alt=""
               decoding="async"
               onError={() => setMissing((current) => [...current, slide.image])}
+              style={{ objectPosition: slide.objectPosition }}
               className="absolute inset-0 size-full object-cover"
               initial={{ opacity: 0, scale: isReduced ? 1 : 1.08 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -83,7 +84,7 @@ export default function HeroCarousel({ hasEvent = true }: { hasEvent?: boolean }
         />
       )}
 
-      <div className="mx-auto w-full max-w-6xl px-4 pt-20 pb-12 md:px-6 md:pb-16">
+      <div className={cn("mx-auto w-full max-w-6xl px-4 pt-20 md:px-6", hasEvent ? "pb-24 md:pb-28" : "pb-12 md:pb-16")}>
         <motion.div
           initial={isReduced ? false : { opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}

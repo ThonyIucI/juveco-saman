@@ -223,6 +223,97 @@ Reglas que cambiaron respecto de lo de arriba:
 - **Facebook:** solo el botón; el plugin se corta en celular.
 - **Fotos que faltan:** el carrusel queda en azul liso y la card del proyecto va sin imagen.
 
+## Tercera vuelta (Thony, 2026-11-25): que se vea diseñada — PROPUESTA, sin aprobar
+
+Lo que Thony marcó: el cuadro de la fecha 2 decía «Ganador 1 vs Ganador 2», los nombres de equipo iban a 16 px, «Evento en curso» era una franja de texto separado por puntos, Facebook se quitó cuando solo había que arreglar su forma, y «Cuentas claras» era texto sin color ni cifras.
+
+Regla nueva para todo lo público: **ningún dato separado por « · »**. Cada dato va con su ícono o en su propio bloque.
+
+### 1. Campeonato: llave del torneo
+
+La página del campeonato abre con la llave, no con una lista. Cada partido es una caja de dos filas (equipo y goles); el ganador va en negrita con su fila resaltada. Las casillas que aún no tienen equipo van punteadas y vacías, unidas por líneas al partido del que salen.
+
+Escritorio:
+
+```
+ FECHA 1 · dom 22 nov            SEMIFINALES · dom 29 nov          FINAL
+
+ ┌────────────────────┐
+ │ Grau             3 │ ─ mejor perdedor ─┐
+ │ Samán Chico  3 (p) │ ─────────┐        │   ┌────────────────────┐
+ └────────────────────┘          └────────┼──▶│ La Noria           │
+ ┌────────────────────┐          ┌────────┼──▶│ Samán Chico        │──┐
+ │ La Noria         2 │ ─────────┘        │   └────────────────────┘  │   ┌──────────────────┐
+ │ El Cane          1 │                   │                           ├──▶│ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ │
+ └────────────────────┘                   │   ┌────────────────────┐  │   │ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ │──▶ CAMPEÓN
+ ┌────────────────────┐                   └──▶│ Grau               │──┘   └──────────────────┘     (copa, vacío)
+ │ La Palma         2 │ ─────────────────────▶│ Calixto Romero     │
+ │ Calixto Romero   3 │                       └────────────────────┘
+ └────────────────────┘
+```
+
+Celular: las tres rondas apiladas (Fecha 1, Semifinales, Final), con la línea que baja de una ronda a la siguiente y la final al pie con sus dos casillas punteadas.
+
+- Nombres de equipo a **14 px**; el marcador a 16 en negrita. Nada a 20 dentro de la llave.
+- Debajo de la llave: detalle por partido (goleadores, penales, rojas) con ícono de balón, de tarjeta roja y de penal, sin puntos. Al costado, goleadores del torneo.
+- Cuando se carguen los resultados del 29, las casillas se llenan solas desde `relampago-2026.ts`.
+
+### 2. Evento en curso: cartel que monta sobre el carrusel
+
+La franja azul de una línea se va. En su lugar, un cartel blanco que se monta sobre el borde inferior del carrusel:
+
+```
+        ┌───────────────────────────────────────────────────────────────────────┐
+        │ ┌─────┐  EVENTO EN CURSO                              ┌────┐          │
+        │ │ DIC │  Chocolatada 2026                             │ 28 │ días     │
+        │ │ 23  │  [regalo] 300 niños y niñas                   └────┘          │
+        │ └─────┘  [ticket] Bingo sáb 28 nov   [balón] Final dom 29 nov  [Ver] │
+        └───────────────────────────────────────────────────────────────────────┘
+```
+
+- Bloque de fecha tipo calendario (mes arriba en azul, día grande).
+- Cada dato con su ícono; las actividades son pastillas que llevan a su página.
+- Cuenta regresiva en su propio bloque dorado.
+- En celular: lo mismo en dos filas, el bloque de fecha a la izquierda.
+
+**Aviso flotante (opcional):** al pasar el carrusel, una pastilla abajo a la derecha con lo próximo («Bingo, sábado 28») que se puede cerrar y lleva a su página. Recomendación: sí, pero solo para la actividad más cercana y solo hasta su fecha.
+
+### 3. Sección de la Chocolatada
+
+Fondo azul marino a todo el ancho (rompe la secuencia blanco/gris). Las actividades dejan de ser filas de texto: dos piezas grandes lado a lado, cada una con su bloque de fecha, su ícono y su estado («Se juega la final», «Faltan 3 días»).
+
+### 4. Cuentas claras — DEPENDE DE UNA DECISIÓN
+
+El 25 nov Thony pidió «solo el concepto, no deben ir montos». Sin montos no hay gráfico posible: solo quedan palabras. Tres salidas:
+
+- **A. Con montos por concepto (recomendada).** Tres cifras arriba (Entró, Se usó, Queda para la chocolatada), una barra de colores por origen (cartillas, inscripciones, donaciones) y debajo cada concepto con su monto. Nunca cuánto dio cada persona: los que apoyaron van como lista de nombres, sin cifra.
+- **B. Solo totales.** Las tres cifras y la barra; los conceptos sin monto.
+- **C. Sin montos.** Conceptos como etiquetas de color por origen y la lista de quienes apoyaron. Es lo de hoy con color; seguirá viéndose pobre.
+
+A y B cambian la API pública (hoy no envía montos) y su test.
+
+```
+ Cuentas claras
+ ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐
+ │ Entró        │ │ Se usó       │ │ Para la chocolatada  │
+ │ S/ 0.000     │ │ S/ 000       │ │ S/ 0.000             │
+ └──────────────┘ └──────────────┘ └──────────────────────┘
+ ████████████████████▓▓▓▓▓▓▓▓░░░░   cartillas · inscripciones · donaciones (leyenda con color)
+ Lo que entró                  En qué se usó
+ [■] Venta de cartillas  S/…   [■] Premios        S/…
+ [■] Inscripciones       S/…   [■] Arbitraje      S/…
+ Gracias a: Fulano, Mengano, Zutano (sin montos)
+```
+
+### 5. Facebook vuelve, bien encajado
+
+- **Ahora:** el plugin oficial de la página, pero con el ancho calculado desde su contenedor (se cortaba porque el plugin fija su ancho al cargar, máximo 500 px, y no se adapta solo). En celular ocupa el ancho de la pantalla; en escritorio va al lado de TikTok, las dos columnas con la misma altura.
+- **Después del bingo:** galería propia con las fotos de las últimas publicaciones. Facebook solo entrega esas fotos por su API con una llave de la página (hay que crear una app en Meta); sin llave no hay forma legítima de sacarlas.
+
+### 6. Fotos
+
+Cinco proyectos (mural, cámaras, pozo, sillas de ruedas, letras céntricas) y carrusel de seis fotos (las cinco más monitoreo de cámaras). Las PNG de `docs/carrusel/` se convierten a webp en `apps/web/public/portada/proyectos/`.
+
 ## Dónde se completa el contenido
 
 Todo en `apps/web/src/modules/public/data/site.ts`:

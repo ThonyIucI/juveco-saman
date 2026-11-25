@@ -56,21 +56,67 @@ export interface ISiteProject {
   description: string | null;
   /** En `apps/web/public/portada/proyectos/`. */
   image: string;
+  /** Dónde se ancla la foto al recortarla con `object-cover`; centro si falta. */
+  objectPosition?: string;
   status: TSiteProjectStatus | null;
+  /** Rótulo corto sobre quién la hizo, p. ej. «Gestión anterior». */
+  tag?: string;
 }
+
+const PREVIOUS_TERM_TAG = "Gestión anterior";
 
 /**
  * Proyectos de la Juveco: obras para el barrio. La chocolatada es un evento, no un proyecto
- * (Thony, 2026-11-25). Pendiente (Thony): descripción, estado y la foto de cada uno.
+ * (Thony, 2026-11-25). Las sillas de ruedas y las letras son de la gestión pasada: ya están
+ * hechas. Pendiente (Thony): descripción y estado de las demás.
  */
 export const PROJECTS: ISiteProject[] = [
   { id: "mural", name: "Mural", description: null, image: "/portada/proyectos/mural.webp", status: null },
-  { id: "camaras", name: "Cámaras de seguridad", description: null, image: "/portada/proyectos/camaras.webp", status: null },
-  { id: "pozo", name: "Pozo de agua", description: null, image: "/portada/proyectos/pozo.webp", status: null },
+  {
+    id: "camaras",
+    name: "Cámaras de seguridad",
+    description: null,
+    image: "/portada/proyectos/camaras.webp",
+    objectPosition: "center 50%",
+    status: null,
+  },
+  {
+    id: "pozo",
+    name: "Pozo de agua en María Auxiliadora",
+    description: null,
+    image: "/portada/proyectos/pozo.webp",
+    objectPosition: "center 30%",
+    status: null,
+  },
+  {
+    id: "sillas",
+    name: "Donación de sillas de ruedas",
+    description: null,
+    image: "/portada/proyectos/sillas.webp",
+    status: "DONE",
+    tag: PREVIOUS_TERM_TAG,
+  },
+  {
+    id: "letras",
+    name: "Letras céntricas",
+    description: null,
+    image: "/portada/proyectos/letras.webp",
+    status: "DONE",
+    tag: PREVIOUS_TERM_TAG,
+  },
 ];
 
-/** Las fotos del carrusel de inicio: las de los proyectos, con su nombre al pie. */
-export const HERO_SLIDES = PROJECTS.map((project) => ({ image: project.image, caption: project.name }));
+export interface IHeroSlide {
+  image: string;
+  caption: string;
+  objectPosition?: string;
+}
+
+/** Las seis fotos del carrusel: las de los proyectos y la del monitoreo de las cámaras. */
+export const HERO_SLIDES: IHeroSlide[] = [
+  ...PROJECTS.map(({ image, name, objectPosition }) => ({ image, caption: name, objectPosition })),
+  { image: "/portada/proyectos/monitoreo.webp", caption: "Monitoreo de las cámaras", objectPosition: "center 55%" },
+];
 
 /** Enlaces del navbar y del footer: cada uno baja a su sección del inicio. */
 export const SITE_SECTIONS = [

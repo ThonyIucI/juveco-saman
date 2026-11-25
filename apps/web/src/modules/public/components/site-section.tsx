@@ -3,11 +3,17 @@ import type { ReactNode } from "react";
 
 import { Reveal } from "./reveal";
 
+const TONE_CLASSES = {
+  plain: "border-border bg-background",
+  muted: "border-border bg-page",
+  navy: "border-white/10 bg-[#14214A] text-white",
+} as const;
+
 interface ISiteSectionProps {
   /** Opcional: el evento lleva su `id` en un contenedor fijo (ver `routes/index.tsx`). */
   id?: string;
-  /** Las secciones alternan fondo blanco y gris claro. */
-  tone?: "plain" | "muted";
+  /** Las secciones alternan fondo blanco y gris claro; `navy` es el azul marino del logo (igual en oscuro). */
+  tone?: "plain" | "muted" | "navy";
   /** La palabra chica sobre el título: «Nosotros», «Proyectos». */
   eyebrow?: string;
   title: ReactNode;
@@ -21,19 +27,32 @@ interface ISiteSectionProps {
  * note dónde empieza (Thony, 2026-11-25). Letras solo de 12, 14, 16, 20 y 24 px.
  */
 export default function SiteSection({ id, tone = "plain", eyebrow, title, intro, children }: ISiteSectionProps) {
+  const isNavy = tone === "navy";
+
   return (
     <section
       id={id}
       className={cn(
-        "scroll-mt-16 border-t border-border py-14 md:py-20",
-        tone === "muted" ? "bg-page" : "bg-background",
+        "scroll-mt-16 border-t py-14 md:py-20",
+        TONE_CLASSES[tone],
       )}
     >
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <Reveal className="mb-8 max-w-2xl md:mb-10">
-          {eyebrow && <p className="mb-2 text-xs font-semibold tracking-widest text-primary uppercase dark:text-blue-400">{eyebrow}</p>}
-          <h2 className="font-heading text-2xl font-semibold tracking-tight text-foreground">{title}</h2>
-          {intro && <p className="mt-2 text-base text-muted-foreground">{intro}</p>}
+          {eyebrow && (
+            <p
+              className={cn(
+                "mb-2 text-xs font-semibold tracking-widest uppercase",
+                isNavy ? "text-gold" : "text-primary dark:text-blue-400",
+              )}
+            >
+              {eyebrow}
+            </p>
+          )}
+          <h2 className={cn("font-heading text-2xl font-semibold tracking-tight", isNavy ? "text-white" : "text-foreground")}>
+            {title}
+          </h2>
+          {intro && <p className={cn("mt-2 text-base", isNavy ? "text-white/80" : "text-muted-foreground")}>{intro}</p>}
         </Reveal>
         {children}
       </div>

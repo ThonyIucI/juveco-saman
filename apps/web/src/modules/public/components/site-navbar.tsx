@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { SITE, SITE_SECTIONS } from "@/modules/public/data/site";
 import { useActiveSection } from "@/modules/public/hooks/use-active-section";
+import { useNavbarHidden } from "@/modules/public/hooks/use-navbar-hidden";
 import { scrollToSection } from "@/modules/public/utils/scroll";
 
 const SECTION_IDS = SITE_SECTIONS.map((section) => section.id);
@@ -21,12 +22,14 @@ interface ISiteNavbarProps {
 
 /**
  * Navbar de las páginas públicas: el logo y el nombre en una sola línea, y los enlaces a las
- * secciones del inicio (el de la que se está leyendo, marcado). En celular, un menú ☰.
+ * secciones del inicio (el de la que se está leyendo, marcado). En celular, un menú ☰. Se
+ * esconde al bajar y reaparece al subir (Thony, 2026-11-25).
  */
 export default function SiteNavbar({ isHome = false, isContentReady = false, hasEvent = true }: ISiteNavbarProps) {
   const activeId = useActiveSection(SECTION_IDS, isContentReady);
   const isReduced = useReducedMotion() ?? false;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isHidden = useNavbarHidden(isMenuOpen);
   const sections = SITE_SECTIONS.filter((section) => hasEvent || section.id !== "evento");
 
   /* Escape cierra el menú móvil. */
@@ -62,7 +65,13 @@ export default function SiteNavbar({ isHome = false, isContentReady = false, has
   );
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
+    <header
+      inert={isHidden}
+      className={cn(
+        "sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur transition-transform duration-300 ease-out motion-reduce:transition-none",
+        isHidden && "-translate-y-full",
+      )}
+    >
       <nav aria-label="Secciones" className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 md:px-6">
         <Link
           to="/"

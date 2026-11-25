@@ -15,9 +15,14 @@ interface IPublicHomeData {
       id: string;
       type: string;
       prizes: { name: string; donorName: string | null; winner: unknown }[];
-      incomeConcepts: string[];
-      expenseConcepts: string[];
     }[];
+    accounts: {
+      collected: number;
+      spent: number;
+      remaining: number;
+      incomes: { label: string; amount: number; source: string }[];
+      expenses: { label: string; amount: number }[];
+    };
     supporters: string[];
   } | null;
 }
@@ -46,7 +51,7 @@ describe("portada pública", () => {
     expect(data.project?.activities.map((activity) => activity.type).sort()).toEqual(["BINGO", "CHAMPIONSHIP"]);
   });
 
-  it("muestra premio con donante, conceptos del balance sin montos y quienes apoyaron", async () => {
+  it("muestra premio con donante y quienes apoyaron, sin monto por persona", async () => {
     // Arrange
     const donor = await dataOf<{ id: string }>(
       await postJson("/api/v1/users", { firstName: "Marta", lastName: "Apoyo" }, { cookie }),
@@ -56,8 +61,6 @@ describe("portada pública", () => {
       { name: "Televisor", origin: "DONATED", donorId: donor.id },
       { cookie },
     );
-    await postJson(`/api/v1/activities/${bingoId}/expenses`, { concept: "Toldo", amount: 120 }, { cookie });
-    await postJson(`/api/v1/activities/${bingoId}/incomes`, { concept: "Venta de gaseosas", amount: 90 }, { cookie });
 
     // Act
     const data = await home();
@@ -65,10 +68,49 @@ describe("portada pública", () => {
     // Assert
     const bingo = data.project?.activities.find((activity) => activity.id === bingoId);
     expect(bingo?.prizes).toContainEqual({ name: "Televisor", donorName: "Marta Apoyo", winner: null });
-    expect(bingo?.expenseConcepts).toContain("Toldo");
-    expect(bingo?.incomeConcepts).toContain("Venta de gaseosas");
     expect(data.project?.supporters).toContain("Marta Apoyo");
-    /* Sin montos: ningún número de plata en la respuesta. */
-    expect(JSON.stringify(data)).not.toMatch(/"(amount|cost|price|collected)"/);
+    /* Los donantes van como nombres: ni el premio ni la lista llevan montos. */
+    expect(JSON.stringify(bingo?.prizes)).not.toMatch(/"(amount|cost|price)"/);
+    expect(JSON.stringify(data.project?.supporters)).not.toMatch(/\d/);
+  });
+
+  it("envía los montos de las cuentas claras por concepto y los totales cuadran", async () => {
+    // Arrange
+    const before = (await home()).project?.accounts;
+    await postJson(`/api/v1/activities/${bingoId}/expenses`, { concept: "Toldo", amount: 120 }, { cookie });
+    await postJson(`/api/v1/activities/${bingoId}/incomes`, { concept: "Venta de gaseosas", amount: 90 }, { cookie });
+    await postJson(`/api/v1/activities/${bingoId}/incomes`, { concept: "venta de GASEOSAS", amount: 10 }, { cookie });
+
+    // Act
+    const accounts = (await home()).project?.accounts;
+
+    // Assert
+    expect(accounts?.expenses).toContainEqual({ label: "Toldo", amount: 120 });
+    expect(accounts?.incomes).toContainEqual({ label: "Venta de gaseosas", amount: 100, source: "OTHER" });
+    expect(accounts?.collected).toBeCloseTo((before?.collected ?? 0) + 100, 2);
+    expect(accounts?.spent).toBeCloseTo((before?.spent ?? 0) + 120, 2);
+    expect(accounts?.remaining).toBeCloseTo((accounts?.collected ?? 0) - (accounts?.spent ?? 0), 2);
+    const incomesTotal = accounts?.incomes.reduce((total, line) => total + line.amount, 0) ?? 0;
+    expect(incomesTotal).toBeCloseTo(accounts?.collected ?? 0, 2);
+    const expensesTotal = accounts?.expenses.reduce((total, line) => total + line.amount, 0) ?? 0;
+    expect(expensesTotal).toBeCloseTo(accounts?.spent ?? 0, 2);
+  });
+
+  it("suma las donaciones anotadas a mano en un solo renglón, sin nombres", async () => {
+    // Arrange
+    await postJson(`/api/v1/activities/${bingoId}/incomes`, { concept: "Donación de Juan Pérez", amount: 50 }, { cookie });
+    await postJson(`/api/v1/activities/${bingoId}/incomes`, { concept: "Aporte de Rosa Díaz", amount: 30 }, { cookie });
+
+    // Act
+    const accounts = (await home()).project?.accounts;
+
+    // Assert
+    const donations = accounts?.incomes.filter((line) => line.source === "DONATIONS") ?? [];
+    expect(donations).toHaveLength(1);
+    expect(donations[0]?.label).toBe("Donaciones y apoyos");
+    expect(donations[0]?.amount).toBeGreaterThanOrEqual(80);
+    const text = JSON.stringify(accounts);
+    expect(text).not.toContain("Juan Pérez");
+    expect(text).not.toContain("Rosa Díaz");
   });
 });
