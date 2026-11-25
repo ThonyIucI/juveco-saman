@@ -92,6 +92,20 @@
       "when": 1795076078936,
       "tag": "0012_seed_campeonato_relampago",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1795594259652,
+      "tag": "0013_unusual_jigsaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1795594330528,
+      "tag": "0014_postergar_bingo_28_nov",
+      "breakpoints": true
     }
   ]
 }

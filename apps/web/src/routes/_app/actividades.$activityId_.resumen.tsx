@@ -4,7 +4,7 @@ import { activityItemLabels } from "@juveco/shared/activities";
 import type { IActivityExpenseResource } from "@juveco/shared/activity-expenses";
 import type { IActivityPrizeResource } from "@juveco/shared/activity-prizes";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { Pencil, RefreshCw, Trash2, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import ConfirmModal from "@/common/components/confirm-modal";
@@ -16,17 +16,21 @@ import type { IRowAction } from "@/common/components/row-actions";
 import ActivityBalance from "@/modules/activities/components/activity-balance";
 import ActivityKpis from "@/modules/activities/components/activity-kpis";
 import ActivityMeta from "@/modules/activities/components/activity-meta";
-import ExpenseFormModal from "@/modules/activities/components/expense-form-modal";
-import ExpenseList from "@/modules/activities/components/expense-list";
+import MovementFormModal from "@/modules/activities/components/movement-form-modal";
+import MovementList from "@/modules/activities/components/movement-list";
 import PrizeFormModal from "@/modules/activities/components/prize-form-modal";
 import PrizeList from "@/modules/activities/components/prize-list";
-import { useDeleteActivityExpense } from "@/modules/activities/hooks/use-delete-activity-expense";
+import PrizeWinnerModal from "@/modules/activities/components/prize-winner-modal";
+import { useDeleteActivityMovement } from "@/modules/activities/hooks/use-delete-activity-movement";
 import { useDeleteActivityPrize } from "@/modules/activities/hooks/use-delete-activity-prize";
 import { useGetActivity } from "@/modules/activities/hooks/use-get-activity";
 import { useGetActivityBalance } from "@/modules/activities/hooks/use-get-activity-balance";
 import { useGetActivitySummary } from "@/modules/activities/hooks/use-get-activity-summary";
-import { useListActivityExpenses } from "@/modules/activities/hooks/use-list-activity-expenses";
+import { useListActivityItems } from "@/modules/activities/hooks/use-list-activity-items";
+import { useListActivityMovements } from "@/modules/activities/hooks/use-list-activity-movements";
 import { useListActivityPrizes } from "@/modules/activities/hooks/use-list-activity-prizes";
+import { useSetPrizeWinner } from "@/modules/activities/hooks/use-set-prize-winner";
+import type { TMovementKind } from "@/modules/activities/utils/movements";
 import { useListUsers } from "@/modules/users/hooks/use-list-users";
 
 /*
@@ -42,8 +46,11 @@ type TFormTarget<TEntry> = { entry?: TEntry } | null;
 
 type TDeleteTarget =
   | { kind: "prize"; prize: IActivityPrizeResource }
-  | { kind: "expense"; expense: IActivityExpenseResource }
+  | { kind: TMovementKind; movement: IActivityExpenseResource }
   | null;
+
+/* Un ingreso o un gasto abierto en el formulario. */
+type TMovementForm = { kind: TMovementKind; entry?: IActivityExpenseResource } | null;
 
 /**
  * Resumen de una actividad (acordado 2026-11-07), todo en una página: KPIs de las cartillas,
@@ -57,14 +64,22 @@ function ActivitySummaryPage() {
   const GetActivitySummary = useGetActivitySummary();
   const GetActivityBalance = useGetActivityBalance();
   const ListActivityPrizes = useListActivityPrizes();
-  const ListActivityExpenses = useListActivityExpenses();
+  const ListActivityIncomes = useListActivityMovements("income");
+  const ListActivityExpenses = useListActivityMovements("expense");
+  const ListActivityItems = useListActivityItems();
   const ListUsers = useListUsers();
   const DeleteActivityPrize = useDeleteActivityPrize();
-  const DeleteActivityExpense = useDeleteActivityExpense();
+  const DeleteActivityIncome = useDeleteActivityMovement("income");
+  const DeleteActivityExpense = useDeleteActivityMovement("expense");
+  const SetPrizeWinner = useSetPrizeWinner();
 
   const [prizeForm, setPrizeForm] = useState<TFormTarget<IActivityPrizeResource>>(null);
-  const [expenseForm, setExpenseForm] = useState<TFormTarget<IActivityExpenseResource>>(null);
+  const [movementForm, setMovementForm] = useState<TMovementForm>(null);
   const [deleteTarget, setDeleteTarget] = useState<TDeleteTarget>(null);
+  /* Por id: así el modal ve el premio al día tras marcar o quitar el ganador. */
+  const [winnerPrizeId, setWinnerPrizeId] = useState<string | null>(null);
+
+  const movementListOf = (kind: TMovementKind) => (kind === "income" ? ListActivityIncomes : ListActivityExpenses);
 
   /* Las personas también: el donante se elige de ahí. */
   const loadAll = (signal?: AbortSignal) =>
@@ -73,7 +88,10 @@ function ActivitySummaryPage() {
       GetActivitySummary.handler(activityId, signal),
       GetActivityBalance.handler(activityId, signal),
       ListActivityPrizes.handler(activityId, signal),
+      ListActivityIncomes.handler(activityId, signal),
       ListActivityExpenses.handler(activityId, signal),
+      /* Las cartillas, para buscar la ganadora de cada premio. */
+      ListActivityItems.handler(activityId, signal),
       ListUsers.handler(signal),
     ]);
 
@@ -95,6 +113,7 @@ function ActivitySummaryPage() {
     GetActivitySummary.loading ||
     GetActivityBalance.loading ||
     ListActivityPrizes.loading ||
+    ListActivityIncomes.loading ||
     ListActivityExpenses.loading;
 
   const handlePrizeSaved = (prize: IActivityPrizeResource) => {
@@ -102,12 +121,22 @@ function ActivitySummaryPage() {
     refreshBalance();
   };
 
-  const handleExpenseSaved = (expense: IActivityExpenseResource) => {
-    ListActivityExpenses.onUpsert(expense);
+  const handleMovementSaved = (kind: TMovementKind, movement: IActivityExpenseResource) => {
+    movementListOf(kind).onUpsert(movement);
     refreshBalance();
   };
 
+  const pickWinner = async (prize: IActivityPrizeResource, itemId: string | null) => {
+    const updated = await SetPrizeWinner.handler(prize, itemId);
+    if (updated) {
+      ListActivityPrizes.onUpsert(updated);
+    }
+    return updated !== null;
+  };
+
+  /* Marcar al ganador va directo: es lo que se hace en vivo el día del sorteo. */
   const buildPrizeActions = (prize: IActivityPrizeResource): IRowAction[] => [
+    { icon: Trophy, label: "Ganador", inline: true, onClick: () => setWinnerPrizeId(prize.id) },
     { icon: Pencil, label: "Editar", onClick: () => setPrizeForm({ entry: prize }) },
     {
       icon: Trash2,
@@ -117,15 +146,17 @@ function ActivitySummaryPage() {
     },
   ];
 
-  const buildExpenseActions = (expense: IActivityExpenseResource): IRowAction[] => [
-    { icon: Pencil, label: "Editar", onClick: () => setExpenseForm({ entry: expense }) },
-    {
-      icon: Trash2,
-      label: "Eliminar",
-      variant: "destructive",
-      onClick: () => setDeleteTarget({ kind: "expense", expense }),
-    },
-  ];
+  const buildMovementActions =
+    (kind: TMovementKind) =>
+    (movement: IActivityExpenseResource): IRowAction[] => [
+      { icon: Pencil, label: "Editar", onClick: () => setMovementForm({ kind, entry: movement }) },
+      {
+        icon: Trash2,
+        label: "Eliminar",
+        variant: "destructive",
+        onClick: () => setDeleteTarget({ kind, movement }),
+      },
+    ];
 
   const confirmDelete = async () => {
     if (deleteTarget?.kind === "prize") {
@@ -135,10 +166,11 @@ function ActivitySummaryPage() {
         refreshBalance();
       }
     }
-    if (deleteTarget?.kind === "expense") {
-      const deleted = await DeleteActivityExpense.handler(deleteTarget.expense);
+    if (deleteTarget && deleteTarget.kind !== "prize") {
+      const remove = deleteTarget.kind === "income" ? DeleteActivityIncome : DeleteActivityExpense;
+      const deleted = await remove.handler(deleteTarget.movement);
       if (deleted) {
-        ListActivityExpenses.onRemove(deleted.id);
+        movementListOf(deleteTarget.kind).onRemove(deleted.id);
         refreshBalance();
       }
     }
@@ -148,8 +180,8 @@ function ActivitySummaryPage() {
   const deleteName =
     deleteTarget?.kind === "prize"
       ? `el premio «${deleteTarget.prize.name}»`
-      : deleteTarget?.kind === "expense"
-        ? `el gasto «${deleteTarget.expense.concept}»`
+      : deleteTarget
+        ? `el ${deleteTarget.kind === "income" ? "ingreso" : "gasto"} «${deleteTarget.movement.concept}»`
         : "";
 
   const syncButton = (
@@ -190,7 +222,13 @@ function ActivitySummaryPage() {
               <ActivityBalance balance={null} />
               <div className="space-y-4">
                 <PrizeList prizes={[]} isLoading buildActions={buildPrizeActions} onCreate={() => undefined} />
-                <ExpenseList expenses={[]} isLoading buildActions={buildExpenseActions} onCreate={() => undefined} />
+                <MovementList
+                  kind="expense"
+                  movements={[]}
+                  isLoading
+                  buildActions={buildMovementActions("expense")}
+                  onCreate={() => undefined}
+                />
               </div>
             </div>
           </div>
@@ -208,11 +246,19 @@ function ActivitySummaryPage() {
             buildActions={buildPrizeActions}
             onCreate={() => setPrizeForm({})}
           />
-          <ExpenseList
-            expenses={ListActivityExpenses.expenses}
+          <MovementList
+            kind="income"
+            movements={ListActivityIncomes.movements}
+            isLoading={ListActivityIncomes.loading}
+            buildActions={buildMovementActions("income")}
+            onCreate={() => setMovementForm({ kind: "income" })}
+          />
+          <MovementList
+            kind="expense"
+            movements={ListActivityExpenses.movements}
             isLoading={ListActivityExpenses.loading}
-            buildActions={buildExpenseActions}
-            onCreate={() => setExpenseForm({})}
+            buildActions={buildMovementActions("expense")}
+            onCreate={() => setMovementForm({ kind: "expense" })}
           />
         </div>
       </div>
@@ -229,12 +275,21 @@ function ActivitySummaryPage() {
         onClose={() => setPrizeForm(null)}
       />
 
-      <ExpenseFormModal
-        open={expenseForm !== null}
+      <MovementFormModal
+        open={movementForm !== null}
+        kind={movementForm?.kind ?? "expense"}
         activityId={activityId}
-        expense={expenseForm?.entry}
-        onSaved={handleExpenseSaved}
-        onClose={() => setExpenseForm(null)}
+        movement={movementForm?.entry}
+        onSaved={(movement) => handleMovementSaved(movementForm?.kind ?? "expense", movement)}
+        onClose={() => setMovementForm(null)}
+      />
+
+      <PrizeWinnerModal
+        prize={ListActivityPrizes.prizes.find((prize) => prize.id === winnerPrizeId) ?? null}
+        items={ListActivityItems.items}
+        isSaving={SetPrizeWinner.loading}
+        onPick={pickWinner}
+        onClose={() => setWinnerPrizeId(null)}
       />
 
       <ConfirmModal
@@ -243,7 +298,7 @@ function ActivitySummaryPage() {
         description="Se quita del balance. Esto no se puede deshacer."
         confirmLabel="Eliminar"
         variant="destructive"
-        loading={DeleteActivityPrize.loading || DeleteActivityExpense.loading}
+        loading={DeleteActivityPrize.loading || DeleteActivityIncome.loading || DeleteActivityExpense.loading}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />

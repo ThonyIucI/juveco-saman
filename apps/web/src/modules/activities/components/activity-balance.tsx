@@ -39,8 +39,21 @@ export default function ActivityBalance({ balance }: IActivityBalanceProps) {
     );
   }
 
+  /* Con ingresos sueltos (inscripciones, ventas del día), se separan de lo vendido. */
+  const incomeLines: IBalanceLine[] =
+    balance.incomes > 0
+      ? [
+          {
+            label: "Ventas",
+            current: balance.collected - balance.incomes,
+            expected: balance.expected - balance.incomes,
+          },
+          { label: "Otros ingresos", current: balance.incomes, expected: balance.incomes },
+        ]
+      : [{ label: "Ingresos", current: balance.collected, expected: balance.expected }];
+
   const lines: IBalanceLine[] = [
-    { label: "Ingresos", current: balance.collected, expected: balance.expected },
+    ...incomeLines,
     {
       label: "Premios",
       current: balance.purchasedPrizes,

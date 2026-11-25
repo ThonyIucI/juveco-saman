@@ -163,7 +163,7 @@ describe("/activities/:id/teams", () => {
     expect(updated.players.map((player) => player.id).sort()).toEqual([people[8], people[9]].sort());
   });
 
-  it("cobra la inscripción por partes, nunca más de lo que falta, y suma al balance", async () => {
+  it("cobra la inscripción por partes, nunca más de lo que falta, y no toca el balance", async () => {
     const team = await dataOf<ITeamData>(await createTeam({ name: "Unión Ramón Castilla", delegateId: people[10] }));
     const before = await dataOf<IBalanceData>(
       await request(`/api/v1/activities/${championship.id}/balance`, { headers: { cookie } }),
@@ -183,8 +183,9 @@ describe("/activities/:id/teams", () => {
     const after = await dataOf<IBalanceData>(
       await request(`/api/v1/activities/${championship.id}/balance`, { headers: { cookie } }),
     );
+    /* Lo del campeonato entra como ingreso (Thony, 2026-11-25): los pagos de equipos no suman. */
     expect(after.expected).toBe(before.expected);
-    expect(after.collected).toBe(before.collected + 200);
+    expect(after.collected).toBe(before.collected);
   });
 
   it("no elimina un equipo con pagos; eliminado el pago, sí", async () => {

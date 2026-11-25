@@ -1,12 +1,6 @@
 import { Label } from "@juveco/ui/components/label";
 import { Textarea } from "@juveco/ui/components/textarea";
-import {
-  EXPENSE_CONCEPT_LENGTH_MESSAGE,
-  EXPENSE_CONCEPT_MAX_LENGTH,
-  EXPENSE_CONCEPT_REQUIRED_MESSAGE,
-  type IActivityExpenseInput,
-  type IActivityExpenseResource,
-} from "@juveco/shared/activity-expenses";
+import type { IActivityExpenseInput, IActivityExpenseResource } from "@juveco/shared/activity-expenses";
 import { INVALID_SOLES_MESSAGE, parseSoles, toSolesInput } from "@juveco/shared/money";
 import { PERSON_NOTE_LENGTH_MESSAGE, PERSON_NOTE_MAX_LENGTH } from "@juveco/shared/people";
 import { useForm, useStore } from "@tanstack/react-form";
@@ -18,61 +12,81 @@ import FormSubmitButtons from "@/common/components/form-submit-buttons";
 import Modal from "@/common/components/modal";
 import SolesInput from "@/common/components/soles-input";
 import TextField from "@/common/components/text-field";
-import { useCreateActivityExpense } from "@/modules/activities/hooks/use-create-activity-expense";
-import { useUpdateActivityExpense } from "@/modules/activities/hooks/use-update-activity-expense";
+import { useCreateActivityMovement } from "@/modules/activities/hooks/use-create-activity-movement";
+import { useUpdateActivityMovement } from "@/modules/activities/hooks/use-update-activity-movement";
+import { type TMovementKind, movementLabels } from "@/modules/activities/utils/movements";
 
-const FORM_ID = "expense-form";
+const FORM_ID = "movement-form";
 
-const formSchema = z.object({
-  concept: z
-    .string()
-    .trim()
-    .min(1, EXPENSE_CONCEPT_REQUIRED_MESSAGE)
-    .max(EXPENSE_CONCEPT_MAX_LENGTH, EXPENSE_CONCEPT_LENGTH_MESSAGE),
-  amount: z.string().refine((value) => parseSoles(value) !== null, INVALID_SOLES_MESSAGE),
-  note: z.string().max(PERSON_NOTE_MAX_LENGTH, PERSON_NOTE_LENGTH_MESSAGE),
+const buildSchema = (kind: TMovementKind) => {
+  const labels = movementLabels[kind];
+  return z.object({
+    concept: z
+      .string()
+      .trim()
+      .min(1, labels.conceptRequiredMessage)
+      .max(labels.conceptMaxLength, labels.conceptLengthMessage),
+    amount: z.string().refine((value) => parseSoles(value) !== null, INVALID_SOLES_MESSAGE),
+    note: z.string().max(PERSON_NOTE_MAX_LENGTH, PERSON_NOTE_LENGTH_MESSAGE),
+  });
+};
+
+interface IMovementFormValues {
+  concept: string;
+  amount: string;
+  note: string;
+}
+
+const buildDefaults = (movement?: IActivityExpenseResource): IMovementFormValues => ({
+  concept: movement?.concept ?? "",
+  amount: movement ? toSolesInput(movement.amount) : "",
+  note: movement?.note ?? "",
 });
 
-type TExpenseFormValues = z.input<typeof formSchema>;
-
-const buildDefaults = (expense?: IActivityExpenseResource): TExpenseFormValues => ({
-  concept: expense?.concept ?? "",
-  amount: expense ? toSolesInput(expense.amount) : "",
-  note: expense?.note ?? "",
-});
-
-const toPayload = (value: TExpenseFormValues): IActivityExpenseInput => ({
+const toPayload = (value: IMovementFormValues): IActivityExpenseInput => ({
   concept: value.concept.trim(),
   /* El esquema ya garantizó que es un monto válido. */
   amount: parseSoles(value.amount) ?? 0,
   note: value.note.trim() || null,
 });
 
-interface IExpenseFormModalProps {
+interface IMovementFormModalProps {
   open: boolean;
+  kind: TMovementKind;
   activityId: string;
-  /** Sin gasto: nuevo. Con gasto: edición. */
-  expense?: IActivityExpenseResource;
-  onSaved: (expense: IActivityExpenseResource) => void;
+  /** Sin movimiento: nuevo. Con movimiento: edición. */
+  movement?: IActivityExpenseResource;
+  onSaved: (movement: IActivityExpenseResource) => void;
   onClose: () => void;
 }
 
-/** Un gasto de la actividad (impresión de cartillas, alquiler…): concepto, monto y una nota. */
-export default function ExpenseFormModal({ open, activityId, expense, onSaved, onClose }: IExpenseFormModalProps) {
-  const CreateActivityExpense = useCreateActivityExpense();
-  const UpdateActivityExpense = useUpdateActivityExpense();
+/**
+ * Un ingreso o un gasto de la actividad (inscripciones, impresión de cartillas…): concepto,
+ * monto y una nota.
+ */
+export default function MovementFormModal({
+  open,
+  kind,
+  activityId,
+  movement,
+  onSaved,
+  onClose,
+}: IMovementFormModalProps) {
+  const CreateActivityMovement = useCreateActivityMovement(kind);
+  const UpdateActivityMovement = useUpdateActivityMovement(kind);
+  const labels = movementLabels[kind];
 
   /* «Crear y seguir creando»: guarda y deja el formulario abierto, vacío, para el siguiente. */
   const keepOpenRef = useRef(false);
 
   const form = useForm({
-    defaultValues: buildDefaults(expense),
-    validators: { onSubmit: formSchema },
+    defaultValues: buildDefaults(movement),
+    validators: { onSubmit: buildSchema(kind) },
     onSubmit: async ({ value }) => {
       const payload = toPayload(value);
-      const saved = expense
-        ? await UpdateActivityExpense.handler(expense, payload)
-        : await CreateActivityExpense.handler(activityId, payload);
+      const saved = movement
+        ? await UpdateActivityMovement.handler(movement, payload)
+        : await CreateActivityMovement.handler(activityId, payload);
       if (!saved) {
         return;
       }
@@ -89,16 +103,16 @@ export default function ExpenseFormModal({ open, activityId, expense, onSaved, o
 
   useEffect(() => {
     if (open) {
-      form.reset(buildDefaults(expense));
+      form.reset(buildDefaults(movement));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, expense]);
+  }, [open, movement]);
 
   return (
     <Modal
       isDirty={isDirty}
       open={open}
-      title={expense ? "Editar gasto" : "Nuevo gasto"}
+      title={movement ? labels.editTitle : labels.newTitle}
       width="lg"
       onClose={onClose}
       footer={
@@ -107,9 +121,9 @@ export default function ExpenseFormModal({ open, activityId, expense, onSaved, o
             <FormSubmitButtons
               formId={FORM_ID}
               isSubmitting={isSubmitting}
-              label={expense ? "Guardar cambios" : "Crear"}
+              label={movement ? "Guardar cambios" : "Crear"}
               onSubmitAndContinue={
-                expense
+                movement
                   ? undefined
                   : () => {
                       keepOpenRef.current = true;
@@ -141,7 +155,7 @@ export default function ExpenseFormModal({ open, activityId, expense, onSaved, o
                 id={field.name}
                 label="Concepto"
                 autoComplete="off"
-                maxLength={EXPENSE_CONCEPT_MAX_LENGTH}
+                maxLength={labels.conceptMaxLength}
                 placeholder="Ingresa el concepto"
                 value={field.state.value}
                 errors={field.state.meta.errors}

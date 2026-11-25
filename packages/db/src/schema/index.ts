@@ -1,5 +1,6 @@
 export * from "./activities";
 export * from "./activity-expenses";
+export * from "./activity-incomes";
 export * from "./activity-item-payments";
 export * from "./activity-prizes";
 export * from "./activity-items";

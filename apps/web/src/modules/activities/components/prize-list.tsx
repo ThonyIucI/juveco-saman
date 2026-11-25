@@ -4,7 +4,7 @@ import { Skeleton } from "@juveco/ui/components/skeleton";
 import { EPrizeOrigin, type IActivityPrizeResource, prizeOriginLabels } from "@juveco/shared/activity-prizes";
 import { formatSoles } from "@juveco/shared/money";
 import { fullName } from "@juveco/shared/people";
-import { Gift, Plus, ShoppingBag } from "lucide-react";
+import { Gift, Plus, ShoppingBag, Trophy } from "lucide-react";
 
 import { DetailSection } from "@/common/components/detail-section";
 import RowActions, { type IRowAction } from "@/common/components/row-actions";
@@ -19,7 +19,7 @@ interface IPrizeListProps {
   onCreate: () => void;
 }
 
-/** Los premios: nombre, si fue donado (y por quién) o comprado (y cuánto costó). */
+/** Los premios: nombre, si fue donado (y por quién) o comprado (y cuánto costó), y quién ganó. */
 export default function PrizeList({ prizes, isLoading, buildActions, onCreate }: IPrizeListProps) {
   return (
     <DetailSection
@@ -61,6 +61,15 @@ export default function PrizeList({ prizes, isLoading, buildActions, onCreate }:
                       : `Costó ${formatSoles(prize.cost ?? 0)}`}
                     {prize.note && ` · ${prize.note}`}
                   </p>
+                  {prize.winner && (
+                    <p className="flex min-w-0 items-center gap-1.5 text-sm text-foreground">
+                      <Trophy aria-hidden className="size-4 shrink-0 text-gold-ink" />
+                      <span className="truncate">
+                        Ganó <span className="font-mono font-semibold">{prize.winner.serial}</span> ·{" "}
+                        {fullName(prize.winner.buyer)}
+                      </span>
+                    </p>
+                  )}
                 </div>
                 <RowActions actions={buildActions(prize)} isBordered />
               </li>

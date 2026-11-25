@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 2026-11-07.
+Última actualización: 2026-11-25.
 
 ## Hecho
 
@@ -55,7 +55,24 @@ Acuerdos, reglas y fases en [propuestas/campeonatos/README.md](propuestas/campeo
   - equipos con delegado y hasta 15 jugadores;
   - cobro de la inscripción por partes;
   - vista propia del campeonato en `/actividades/$activityId`.
-- **Fases 2 y 3:** resultados, posiciones, link público, ventas y Movimientos.
+- **2026-11-25:**
+  - lo del campeonato entra al balance como ingresos y gastos;
+  - los resultados se publican en la portada, escritos en código.
+
+## En curso: portada pública y cierre de la Chocolatada (2026-11-25)
+
+- **La raíz `/` ahora es la portada pública** y ya no manda al login. Muestra:
+  - quiénes somos y las redes (Facebook y TikTok);
+  - la Chocolatada con sus actividades;
+  - los premios del bingo con su donante y, ya sorteados, su ganador;
+  - los resultados del campeonato;
+  - el balance **solo con conceptos, sin montos**, y quiénes apoyaron;
+  - las últimas publicaciones de TikTok y Facebook, como avance.
+- **API pública:** `GET /public/home`, sin sesión.
+- **Ingresos genéricos por actividad (`activity_incomes`)**, con la misma forma que los gastos. Suman a lo cobrado y a lo esperado. Se registran en la vista del campeonato y en el resumen del bingo.
+- **Ganador de cada premio:** se guarda la cartilla ganadora (`activity_prizes.winning_item_id`), y el ganador es su comprador.
+  - Se marca desde el resumen del bingo con el ícono del trofeo, buscando por serie.
+  - El bingo se postergó al **28 de noviembre**.
 
 ## Pendiente (en este orden; cada parte se prueba antes de seguir)
 

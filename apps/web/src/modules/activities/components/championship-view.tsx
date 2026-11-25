@@ -2,6 +2,7 @@ import { Button } from "@juveco/ui/components/button";
 import { IconButton } from "@juveco/ui/components/icon-button";
 import { cn } from "@juveco/ui/lib/utils";
 import type { IActivityResource } from "@juveco/shared/activities";
+import type { IActivityExpenseResource } from "@juveco/shared/activity-expenses";
 import type { IActivityTeamResource } from "@juveco/shared/activity-teams";
 import { roundSoles } from "@juveco/shared/money";
 import { HandCoins, Pencil, Plus, RefreshCw, Shield, Trash2 } from "lucide-react";
@@ -17,15 +18,19 @@ import PageHeader from "@/common/components/page-header";
 import type { IRowAction } from "@/common/components/row-actions";
 import { useBoolean } from "@/common/hooks/use-boolean";
 import { useCreateTeamPayment } from "@/modules/activities/hooks/use-create-team-payment";
+import { useDeleteActivityMovement } from "@/modules/activities/hooks/use-delete-activity-movement";
 import { useDeleteActivityTeam } from "@/modules/activities/hooks/use-delete-activity-team";
-import { useGetActivityBalance } from "@/modules/activities/hooks/use-get-activity-balance";
+import { useListActivityMovements } from "@/modules/activities/hooks/use-list-activity-movements";
 import { useListActivityTeams } from "@/modules/activities/hooks/use-list-activity-teams";
 import { collectionOf } from "@/modules/activities/utils/activity-items";
+import type { TMovementKind } from "@/modules/activities/utils/movements";
 import { teamNumbersOf } from "@/modules/activities/utils/teams";
 import { useListUsers } from "@/modules/users/hooks/use-list-users";
 
 import ActivityMeta from "./activity-meta";
 import ChampionshipKpis, { ChampionshipKpisSkeleton } from "./championship-kpis";
+import MovementFormModal from "./movement-form-modal";
+import MovementList from "./movement-list";
 import PaymentFormModal from "./payment-form-modal";
 import TeamCardList from "./team-card-list";
 import TeamDetailPanel from "./team-detail-panel";
@@ -38,15 +43,26 @@ interface IChampionshipViewProps {
   currentUserId: string;
 }
 
+/* Un ingreso o un gasto abierto en el formulario, o a punto de eliminarse. */
+type TMovementTarget = { kind: TMovementKind; entry?: IActivityExpenseResource } | null;
+
+const sumAmounts = (movements: IActivityExpenseResource[]) =>
+  roundSoles(movements.reduce((sum, movement) => sum + movement.amount, 0));
+
 /**
  * Un campeonato (acordado 2026-11-19, diseño de Stitch corregido): encabezado con «Agregar
- * equipo», KPIs compactos (ingresos y egresos, saldo) y todos los equipos en una sola lista.
- * Cobrar va directo en la fila mientras falte; editar y eliminar, en el `⋯`. Los
- * tabs Partidos, Posiciones y Movimientos llegan con las fases 2 y 3.
+ * equipo», KPIs compactos (ingresos y egresos, saldo), los ingresos y gastos, y todos los
+ * equipos en una sola lista.
+ *
+ * Lo que entra al balance de la Chocolatada son los ingresos y gastos (Thony, 2026-11-25): lo
+ * cobrado a cada equipo queda solo como control de la inscripción y no suma al balance.
  */
 export default function ChampionshipView({ activity, currentUserId }: IChampionshipViewProps) {
   const ListActivityTeams = useListActivityTeams();
-  const GetActivityBalance = useGetActivityBalance();
+  const ListActivityIncomes = useListActivityMovements("income");
+  const ListActivityExpenses = useListActivityMovements("expense");
+  const DeleteActivityIncome = useDeleteActivityMovement("income");
+  const DeleteActivityExpense = useDeleteActivityMovement("expense");
   const ListUsers = useListUsers();
   const CreateTeamPayment = useCreateTeamPayment();
   const DeleteActivityTeam = useDeleteActivityTeam();
@@ -57,11 +73,16 @@ export default function ChampionshipView({ activity, currentUserId }: IChampions
   /* Por id y no el objeto: así el detalle y el pago ven el equipo al día tras cada cambio. */
   const [detailId, setDetailId] = useState<string | null>(null);
   const [payId, setPayId] = useState<string | null>(null);
+  const [movementForm, setMovementForm] = useState<TMovementTarget>(null);
+  const [movementToDelete, setMovementToDelete] = useState<TMovementTarget>(null);
+
+  const movementListOf = (kind: TMovementKind) => (kind === "income" ? ListActivityIncomes : ListActivityExpenses);
 
   const loadAll = (signal?: AbortSignal) =>
     Promise.all([
       ListActivityTeams.handler(activity.id, signal),
-      GetActivityBalance.handler(activity.id, signal),
+      ListActivityIncomes.handler(activity.id, signal),
+      ListActivityExpenses.handler(activity.id, signal),
       ListUsers.handler(signal),
     ]);
 
@@ -73,16 +94,18 @@ export default function ChampionshipView({ activity, currentUserId }: IChampions
   }, [activity.id]);
 
   const { teams } = ListActivityTeams;
-  const { balance } = GetActivityBalance;
-  const isLoading = (ListActivityTeams.loading && teams.length === 0) || !balance;
-  const isSyncing = ListActivityTeams.loading || GetActivityBalance.loading || ListUsers.loading;
+  const incomes = ListActivityIncomes.movements;
+  const expenses = ListActivityExpenses.movements;
+  const isLoading =
+    (ListActivityTeams.loading && teams.length === 0) ||
+    (ListActivityIncomes.loading && incomes.length === 0) ||
+    (ListActivityExpenses.loading && expenses.length === 0);
+  const isSyncing =
+    ListActivityTeams.loading || ListActivityIncomes.loading || ListActivityExpenses.loading || ListUsers.loading;
 
-  /*
-    Lo cobrado sale de los equipos ya cargados, así cada pago lo actualiza sin volver a pedir
-    nada; del balance solo se toman los gastos, que no cambian en esta página.
-  */
-  const collected = roundSoles(teams.reduce((sum, team) => sum + team.paidAmount, 0));
-  const spending = balance ? roundSoles(balance.purchasedPrizes + balance.expenses) : 0;
+  /* Salen de las listas ya cargadas: cada ingreso o gasto los actualiza sin volver a pedir. */
+  const collected = sumAmounts(incomes);
+  const spending = sumAmounts(expenses);
 
   const numbers = teamNumbersOf(teams);
 
@@ -110,6 +133,45 @@ export default function ChampionshipView({ activity, currentUserId }: IChampions
     }
     setDeleteTarget(null);
   };
+
+  const confirmDeleteMovement = async () => {
+    if (!movementToDelete?.entry) {
+      return;
+    }
+    const remove = movementToDelete.kind === "income" ? DeleteActivityIncome : DeleteActivityExpense;
+    const deleted = await remove.handler(movementToDelete.entry);
+    if (deleted) {
+      movementListOf(movementToDelete.kind).onRemove(deleted.id);
+    }
+    setMovementToDelete(null);
+  };
+
+  const buildMovementActions =
+    (kind: TMovementKind) =>
+    (movement: IActivityExpenseResource): IRowAction[] => [
+      { icon: Pencil, label: "Editar", onClick: () => setMovementForm({ kind, entry: movement }) },
+      {
+        icon: Trash2,
+        label: "Eliminar",
+        variant: "destructive",
+        onClick: () => setMovementToDelete({ kind, entry: movement }),
+      },
+    ];
+
+  const movementLists = (isSkeleton: boolean) => (
+    <div className="grid items-start gap-4 lg:grid-cols-2">
+      {(["income", "expense"] as const).map((kind) => (
+        <MovementList
+          key={kind}
+          kind={kind}
+          movements={isSkeleton ? [] : movementListOf(kind).movements}
+          isLoading={isSkeleton}
+          buildActions={buildMovementActions(kind)}
+          onCreate={() => setMovementForm({ kind })}
+        />
+      ))}
+    </div>
+  );
 
   /* Mientras falte cobrar, cobrar va directo; editar y eliminar, en el `⋯`. */
   const buildActions = (team: IActivityTeamResource): IRowAction[] => [
@@ -153,11 +215,13 @@ export default function ChampionshipView({ activity, currentUserId }: IChampions
           className="space-y-4"
           skeleton={
             <>
+              {movementLists(true)}
               <TeamTable teams={[]} isLoading numbers={numbers} buildActions={buildActions} onOpen={() => undefined} />
               <TeamCardList teams={[]} isLoading numbers={numbers} buildActions={buildActions} onOpen={() => undefined} />
             </>
           }
         >
+          {movementLists(false)}
           {teams.length === 0 ? (
             <EmptyState
               icon={Shield}
@@ -231,6 +295,26 @@ export default function ChampionshipView({ activity, currentUserId }: IChampions
           return change !== null;
         }}
         onClose={() => setPayId(null)}
+      />
+
+      <MovementFormModal
+        open={movementForm !== null}
+        kind={movementForm?.kind ?? "income"}
+        activityId={activity.id}
+        movement={movementForm?.entry}
+        onSaved={(movement) => movementListOf(movementForm?.kind ?? "income").onUpsert(movement)}
+        onClose={() => setMovementForm(null)}
+      />
+
+      <ConfirmModal
+        open={movementToDelete !== null}
+        title={`¿Eliminar el ${movementToDelete?.kind === "income" ? "ingreso" : "gasto"} «${movementToDelete?.entry?.concept ?? ""}»?`}
+        description="Se quita del balance de la Chocolatada. Esto no se puede deshacer."
+        confirmLabel="Eliminar"
+        variant="destructive"
+        loading={DeleteActivityIncome.loading || DeleteActivityExpense.loading}
+        onConfirm={confirmDeleteMovement}
+        onCancel={() => setMovementToDelete(null)}
       />
 
       <ConfirmModal

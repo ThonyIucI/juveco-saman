@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { patchJson, postJson, request, signInAsSuperadmin } from "./helpers";
+import { patchJson, postJson, putJson, request, signInAsSuperadmin } from "./helpers";
 
 interface IBody<TData> {
   success: boolean;
@@ -15,6 +15,7 @@ interface IPrizeData {
   donor: { id: string; firstName: string } | null;
   cost: number | null;
   note: string | null;
+  winner: { itemId: string; serial: string; buyer: { id: string; firstName: string } } | null;
 }
 
 interface IExpenseData {
@@ -26,6 +27,7 @@ interface IExpenseData {
 interface IBalanceData {
   collected: number;
   expected: number;
+  incomes: number;
   purchasedPrizes: number;
   expenses: number;
   currentProfit: number;
@@ -138,5 +140,72 @@ describe("premios, gastos y balance de una actividad", () => {
     const response = await request(`/api/v1/users/${donorId}`, { method: "DELETE", headers: { cookie } });
 
     expect(response.status).toBe(409);
+  });
+
+  it("crea, edita y elimina un ingreso, y el balance lo suma a lo cobrado y a lo esperado", async () => {
+    // Arrange
+    const before = await balance();
+
+    // Act
+    const created = await postJson(path("incomes"), { concept: " Inscripciones  del campeonato ", amount: 600 }, { cookie });
+    const { id, concept } = await dataOf<IExpenseData>(created);
+    const middle = await balance();
+    const updated = await patchJson(path(`incomes/${id}`), { concept, amount: 800 }, { cookie });
+    const deleted = await request(path(`incomes/${id}`), { method: "DELETE", headers: { cookie } });
+    const after = await balance();
+
+    // Assert
+    expect(created.status).toBe(201);
+    expect(concept).toBe("Inscripciones del campeonato");
+    expect(middle.incomes).toBeCloseTo(before.incomes + 600);
+    expect(middle.collected).toBeCloseTo(before.collected + 600);
+    expect(middle.expected).toBeCloseTo(before.expected + 600);
+    expect((await dataOf<IExpenseData>(updated)).amount).toBe(800);
+    expect(deleted.status).toBe(200);
+    expect(after.collected).toBeCloseTo(before.collected);
+  });
+
+  it("pide concepto y monto válido en un ingreso", async () => {
+    const response = await postJson(path("incomes"), { concept: " ", amount: 10 }, { cookie });
+
+    expect(response.status).toBe(400);
+    expect(await errorOf(response)).toBe("Escribe el concepto del ingreso.");
+  });
+
+  it("marca y quita la cartilla ganadora de un premio; el ganador es su comprador", async () => {
+    // Arrange
+    const prize = await dataOf<IPrizeData>(
+      await postJson(path("prizes"), { name: "Bicicleta", origin: "DONATED", donorId }, { cookie }),
+    );
+    const buyer = await dataOf<{ id: string }>(
+      await postJson("/api/v1/users", { firstName: "Lucho", lastName: "Ganador" }, { cookie }),
+    );
+    const item = await dataOf<{ id: string }>(
+      await postJson(path("items"), { serial: "0777", buyerId: buyer.id }, { cookie }),
+    );
+
+    // Act
+    const marked = await putJson(path(`prizes/${prize.id}/winner`), { itemId: item.id }, { cookie });
+    const cleared = await putJson(path(`prizes/${prize.id}/winner`), { itemId: null }, { cookie });
+
+    // Assert
+    expect(marked.status).toBe(200);
+    expect((await dataOf<IPrizeData>(marked)).winner).toMatchObject({
+      itemId: item.id,
+      serial: "0777",
+      buyer: { id: buyer.id, firstName: "Lucho" },
+    });
+    expect((await dataOf<IPrizeData>(cleared)).winner).toBeNull();
+  });
+
+  it("no acepta como ganadora una cartilla de otra actividad", async () => {
+    const prize = await dataOf<IPrizeData>(
+      await postJson(path("prizes"), { name: "Olla", origin: "DONATED", donorId }, { cookie }),
+    );
+
+    const response = await putJson(path(`prizes/${prize.id}/winner`), { itemId: "no-existe" }, { cookie });
+
+    expect(response.status).toBe(400);
+    expect(await errorOf(response)).toBe("Esa cartilla no es de esta actividad.");
   });
 });

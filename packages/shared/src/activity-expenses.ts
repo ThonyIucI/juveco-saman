@@ -28,10 +28,12 @@ export interface IActivityExpenseInput {
 
 /** El balance de la actividad: lo que entra menos premios comprados y gastos. */
 export interface IActivityBalance {
-  /** Lo ya cobrado. */
+  /** Lo ya cobrado, ingresos incluidos. */
   collected: number;
-  /** Lo que se cobraría si todos pagan. */
+  /** Lo que se cobraría si todos pagan, ingresos incluidos. */
   expected: number;
+  /** La suma de los ingresos (`activity_incomes`); ya está dentro de `collected` y `expected`. */
+  incomes: number;
   purchasedPrizes: number;
   expenses: number;
   /** `collected - purchasedPrizes - expenses`. */

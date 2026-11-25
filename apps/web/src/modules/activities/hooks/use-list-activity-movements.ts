@@ -1,14 +1,15 @@
 import type { IActivityExpenseResource } from "@juveco/shared/activity-expenses";
 
 import { useRequest } from "@/common/hooks/use-request";
-import { listActivityExpensesRequest } from "@/modules/activities/services/activity-finance.service";
+import { listActivityMovementsRequest } from "@/modules/activities/services/activity-finance.service";
+import type { TMovementKind } from "@/modules/activities/utils/movements";
 
-/** `onUpsert` y `onRemove` mantienen la lista al día sin recargar. */
-export const useListActivityExpenses = () => {
+/** Los ingresos o los gastos de una actividad. `onUpsert` y `onRemove` la mantienen al día. */
+export const useListActivityMovements = (kind: TMovementKind) => {
   const request = useRequest<IActivityExpenseResource[]>();
 
   const handler = (activityId: string, signal?: AbortSignal) =>
-    request.handleRequest(() => listActivityExpensesRequest(activityId, signal));
+    request.handleRequest(() => listActivityMovementsRequest(kind, activityId, signal));
 
   const onUpsert = (saved: IActivityExpenseResource) =>
     request.setData((previous) => {
@@ -21,5 +22,5 @@ export const useListActivityExpenses = () => {
   const onRemove = (id: string) =>
     request.setData((previous) => (previous ?? []).filter((entry) => entry.id !== id));
 
-  return { expenses: request.data ?? [], loading: request.loading, handler, onUpsert, onRemove };
+  return { movements: request.data ?? [], loading: request.loading, handler, onUpsert, onRemove };
 };

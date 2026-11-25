@@ -55,3 +55,9 @@ export const sidebarEntriesForRole = (role: TUserRole | null): readonly TSidebar
 /** Con sesión, todos tienen menú lateral: el layout le deja su espacio. */
 export const hasSidebarForRole = (role: TUserRole | null): boolean =>
   sidebarEntriesForRole(role).length > 0;
+
+/**
+ * Pantallas sin el encabezado, el menú lateral ni la barra inferior de la app: el login y la
+ * portada pública, que traen los suyos.
+ */
+export const CHROMELESS_ROUTES: readonly string[] = ["/", "/login"];

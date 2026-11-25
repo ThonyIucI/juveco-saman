@@ -27,6 +27,23 @@ export const PRIZE_ORIGIN_REQUIRED_MESSAGE = "Elige si fue donado o comprado.";
 export const PRIZE_DONOR_REQUIRED_MESSAGE = "Elige quién lo donó.";
 export const PRIZE_COST_REQUIRED_MESSAGE = "Escribe cuánto costó.";
 
+/**
+ * Quién ganó el premio (acordado 2026-11-25): la cartilla ganadora y, de ella, su comprador.
+ * Así el nombre no se escribe dos veces.
+ */
+export interface IPrizeWinner {
+  itemId: string;
+  serial: string;
+  buyer: IActivityItemPerson;
+}
+
+/** Lo que se manda al marcar el ganador; `null` lo quita. */
+export interface IPrizeWinnerInput {
+  itemId: string | null;
+}
+
+export const PRIZE_WINNER_ITEM_NOT_FOUND_MESSAGE = "Esa cartilla no es de esta actividad.";
+
 /** Un premio tal como lo devuelve la API. */
 export interface IActivityPrizeResource {
   id: string;
@@ -38,6 +55,8 @@ export interface IActivityPrizeResource {
   /** Solo si es comprado; en soles con dos decimales. */
   cost: number | null;
   note: string | null;
+  /** Vacío hasta que se sortea. */
+  winner: IPrizeWinner | null;
   createdAt: string;
 }
 

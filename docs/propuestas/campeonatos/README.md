@@ -86,5 +86,14 @@ Toma el diseño de Stitch (exportado el 2026-11-19) como referencia, armado con 
 | # | Qué queda funcionando | Para cuándo | Estado |
 |---|---|---|---|
 | 1 | Equipos, delegado, jugadores y cobro de la inscripción | Antes del 22/11 | Hecha el 2026-11-19, en prueba |
-| 2 | Sorteo, resultados con goles y penales, posiciones y link público | Antes del 22/11 | Pendiente |
-| 3 | Fecha 2, ventas y otros ingresos, tab Movimientos con ingresos y gastos | Antes del 29/11 | Pendiente |
+| 2 | Sorteo, resultados con goles y penales, posiciones y link público | Antes del 22/11 | En pausa: los resultados van en código en la portada |
+| 3 | Ingresos y gastos del campeonato | Antes del 29/11 | Hecha el 2026-11-25, en prueba |
+
+## Cambios del 2026-11-25
+
+- **Lo del campeonato entra al balance como ingresos y gastos** (`activity_incomes` y `activity_expenses`). Así se ve en el balance de la Chocolatada.
+- **Los pagos de inscripción de cada equipo ya no suman al balance.** Quedan solo como control de quién pagó.
+- **Los resultados se publican en la portada pública (`/`), escritos en código** en `apps/web/src/modules/public/data/relampago-2026.ts`:
+  - Fecha 1 con goleadores, penales y tarjetas rojas.
+  - Semifinales: La Noria vs Samán Chico y Atlético Grau vs Calixto Romero. Grau pasa como mejor perdedor, por haber perdido por penales.
+  - Cuando se juegue la fecha 2, se completa en ese mismo archivo.

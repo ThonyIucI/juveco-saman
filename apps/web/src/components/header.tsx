@@ -2,14 +2,12 @@ import { cn } from "@juveco/ui/lib/utils";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { motion } from "motion/react";
 
+import { CHROMELESS_ROUTES } from "@/common/constants/routes";
 import { useChromeHidden } from "@/common/hooks/use-chrome-hidden";
 import { useHasSidebar, useNavItems } from "@/common/hooks/use-nav-items";
 
 import { ModeToggle } from "./mode-toggle";
 import UserMenu from "./user-menu";
-
-/** Sin encabezado: el login, que es pantalla completa y trae su propio control de tema. */
-const CHROMELESS_ROUTES: readonly string[] = ["/login"];
 
 export default function Header() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });

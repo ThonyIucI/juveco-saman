@@ -4,6 +4,7 @@ import type { TPrizeOrigin } from "@juveco/shared/activity-prizes";
 
 import { timestamps } from "./columns";
 import { activities } from "./activities";
+import { activityItems } from "./activity-items";
 import { users } from "./users";
 
 /**
@@ -23,6 +24,8 @@ export const activityPrizes = sqliteTable(
     /* Soles con dos decimales; solo si es comprado. */
     cost: real("cost"),
     note: text("note"),
+    /* La cartilla ganadora; el ganador es su comprador. Vacío hasta que se sortea. */
+    winningItemId: text("winning_item_id").references(() => activityItems.id),
     ...timestamps(),
   },
   (table) => [

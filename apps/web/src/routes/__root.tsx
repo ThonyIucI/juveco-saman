@@ -1,8 +1,9 @@
 import { Toaster } from "@juveco/ui/components/sonner";
 import { cn } from "@juveco/ui/lib/utils";
-import { HeadContent, Outlet, createRootRouteWithContext } from "@tanstack/react-router";
+import { HeadContent, Outlet, createRootRouteWithContext, useRouterState } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
+import { CHROMELESS_ROUTES } from "@/common/constants/routes";
 import { useHasSidebar, useNavItems } from "@/common/hooks/use-nav-items";
 import AppSidebar from "@/components/app-sidebar";
 import BottomNav from "@/components/bottom-nav";
@@ -29,10 +30,13 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 });
 
 function RootComponent() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  /* La portada y el login traen su propio encabezado: sin menús de la app aunque haya sesión. */
+  const isChromeless = CHROMELESS_ROUTES.includes(pathname);
   /* El hueco para la barra inferior solo se reserva cuando la barra existe (hay sesión). */
-  const hasBottomNav = useNavItems().length > 0;
+  const hasBottomNav = useNavItems().length > 0 && !isChromeless;
   /* Con sesión, todos tienen menú lateral. */
-  const hasSidebar = useHasSidebar();
+  const hasSidebar = useHasSidebar() && !isChromeless;
 
   return (
     <>
@@ -63,7 +67,7 @@ function RootComponent() {
             La barra inferior va `fixed`, por eso no es una fila de la grilla y el contenido
             lleva `pb-20` para no quedar debajo (solo con sesión).
           */}
-          <BottomNav />
+          {!isChromeless && <BottomNav />}
         </>
         <Toaster richColors />
       </ThemeProvider>

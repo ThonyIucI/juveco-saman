@@ -1,9 +1,9 @@
 import { createDb } from "@juveco/db";
 import { activityExpenses } from "@juveco/db/schema/activity-expenses";
+import { activityIncomes } from "@juveco/db/schema/activity-incomes";
 import { activityItemPayments } from "@juveco/db/schema/activity-item-payments";
 import { activityItems } from "@juveco/db/schema/activity-items";
 import { activityPrizes } from "@juveco/db/schema/activity-prizes";
-import { activityTeamPayments, activityTeams } from "@juveco/db/schema/activity-teams";
 import { users } from "@juveco/db/schema/users";
 import {
   EXPENSE_CONCEPT_LENGTH_MESSAGE,
@@ -22,9 +22,11 @@ import {
   PRIZE_NAME_REQUIRED_MESSAGE,
   PRIZE_ORIGINS,
   PRIZE_ORIGIN_REQUIRED_MESSAGE,
+  PRIZE_WINNER_ITEM_NOT_FOUND_MESSAGE,
 } from "@juveco/shared/activity-prizes";
 import { roundSoles } from "@juveco/shared/money";
 import { type AnyColumn, and, asc, eq, isNull, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -42,6 +44,7 @@ import { type TDb, findActivity, priceSchema } from "./activities";
 export const ACTIVITY_FINANCE_ROUTES = {
   PRIZES: "/activities/:id/prizes",
   PRIZE: "/activities/:id/prizes/:prizeId",
+  PRIZE_WINNER: "/activities/:id/prizes/:prizeId/winner",
   EXPENSES: "/activities/:id/expenses",
   EXPENSE: "/activities/:id/expenses/:expenseId",
   BALANCE: "/activities/:id/balance",
@@ -53,7 +56,7 @@ const DONOR_NOT_FOUND = "No encontramos a quien lo donó.";
 
 const collapseSpaces = (value: string) => value.replace(/\s+/g, " ");
 
-const requiredText = (maxLength: number, requiredMessage: string, lengthMessage: string) =>
+export const requiredText = (maxLength: number, requiredMessage: string, lengthMessage: string) =>
   z.string(requiredMessage).trim().min(1, requiredMessage).max(maxLength, lengthMessage).transform(collapseSpaces);
 
 /*
@@ -90,12 +93,21 @@ const expenseSchema = z.object({
   note: noteSchema.optional(),
 });
 
+/** Ganador del premio (acordado 2026-11-25): la cartilla; `null` lo quita. */
+const winnerSchema = z.object({ itemId: z.string().min(1).nullable() });
+
+/* El comprador de la cartilla ganadora: otra vez `users`, por eso va con alias. */
+const winningItems = alias(activityItems, "winning_items");
+const winners = alias(users, "winners");
+
 interface IPrizeRow {
   prize: typeof activityPrizes.$inferSelect;
   donor: typeof users.$inferSelect | null;
+  winningItem: typeof activityItems.$inferSelect | null;
+  winner: typeof users.$inferSelect | null;
 }
 
-const toPrizeResource = ({ prize, donor }: IPrizeRow): IActivityPrizeResource => ({
+export const toPrizeResource = ({ prize, donor, winningItem, winner }: IPrizeRow): IActivityPrizeResource => ({
   id: prize.id,
   activityId: prize.activityId,
   name: prize.name,
@@ -103,10 +115,19 @@ const toPrizeResource = ({ prize, donor }: IPrizeRow): IActivityPrizeResource =>
   donor: donor ? { id: donor.id, firstName: donor.firstName, lastName: donor.lastName } : null,
   cost: prize.cost,
   note: prize.note,
+  winner:
+    winningItem && winner
+      ? {
+          itemId: winningItem.id,
+          serial: winningItem.serial,
+          buyer: { id: winner.id, firstName: winner.firstName, lastName: winner.lastName },
+        }
+      : null,
   createdAt: prize.createdAt.toISOString(),
 });
 
-const toExpenseResource = (row: typeof activityExpenses.$inferSelect): IActivityExpenseResource => ({
+/** Un gasto o un ingreso: tienen las mismas columnas. */
+export const toMovementResource = (row: typeof activityExpenses.$inferSelect): IActivityExpenseResource => ({
   id: row.id,
   activityId: row.activityId,
   concept: row.concept,
@@ -115,11 +136,13 @@ const toExpenseResource = (row: typeof activityExpenses.$inferSelect): IActivity
   createdAt: row.createdAt.toISOString(),
 });
 
-const selectPrizes = (db: TDb) =>
+export const selectPrizes = (db: TDb) =>
   db
-    .select({ prize: activityPrizes, donor: users })
+    .select({ prize: activityPrizes, donor: users, winningItem: winningItems, winner: winners })
     .from(activityPrizes)
-    .leftJoin(users, eq(users.id, activityPrizes.donorId));
+    .leftJoin(users, eq(users.id, activityPrizes.donorId))
+    .leftJoin(winningItems, eq(winningItems.id, activityPrizes.winningItemId))
+    .leftJoin(winners, eq(winners.id, winningItems.buyerId));
 
 const findPrize = async (db: TDb, activityId: string, prizeId: string) => {
   const row = await selectPrizes(db)
@@ -157,7 +180,8 @@ const sumOf = (column: AnyColumn) => sql<number>`coalesce(sum(${column}), 0)`.ma
 
 /**
  * Lo que entra (cobrado y esperado) menos premios comprados y gastos. Lo que entra suma lo
- * vendido (cartillas) y las inscripciones de los equipos: una actividad tiene uno u otro.
+ * vendido (cartillas) y los ingresos. Los pagos de inscripción de los equipos no cuentan: lo
+ * que llega del campeonato se anota como ingreso (Thony, 2026-11-25).
  */
 export const buildBalance = async (db: TDb, activityId: string): Promise<IActivityBalance> => {
   const [
@@ -166,8 +190,7 @@ export const buildBalance = async (db: TDb, activityId: string): Promise<IActivi
     purchasedRow,
     donatedRow,
     expensesRow,
-    teamsExpectedRow,
-    teamsCollectedRow,
+    incomesRow,
   ] = await Promise.all([
     db
       .select({ total: sumOf(activityItems.price) })
@@ -197,26 +220,22 @@ export const buildBalance = async (db: TDb, activityId: string): Promise<IActivi
       .where(eq(activityExpenses.activityId, activityId))
       .get(),
     db
-      .select({ total: sumOf(activityTeams.price) })
-      .from(activityTeams)
-      .where(eq(activityTeams.activityId, activityId))
-      .get(),
-    db
-      .select({ total: sumOf(activityTeamPayments.amount) })
-      .from(activityTeamPayments)
-      .innerJoin(activityTeams, eq(activityTeams.id, activityTeamPayments.teamId))
-      .where(eq(activityTeams.activityId, activityId))
+      .select({ total: sumOf(activityIncomes.amount) })
+      .from(activityIncomes)
+      .where(eq(activityIncomes.activityId, activityId))
       .get(),
   ]);
 
-  const expected = roundSoles((expectedRow?.total ?? 0) + (teamsExpectedRow?.total ?? 0));
-  const collected = roundSoles((collectedRow?.total ?? 0) + (teamsCollectedRow?.total ?? 0));
+  const incomes = roundSoles(incomesRow?.total ?? 0);
+  const expected = roundSoles((expectedRow?.total ?? 0) + incomes);
+  const collected = roundSoles((collectedRow?.total ?? 0) + incomes);
   const purchasedPrizes = roundSoles(purchasedRow?.total ?? 0);
   const expenses = roundSoles(expensesRow?.total ?? 0);
 
   return {
     collected,
     expected,
+    incomes,
     purchasedPrizes,
     expenses,
     currentProfit: roundSoles(collected - purchasedPrizes - expenses),
@@ -279,6 +298,34 @@ export const activityFinanceRoutes = new Hono<TAppEnv>()
     return ok(context, { id: prizeId });
   })
 
+  /*
+    El ganador se marca aparte del premio: se hace en vivo durante el sorteo y no toca el
+    resto de sus datos. Cualquier cartilla de la actividad, aun anulada: ese día alguien
+    podría cantar con la que perdió.
+  */
+  .put(ACTIVITY_FINANCE_ROUTES.PRIZE_WINNER, requireAuth, validateJson(winnerSchema), async (context) => {
+    const { itemId } = context.req.valid("json");
+    const activityId = context.req.param("id");
+    const prizeId = context.req.param("prizeId");
+    const db = createDb();
+
+    await assertActivityOpen(db, await findActivity(db, activityId));
+    await findPrize(db, activityId, prizeId);
+    if (itemId) {
+      const item = await db
+        .select({ id: activityItems.id })
+        .from(activityItems)
+        .where(and(eq(activityItems.id, itemId), eq(activityItems.activityId, activityId)))
+        .get();
+      if (!item) {
+        throw badRequest(PRIZE_WINNER_ITEM_NOT_FOUND_MESSAGE);
+      }
+    }
+    await db.update(activityPrizes).set({ winningItemId: itemId }).where(eq(activityPrizes.id, prizeId));
+
+    return ok(context, toPrizeResource(await findPrize(db, activityId, prizeId)));
+  })
+
   .get(ACTIVITY_FINANCE_ROUTES.EXPENSES, requireAuth, async (context) => {
     const db = createDb();
     const activity = await findActivity(db, context.req.param("id"));
@@ -287,7 +334,7 @@ export const activityFinanceRoutes = new Hono<TAppEnv>()
       .from(activityExpenses)
       .where(eq(activityExpenses.activityId, activity.id))
       .orderBy(asc(activityExpenses.createdAt));
-    return ok(context, rows.map(toExpenseResource));
+    return ok(context, rows.map(toMovementResource));
   })
 
   .post(ACTIVITY_FINANCE_ROUTES.EXPENSES, requireAuth, validateJson(expenseSchema), async (context) => {
@@ -305,7 +352,7 @@ export const activityFinanceRoutes = new Hono<TAppEnv>()
       note: body.note ?? null,
     });
 
-    return ok(context, toExpenseResource(await findExpense(db, activity.id, id)), 201);
+    return ok(context, toMovementResource(await findExpense(db, activity.id, id)), 201);
   })
 
   .patch(ACTIVITY_FINANCE_ROUTES.EXPENSE, requireAuth, validateJson(expenseSchema), async (context) => {
@@ -321,7 +368,7 @@ export const activityFinanceRoutes = new Hono<TAppEnv>()
       .set({ concept: body.concept, amount: body.amount, note: body.note ?? null })
       .where(eq(activityExpenses.id, expenseId));
 
-    return ok(context, toExpenseResource(await findExpense(db, activityId, expenseId)));
+    return ok(context, toMovementResource(await findExpense(db, activityId, expenseId)));
   })
 
   .delete(ACTIVITY_FINANCE_ROUTES.EXPENSE, requireAuth, async (context) => {

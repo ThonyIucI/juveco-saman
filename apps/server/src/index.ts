@@ -14,11 +14,13 @@ import { AppError } from "./lib/errors";
 import { fail } from "./lib/response";
 import { activityRoutes } from "./routes/activities";
 import { activityFinanceRoutes } from "./routes/activity-finances";
+import { activityIncomeRoutes } from "./routes/activity-incomes";
 import { activityTeamRoutes } from "./routes/activity-teams";
 import { healthRoutes } from "./routes/health";
 import { internalRoutes } from "./routes/internal";
 import { meRoutes } from "./routes/me";
 import { projectRoutes } from "./routes/projects";
+import { publicRoutes } from "./routes/public";
 import { userRoutes } from "./routes/users";
 
 const AUTH_PATH = "/api/auth";
@@ -65,7 +67,9 @@ app
   .route("/", projectRoutes)
   .route("/", activityRoutes)
   .route("/", activityFinanceRoutes)
+  .route("/", activityIncomeRoutes)
   .route("/", activityTeamRoutes)
+  .route("/", publicRoutes)
   .route("/", internalRoutes);
 
 app.notFound((context) => fail(context, "Recurso no encontrado.", 404));
