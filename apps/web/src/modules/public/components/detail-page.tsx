@@ -25,9 +25,9 @@ interface IDetailPageProps {
  */
 export default function DetailPage({ isLoading, hasFailed, onRetry, header, children }: IDetailPageProps) {
   return (
-    <div className="flex min-h-svh flex-col bg-background">
+    <div className="flex min-h-svh flex-col overflow-x-clip bg-background">
       <SiteNavbar />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-6 md:py-12">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-6 md:py-12">
         {hasFailed ? (
           <LoadError onRetry={onRetry} />
         ) : (
@@ -52,7 +52,7 @@ export default function DetailPage({ isLoading, hasFailed, onRetry, header, chil
                   {header.eventName}
                 </Link>
                 <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground">{header.title}</h1>
-                <p className="mt-1 mb-8 text-base text-muted-foreground">{header.subtitle}</p>
+                <p className="mt-1 mb-6 text-base md:mb-8 text-muted-foreground">{header.subtitle}</p>
                 {children}
               </>
             ) : (

@@ -146,7 +146,7 @@ function StackedBracket() {
       <div className="mb-2">
         <RoundLabel round="FIRST_ROUND" />
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {firstRound.map((match) => (
           <BracketMatch key={match.id} match={match} />
         ))}
@@ -156,7 +156,7 @@ function StackedBracket() {
       <div className="mb-2">
         <RoundLabel round="SEMIFINAL" />
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3">
         {semifinals.map((match) => (
           <BracketMatch key={match.id} match={match} hasBestLoserCaption />
         ))}

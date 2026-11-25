@@ -51,7 +51,7 @@ export default function EventSection({ event }: { event: IPublicProject }) {
             <RevealItem key={activity.id}>
               <ActivityLink
                 activity={activity}
-                className="group flex min-h-32 items-center gap-4 rounded-xl border border-white/15 bg-white/5 p-5 transition-colors hover:border-gold hover:bg-white/10"
+                className="group flex min-h-24 items-center md:min-h-32 gap-3 rounded-xl border border-white/15 bg-white/5 p-4 md:gap-4 md:p-5 transition-colors hover:border-gold hover:bg-white/10"
               >
                 <DateBlock date={activityShownDateOf(activity)} isOnNavy />
                 <span className="min-w-0 flex-1">

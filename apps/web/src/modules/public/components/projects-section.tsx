@@ -13,9 +13,13 @@ const hiddenProjects = PROJECTS.slice(VISIBLE_PROJECTS);
 
 function ProjectGrid({ projects }: { projects: ISiteProject[] }) {
   return (
-    <RevealGroup className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {projects.map((project) => (
-        <RevealItem key={project.id}>
+    <RevealGroup className="grid grid-cols-2 gap-3 md:gap-5 lg:grid-cols-3">
+      {projects.map((project, index) => (
+        /* En celular son dos columnas; con cantidad impar, la primera ocupa el ancho para no dejar un hueco. */
+        <RevealItem
+          key={project.id}
+          className={projects.length % 2 === 1 && index === 0 ? "col-span-2 lg:col-span-1" : undefined}
+        >
           <ProjectCard project={project} />
         </RevealItem>
       ))}
@@ -64,7 +68,7 @@ function ProjectCard({ project }: { project: ISiteProject }) {
           />
         </div>
       )}
-      <div className="p-4">
+      <div className="p-3 md:p-4">
         <h3 className="text-base font-medium text-foreground">{project.name}</h3>
         {(project.status || project.tag) && (
           <div className="mt-2 flex flex-wrap gap-2">

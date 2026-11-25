@@ -20,7 +20,7 @@ const TIKTOK_SCRIPT_SRC = "https://www.tiktok.com/embed.js";
 export default function FollowSection() {
   return (
     <SiteSection id="siguenos" tone="muted" eyebrow="Síguenos" title="Lo último en nuestras redes">
-      <Reveal className="mb-8 space-y-3">
+      <Reveal className="mb-6 space-y-3 md:mb-8">
         <p className="max-w-2xl text-base text-foreground">
           Publicamos avisos, fotos y resultados de cada actividad. Síguenos para enterarte primero.
         </p>
@@ -35,11 +35,12 @@ export default function FollowSection() {
         </div>
       </Reveal>
 
-      <div className="grid items-stretch gap-6 lg:grid-cols-2">
-        <Reveal className="min-w-0 overflow-hidden rounded-lg border border-border bg-card p-3">
+      {/* `grid-cols-1` es minmax(0, 1fr): la columna nunca crece con el iframe de TikTok. */}
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+        <Reveal className="min-w-0 overflow-hidden md:rounded-lg md:border md:border-border md:bg-card md:p-3">
           <TikTokFeed />
         </Reveal>
-        <Reveal delay={0.1} className="min-w-0 rounded-lg border border-border bg-card p-3">
+        <Reveal delay={0.1} className="min-w-0 md:rounded-lg md:border md:border-border md:bg-card md:p-3">
           <FacebookPage />
         </Reveal>
       </div>
@@ -66,7 +67,7 @@ const TikTokFeed = memo(function TikTokFeed() {
       cite={TIKTOK_URL}
       data-unique-id={TIKTOK_USERNAME}
       data-embed-type="creator"
-      style={{ maxWidth: 780, minWidth: 288 }}
+      style={{ maxWidth: 780, minWidth: 0, width: "100%", marginInline: "auto" }}
     >
       <section>
         <a target="_blank" rel="noreferrer" href={`${TIKTOK_URL}?refer=creator_embed`}>

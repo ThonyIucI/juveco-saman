@@ -33,12 +33,12 @@ export default function SiteSection({ id, tone = "plain", eyebrow, title, intro,
     <section
       id={id}
       className={cn(
-        "scroll-mt-16 border-t py-14 md:py-20",
+        "scroll-mt-16 border-t py-10 md:py-20",
         TONE_CLASSES[tone],
       )}
     >
       <div className="mx-auto max-w-6xl px-4 md:px-6">
-        <Reveal className="mb-8 max-w-2xl md:mb-10">
+        <Reveal className="mb-6 max-w-2xl md:mb-10">
           {eyebrow && (
             <p
               className={cn(

@@ -8,7 +8,7 @@ import SiteSection from "./site-section";
 export default function AboutSection() {
   return (
     <SiteSection id="nosotros" eyebrow="Nosotros" title="Somos la junta de vecinos de Samán">
-      <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+      <div className="grid gap-6 md:gap-10 lg:grid-cols-2 lg:gap-16">
         <Reveal className="space-y-4 text-base leading-relaxed text-foreground">
           {SITE.about.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
@@ -29,9 +29,9 @@ export default function AboutSection() {
       </div>
 
       {BOARD.length > 0 && (
-        <Expandable label="Ver directiva" className="mt-8">
+        <Expandable label="Ver directiva" className="mt-4 md:mt-8">
           <h3 className="pt-4 font-heading text-xl font-semibold text-foreground">Directiva {SITE.term}</h3>
-          <RevealGroup className="mt-4 grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
+          <RevealGroup className="mt-4 grid grid-cols-2 gap-x-6 md:gap-x-10 lg:grid-cols-3">
             {BOARD.map((member) => (
               <RevealItem key={`${member.role}-${member.name}`} className="border-b border-border py-3">
                 <p className="text-sm text-muted-foreground">{member.role}</p>

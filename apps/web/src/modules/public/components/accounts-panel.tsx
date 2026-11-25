@@ -21,7 +21,7 @@ function Figure({ label, value, isHighlighted = false }: IFigureProps) {
   return (
     <div
       className={cn(
-        "rounded-lg border p-4",
+        "h-full rounded-lg border p-3 md:p-4",
         isHighlighted ? "border-gold bg-gold text-gold-foreground" : "border-white/15 bg-white/5 text-white",
       )}
     >
@@ -91,7 +91,7 @@ export default function AccountsPanel({ event }: { event: IPublicProject }) {
   const isEmpty = accounts.incomes.length === 0 && accounts.expenses.length === 0;
 
   return (
-    <div className="mt-12 border-t border-white/10 pt-10">
+    <div className="mt-8 border-t border-white/10 pt-8 md:mt-12 md:pt-10">
       <Reveal>
         <h3 className="font-heading text-xl font-semibold">Cuentas claras</h3>
         <p className="text-sm text-white/80">De dónde vinieron los fondos y en qué se usaron.</p>
@@ -110,19 +110,19 @@ export default function AccountsPanel({ event }: { event: IPublicProject }) {
         </>
       ) : (
         <>
-          <RevealGroup className="mt-6 grid gap-3 sm:grid-cols-3">
+          <RevealGroup className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
             <RevealItem>
               <Figure label="Entró" value={accounts.collected} />
             </RevealItem>
             <RevealItem>
               <Figure label="Se usó" value={accounts.spent} />
             </RevealItem>
-            <RevealItem>
+            <RevealItem className="col-span-2 sm:col-span-1">
               <Figure label="Para la chocolatada" value={accounts.remaining} isHighlighted />
             </RevealItem>
           </RevealGroup>
 
-          <Reveal className="mt-6">
+          <Reveal className="mt-5">
             <AccountsBar incomes={accounts.incomes} />
           </Reveal>
 

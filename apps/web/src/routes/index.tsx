@@ -56,7 +56,7 @@ function PublicHomePage() {
   }, [isReady]);
 
   return (
-    <div className="min-h-svh bg-background">
+    <div className="min-h-svh overflow-x-clip bg-background">
       <SiteNavbar isHome isContentReady={isReady} hasEvent={hasEvent} />
       <main>
         <HeroCarousel hasEvent={hasEvent} />
@@ -94,7 +94,7 @@ function PublicHomePage() {
 function EventSkeleton() {
   return (
     <div className="border-t border-white/10 bg-[#14214A]">
-      <div className="mx-auto max-w-6xl space-y-8 px-4 py-14 md:px-6 md:py-20">
+      <div className="mx-auto max-w-6xl space-y-6 px-4 py-10 md:space-y-8 md:px-6 md:py-20">
         <div className="space-y-2">
           <Skeleton className="h-4 w-32 rounded-md bg-white/15" />
           <Skeleton className="h-8 w-64 rounded-md bg-white/15" />

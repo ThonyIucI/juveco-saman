@@ -14,6 +14,8 @@ import ActivityLink from "./activity-link";
 const DISMISSED_KEY = "juveco:upcoming-notice-dismissed";
 /* El carrusel de la portada: el aviso aparece cuando ya se pasó. */
 const CAROUSEL_ID = "inicio";
+/* Mientras esta sección o el footer se ven, el aviso se oculta. */
+const FOLLOW_ID = "siguenos";
 
 const readDismissed = (): boolean => {
   try {
@@ -50,6 +52,35 @@ const useHasPassedCarousel = (): boolean => {
   return hasPassed;
 };
 
+/** Si «Síguenos» o el footer están a la vista: el aviso flotante taparía su contenido. */
+const useIsOverContent = (): boolean => {
+  const [isOver, setIsOver] = useState(false);
+
+  useEffect(() => {
+    const targets = [document.getElementById(FOLLOW_ID), document.querySelector("footer")].filter(
+      (target): target is Element => target !== null,
+    );
+    if (targets.length === 0) {
+      return;
+    }
+    const visible = new Set<Element>();
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          visible.add(entry.target);
+        } else {
+          visible.delete(entry.target);
+        }
+      }
+      setIsOver(visible.size > 0);
+    });
+    targets.forEach((target) => observer.observe(target));
+    return () => observer.disconnect();
+  }, []);
+
+  return isOver;
+};
+
 /**
  * Aviso flotante de lo próximo (Thony, 2026-11-25): una pastilla abajo con la actividad más
  * cercana que aún no pasa. Aparece al pasar el carrusel, lleva a su página y se puede cerrar;
@@ -58,6 +89,7 @@ const useHasPassedCarousel = (): boolean => {
 export default function UpcomingNotice({ event }: { event: IPublicProject }) {
   const isReduced = useReducedMotion() ?? false;
   const hasPassedCarousel = useHasPassedCarousel();
+  const isOverContent = useIsOverContent();
   const [isDismissed, setIsDismissed] = useState(readDismissed);
   const next = nextActivityOf(event.activities);
 
@@ -65,7 +97,7 @@ export default function UpcomingNotice({ event }: { event: IPublicProject }) {
     return null;
   }
   const Icon = ACTIVITY_ICONS[next.activity.type];
-  const isVisible = hasPassedCarousel && !isDismissed;
+  const isVisible = hasPassedCarousel && !isDismissed && !isOverContent;
 
   const dismiss = () => {
     saveDismissed();
@@ -81,7 +113,7 @@ export default function UpcomingNotice({ event }: { event: IPublicProject }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: isReduced ? 0 : 16 }}
             transition={{ duration: isReduced ? 0 : 0.25, ease: EASE_OUT }}
-            className="pointer-events-auto flex max-w-full items-center rounded-full bg-[#14214A] text-white shadow-elevated"
+            className="pointer-events-auto flex max-w-[calc(100vw-2rem)] items-center rounded-full bg-[#14214A] text-white shadow-elevated"
           >
             <ActivityLink
               activity={next.activity}
