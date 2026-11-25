@@ -56,8 +56,12 @@ export const sidebarEntriesForRole = (role: TUserRole | null): readonly TSidebar
 export const hasSidebarForRole = (role: TUserRole | null): boolean =>
   sidebarEntriesForRole(role).length > 0;
 
-/**
- * Pantallas sin el encabezado, el menú lateral ni la barra inferior de la app: el login y la
- * portada pública, que traen los suyos.
- */
-export const CHROMELESS_ROUTES: readonly string[] = ["/", "/login"];
+/*
+  Pantallas sin el encabezado, el menú lateral ni la barra inferior de la app: el login y las
+  páginas públicas (inicio, campeonato, bingo), que traen los suyos.
+*/
+const CHROMELESS_EXACT: readonly string[] = ["/", "/login"];
+const CHROMELESS_PREFIXES: readonly string[] = ["/campeonatos/", "/bingos/"];
+
+export const isChromelessPath = (pathname: string): boolean =>
+  CHROMELESS_EXACT.includes(pathname) || CHROMELESS_PREFIXES.some((prefix) => pathname.startsWith(prefix));

@@ -1,9 +1,13 @@
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import type { ReactNode } from "react";
 
+import { EASE_OUT } from "@/common/constants/motion";
+
 /* Suben 24 px mientras aparecen; una sola vez, cuando una quinta parte ya está a la vista. */
 const VIEWPORT = { once: true, amount: 0.2 } as const;
-const EASE_OUT = [0.22, 1, 0.36, 1] as const;
+
+/* Un grupo muy alto (~40 filas en celular) nunca llega al 20 %: basta con que asome. */
+const GROUP_VIEWPORT = { once: true, amount: "some" } as const;
 
 const variantsWithDelay = (delay: number): Variants => ({
   hidden: { opacity: 0, y: 24 },
@@ -53,7 +57,7 @@ export function RevealGroup({ children, className }: { children: ReactNode; clas
     return <div className={className}>{children}</div>;
   }
   return (
-    <motion.div className={className} initial="hidden" whileInView="shown" viewport={VIEWPORT} variants={groupVariants}>
+    <motion.div className={className} initial="hidden" whileInView="shown" viewport={GROUP_VIEWPORT} variants={groupVariants}>
       {children}
     </motion.div>
   );

@@ -204,6 +204,25 @@ La Chocolatada es la meta, las actividades juntan los fondos y las cuentas muest
 - **Contacto:** WhatsApp con usuario, no con número.
 - **Funciones:** quedan las 4 propuestas.
 
+## Segunda vuelta (Thony, 2026-11-25): tres páginas
+
+La versión de una sola página juntaba demasiado. Queda así:
+
+- **Inicio (`/`):** solo presenta y menciona. Carrusel, franja «Ahora», Nosotros, Proyectos, el evento en curso y Síguenos.
+  - El evento es una sola sección: a la izquierda, las actividades como filas con enlace; a la derecha, Cuentas claras (conceptos sin montos).
+- **Campeonato (`/campeonatos/relampago-2026`):** resultados, fecha 2 y goleadores.
+- **Bingo (`/bingos/ii-2026`):** premios en filas compactas (Premio, Donó, Ganó). Los donantes van aquí.
+- La dirección sale del nombre de la actividad, sin migración.
+
+Reglas que cambiaron respecto de lo de arriba:
+
+- **Letra:** solo 12, 14, 16, 20 y 24 px. Títulos a 24 (también el del carrusel), subtítulos a 20, texto a 16.
+- **Sin franja arcoíris** en el navbar y el footer públicos.
+- **Una línea entre secciones**, además del fondo alternado.
+- **Listas compactas:** sin cards de cifras, sin línea de tiempo y sin cards de premios con ícono.
+- **Facebook:** solo el botón; el plugin se corta en celular.
+- **Fotos que faltan:** el carrusel queda en azul liso y la card del proyecto va sin imagen.
+
 ## Dónde se completa el contenido
 
 Todo en `apps/web/src/modules/public/data/site.ts`:

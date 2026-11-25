@@ -72,12 +72,11 @@ export const PROJECTS: ISiteProject[] = [
 /** Las fotos del carrusel de inicio: las de los proyectos, con su nombre al pie. */
 export const HERO_SLIDES = PROJECTS.map((project) => ({ image: project.image, caption: project.name }));
 
-/** Enlaces del navbar y del footer: cada uno baja a su sección. */
+/** Enlaces del navbar y del footer: cada uno baja a su sección del inicio. */
 export const SITE_SECTIONS = [
   { id: "inicio", label: "Inicio" },
   { id: "nosotros", label: "Nosotros" },
   { id: "proyectos", label: "Proyectos" },
-  { id: "eventos", label: "Eventos" },
-  { id: "cuentas", label: "Cuentas claras" },
+  { id: "evento", label: "Eventos" },
   { id: "siguenos", label: "Síguenos" },
 ] as const;

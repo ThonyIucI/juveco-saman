@@ -1,47 +1,42 @@
-import InitialsAvatar, { avatarColorOf } from "@/common/components/initials-avatar";
 import { BOARD, FUNCTIONS, SITE } from "@/modules/public/data/site";
 
 import { Reveal, RevealGroup, RevealItem } from "./reveal";
 import SiteSection from "./site-section";
 
-/** Nosotros: qué es la Juveco, qué hace y quiénes forman la directiva. */
+/** Nosotros: qué es la Juveco, qué hace y quiénes forman la directiva. Todo en filas compactas. */
 export default function AboutSection() {
   return (
     <SiteSection id="nosotros" eyebrow="Nosotros" title="Somos la junta de vecinos de Samán">
-      <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
-        <Reveal className="space-y-4 text-lg leading-relaxed text-foreground">
+      <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+        <Reveal className="space-y-4 text-base leading-relaxed text-foreground">
           {SITE.about.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}
         </Reveal>
 
-        <RevealGroup className="grid gap-4 sm:grid-cols-2">
+        <RevealGroup className="divide-y divide-border border-y border-border">
           {FUNCTIONS.map(({ icon: Icon, title, text }) => (
-            <RevealItem key={title} className="rounded-lg border border-border bg-card p-5">
-              <span className="mb-4 flex size-11 items-center justify-center rounded-md bg-secondary text-primary">
-                <Icon aria-hidden className="size-6" />
-              </span>
-              <h3 className="font-heading text-lg font-bold text-foreground">{title}</h3>
-              <p className="mt-1 text-muted-foreground">{text}</p>
+            <RevealItem key={title} className="flex items-start gap-3 py-3">
+              <Icon aria-hidden className="mt-0.5 size-5 shrink-0 text-primary" />
+              <div>
+                <h3 className="text-base font-medium text-foreground">{title}</h3>
+                <p className="text-sm text-muted-foreground">{text}</p>
+              </div>
             </RevealItem>
           ))}
         </RevealGroup>
       </div>
 
       {BOARD.length > 0 && (
-        <div className="mt-16">
+        <div className="mt-12">
           <Reveal>
-            <h3 className="font-heading text-2xl font-extrabold text-foreground">Directiva · {SITE.term}</h3>
+            <h3 className="font-heading text-xl font-semibold text-foreground">Directiva · {SITE.term}</h3>
           </Reveal>
-          <RevealGroup className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <RevealGroup className="mt-4 grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
             {BOARD.map((member) => (
-              <RevealItem
-                key={`${member.role}-${member.name}`}
-                className="flex flex-col items-center rounded-lg border border-border bg-card p-5 text-center"
-              >
-                <InitialsAvatar name={member.name} color={avatarColorOf(member.name)} className="size-16 text-xl" />
-                <p className="mt-3 font-heading font-bold text-foreground">{member.name}</p>
+              <RevealItem key={`${member.role}-${member.name}`} className="border-b border-border py-3">
                 <p className="text-sm text-muted-foreground">{member.role}</p>
+                <p className="text-base font-medium text-foreground">{member.name}</p>
               </RevealItem>
             ))}
           </RevealGroup>

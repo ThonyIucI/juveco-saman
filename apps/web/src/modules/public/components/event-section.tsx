@@ -1,94 +1,110 @@
 import { EActivityType } from "@juveco/shared/activities";
 import type { IPublicActivity, IPublicProject } from "@juveco/shared/public";
-import { CalendarDays, Ticket, Trophy, Users } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { ChevronRight } from "lucide-react";
 
 import { formatLongDate } from "@/common/utils/format-date";
-import { MATCH_DAYS } from "@/modules/public/data/relampago-2026";
+import { activityDatesOf, activityFirstDateOf } from "@/modules/public/utils/activity-links";
 
-import ChampionshipBoard from "./championship-board";
-import CountUp from "./count-up";
-import EventTimeline, { type ITimelineStep } from "./event-timeline";
-import PrizeGrid from "./prize-grid";
-import { Reveal } from "./reveal";
+import ActivityLink from "./activity-link";
+import { Reveal, RevealGroup, RevealItem } from "./reveal";
 import SiteSection from "./site-section";
 
-/* El campeonato se juega en dos fechas: salen de sus resultados, no de la actividad. */
-const activityDates = (activity: IPublicActivity): string =>
-  activity.type === EActivityType.CHAMPIONSHIP
-    ? MATCH_DAYS.map((day) => formatLongDate(day.date)).join(" y ")
-    : formatLongDate(activity.eventDate);
-
-const firstDateOf = (activity: IPublicActivity): string =>
-  activity.type === EActivityType.CHAMPIONSHIP ? (MATCH_DAYS[0]?.date ?? activity.eventDate) : activity.eventDate;
+/* Qué hay en la página de cada actividad. */
+const detailHint = (activity: IPublicActivity): string =>
+  activity.type === EActivityType.CHAMPIONSHIP ? "Resultados y goleadores" : "Premios y ganadores";
 
 /**
- * El evento en curso contado como una sola historia (acordado 2026-11-25): qué es, la línea
- * de tiempo de las actividades que juntan los fondos y cada actividad con lo suyo. Las cuentas
- * van en la sección que sigue.
+ * El evento en curso en el inicio (Thony, 2026-11-25): solo se menciona. A la izquierda, sus
+ * actividades como filas que llevan a la página de cada una; a la derecha, las cuentas claras
+ * (conceptos **sin montos**). El detalle del campeonato y del bingo vive en su página.
  */
 export default function EventSection({ event }: { event: IPublicProject }) {
   const activities = [...event.activities].sort((first, second) =>
-    firstDateOf(first).localeCompare(firstDateOf(second)),
+    activityFirstDateOf(first).localeCompare(activityFirstDateOf(second)),
   );
-  const steps: ITimelineStep[] = [
-    ...activities.map((activity) => ({ targetId: activity.id, title: activity.name, date: activityDates(activity) })),
-    { title: event.name, date: formatLongDate(event.startDate) },
-  ];
+  const facts = [
+    formatLongDate(event.startDate),
+    event.beneficiaryCount ? `para ${event.beneficiaryCount} niños y niñas` : null,
+  ].filter(Boolean);
 
   return (
     <SiteSection
-      id="eventos"
       eyebrow="Evento en curso"
       title={event.name}
-      intro={event.description ?? "Estas actividades juntan los fondos para hacerlo posible."}
+      intro={event.description ?? `${facts.join(", ")}. Estas actividades reúnen los fondos para hacerla posible.`}
     >
-      <div className="space-y-16 md:space-y-20">
-        <Reveal className="grid grid-cols-2 gap-4 md:grid-cols-3">
-          <Stat icon={CalendarDays} label="Fecha" value={formatLongDate(event.startDate)} />
-          {event.beneficiaryCount !== null && (
-            <Stat icon={Users} label="Niños y niñas" value={<CountUp value={event.beneficiaryCount} />} />
-          )}
-          <Stat icon={Ticket} label="Actividades" value={<CountUp value={activities.length} />} />
-        </Reveal>
+      <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+        <div>
+          <Reveal>
+            <h3 className="font-heading text-xl font-semibold text-foreground">Actividades</h3>
+          </Reveal>
+          <RevealGroup className="mt-3 divide-y divide-border border-y border-border">
+            {activities.map((activity) => (
+              <RevealItem key={activity.id}>
+                <ActivityLink
+                  activity={activity}
+                  className="group flex min-h-14 items-center gap-3 py-3 transition-colors hover:text-primary"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-base font-medium text-foreground group-hover:text-primary">
+                      {activity.name}
+                    </span>
+                    <span className="block text-sm text-muted-foreground">
+                      {activityDatesOf(activity)} · {detailHint(activity)}
+                    </span>
+                  </span>
+                  <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground group-hover:text-primary" />
+                </ActivityLink>
+              </RevealItem>
+            ))}
+          </RevealGroup>
+        </div>
 
-        <EventTimeline steps={steps} />
-
-        {activities.map((activity) => (
-          <ActivityBlock key={activity.id} activity={activity} />
-        ))}
+        <div>
+          <Reveal>
+            <h3 className="font-heading text-xl font-semibold text-foreground">Cuentas claras</h3>
+            <p className="text-sm text-muted-foreground">De dónde vinieron los fondos y en qué se usaron.</p>
+          </Reveal>
+          <RevealGroup className="mt-3 grid gap-6 border-t border-border pt-4 sm:grid-cols-2">
+            <RevealItem>
+              <ConceptList title="Lo que entró" activities={activities} pick={(activity) => activity.incomeConcepts} />
+            </RevealItem>
+            <RevealItem>
+              <ConceptList title="En qué se usó" activities={activities} pick={(activity) => activity.expenseConcepts} />
+            </RevealItem>
+          </RevealGroup>
+        </div>
       </div>
     </SiteSection>
   );
 }
 
-function Stat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: ReactNode }) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-5 last:col-span-2 md:last:col-span-1">
-      <Icon aria-hidden className="mb-3 size-5 text-primary" />
-      <p className="font-heading text-2xl font-extrabold text-foreground tabular-nums md:text-3xl">{value}</p>
-      <p className="text-sm text-muted-foreground">{label}</p>
-    </div>
-  );
+interface IConceptListProps {
+  title: string;
+  activities: IPublicActivity[];
+  pick: (activity: IPublicActivity) => string[];
 }
 
-function ActivityBlock({ activity }: { activity: IPublicActivity }) {
-  const isChampionship = activity.type === EActivityType.CHAMPIONSHIP;
-  const Icon = isChampionship ? Trophy : Ticket;
+function ConceptList({ title, activities, pick }: IConceptListProps) {
+  const groups = activities.filter((activity) => pick(activity).length > 0);
 
   return (
-    <div id={activity.id} className="scroll-mt-20">
-      <Reveal className="mb-6 flex items-center gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-secondary text-primary">
-          <Icon aria-hidden className="size-6" />
-        </span>
-        <div>
-          <h3 className="font-heading text-2xl font-extrabold text-foreground">{activity.name}</h3>
-          <p className="text-muted-foreground">{activityDates(activity)}</p>
-        </div>
-      </Reveal>
-      {isChampionship ? <ChampionshipBoard /> : <PrizeGrid prizes={activity.prizes} />}
+    <div>
+      <p className="text-sm font-medium text-foreground">{title}</p>
+      {groups.length === 0 ? (
+        <p className="mt-1 text-sm text-muted-foreground">Todavía no hay movimientos.</p>
+      ) : (
+        groups.map((activity) => (
+          <div key={activity.id} className="mt-2">
+            <p className="text-xs text-muted-foreground">{activity.name}</p>
+            <ul className="list-inside list-disc text-sm text-foreground marker:text-muted-foreground">
+              {pick(activity).map((concept) => (
+                <li key={concept}>{concept}</li>
+              ))}
+            </ul>
+          </div>
+        ))
+      )}
     </div>
   );
 }

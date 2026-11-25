@@ -1,9 +1,9 @@
 import { Badge } from "@juveco/ui/components/badge";
+import { useState } from "react";
 
-import { PROJECTS, siteProjectStatusLabels } from "@/modules/public/data/site";
+import { type ISiteProject, PROJECTS, siteProjectStatusLabels } from "@/modules/public/data/site";
 
 import { RevealGroup, RevealItem } from "./reveal";
-import SiteImage from "./site-image";
 import SiteSection from "./site-section";
 
 /** Los proyectos de la Juveco (obras para el barrio), cada uno con su foto. */
@@ -19,29 +19,43 @@ export default function ProjectsSection() {
       <RevealGroup className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {PROJECTS.map((project) => (
           <RevealItem key={project.id}>
-            <article className="group h-full overflow-hidden rounded-lg border border-border bg-card">
-              <div className="aspect-4/3 overflow-hidden">
-                <SiteImage
-                  src={project.image}
-                  alt={project.name}
-                  className="size-full transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
-                />
-              </div>
-              <div className="p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-heading text-lg font-bold text-foreground">{project.name}</h3>
-                  {project.status && (
-                    <Badge color={project.status === "DONE" ? "success" : "primary"} className="shrink-0 rounded-md">
-                      {siteProjectStatusLabels[project.status]}
-                    </Badge>
-                  )}
-                </div>
-                {project.description && <p className="mt-2 text-muted-foreground">{project.description}</p>}
-              </div>
-            </article>
+            <ProjectCard project={project} />
           </RevealItem>
         ))}
       </RevealGroup>
     </SiteSection>
+  );
+}
+
+function ProjectCard({ project }: { project: ISiteProject }) {
+  /* Si la foto todavía no está en `public/portada/`, la card va sin imagen, no con una rota. */
+  const [hasPhoto, setHasPhoto] = useState(true);
+
+  return (
+    <article className="group h-full overflow-hidden rounded-lg border border-border bg-card">
+      {hasPhoto && (
+        <div className="aspect-4/3 overflow-hidden">
+          <img
+            src={project.image}
+            alt={project.name}
+            loading="lazy"
+            decoding="async"
+            onError={() => setHasPhoto(false)}
+            className="size-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
+          />
+        </div>
+      )}
+      <div className="p-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-base font-medium text-foreground">{project.name}</h3>
+          {project.status && (
+            <Badge color={project.status === "DONE" ? "success" : "primary"} className="shrink-0 rounded-md">
+              {siteProjectStatusLabels[project.status]}
+            </Badge>
+          )}
+        </div>
+        {project.description && <p className="mt-1 text-sm text-muted-foreground">{project.description}</p>}
+      </div>
+    </article>
   );
 }

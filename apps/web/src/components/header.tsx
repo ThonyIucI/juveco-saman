@@ -2,7 +2,7 @@ import { cn } from "@juveco/ui/lib/utils";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { motion } from "motion/react";
 
-import { CHROMELESS_ROUTES } from "@/common/constants/routes";
+import { isChromelessPath } from "@/common/constants/routes";
 import { useChromeHidden } from "@/common/hooks/use-chrome-hidden";
 import { useHasSidebar, useNavItems } from "@/common/hooks/use-nav-items";
 
@@ -16,7 +16,7 @@ export default function Header() {
   const hasSidebar = useHasSidebar();
   const isHidden = useChromeHidden();
 
-  if (CHROMELESS_ROUTES.includes(pathname)) {
+  if (isChromelessPath(pathname)) {
     return null;
   }
 

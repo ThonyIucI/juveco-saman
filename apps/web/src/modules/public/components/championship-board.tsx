@@ -30,7 +30,7 @@ export default function ChampionshipBoard() {
         {MATCH_DAYS.map((day) => (
           <div key={day.title}>
             <Reveal className="mb-3 flex flex-wrap items-baseline gap-x-3">
-              <h4 className="font-heading text-lg font-bold text-foreground">{day.title}</h4>
+              <h2 className="font-heading text-xl font-semibold text-foreground">{day.title}</h2>
               <p className="text-sm text-muted-foreground">
                 {formatLongDate(day.date)} · {day.description}
               </p>
@@ -47,24 +47,24 @@ export default function ChampionshipBoard() {
       </div>
 
       {scorers.length > 0 && (
-        <Reveal delay={0.15} className="h-fit rounded-lg border border-border bg-card p-5">
-          <h4 className="font-heading text-lg font-bold text-foreground">Goleadores</h4>
+        <Reveal delay={0.15} className="h-fit rounded-lg border border-border bg-card p-4">
+          <h2 className="font-heading text-xl font-semibold text-foreground">Goleadores</h2>
           <ol className="mt-3 space-y-3">
             {scorers.map((scorer, index) => (
               <li key={`${scorer.name}-${scorer.team}`} className="flex items-center gap-3">
                 <span
                   className={cn(
-                    "flex size-8 shrink-0 items-center justify-center rounded-full font-heading text-sm font-bold",
+                    "flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
                     index === 0 ? "bg-gold text-gold-foreground" : "bg-muted text-muted-foreground",
                   )}
                 >
                   {index + 1}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold text-foreground">{scorer.name}</span>
+                  <span className="block truncate text-base font-medium text-foreground">{scorer.name}</span>
                   <span className="block truncate text-sm text-muted-foreground">{scorer.team}</span>
                 </span>
-                <span className="font-heading text-xl font-extrabold text-foreground tabular-nums">{scorer.goals}</span>
+                <span className="font-heading text-xl font-bold text-foreground tabular-nums">{scorer.goals}</span>
               </li>
             ))}
           </ol>
@@ -83,11 +83,11 @@ function MatchRow({ match }: { match: IMatch }) {
   ].filter(Boolean);
 
   return (
-    <div className="px-4 py-4">
-      <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{match.label}</p>
+    <div className="px-4 py-3">
+      <p className="mb-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">{match.label}</p>
       <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3">
         <TeamCell side={match.home} isWinner={winner === match.home} align="right" />
-        <span className="mt-0.5 rounded-md bg-muted px-3 py-1 font-heading text-lg font-extrabold whitespace-nowrap text-foreground tabular-nums">
+        <span className="mt-0.5 rounded-md bg-muted px-3 py-0.5 font-heading text-xl font-bold whitespace-nowrap text-foreground tabular-nums">
           {isPlayed ? `${match.home.goals} – ${match.away.goals}` : "vs"}
         </span>
         <TeamCell side={match.away} isWinner={winner === match.away} align="left" />
@@ -102,9 +102,9 @@ function TeamCell({ side, isWinner, align }: { side: IMatchSide; isWinner: boole
     <div className={cn("min-w-0", align === "right" && "text-right")}>
       <p
         className={cn(
-          "flex items-center gap-1.5 font-semibold text-foreground",
+          "flex items-center gap-1.5 text-base font-medium text-foreground",
           align === "right" && "justify-end",
-          isWinner && "font-extrabold",
+          isWinner && "font-semibold",
         )}
       >
         {isWinner && align === "left" && <Trophy aria-label="Ganó" className="size-4 shrink-0 text-gold-ink" />}

@@ -3,7 +3,7 @@ import { cn } from "@juveco/ui/lib/utils";
 import { HeadContent, Outlet, createRootRouteWithContext, useRouterState } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
-import { CHROMELESS_ROUTES } from "@/common/constants/routes";
+import { isChromelessPath } from "@/common/constants/routes";
 import { useHasSidebar, useNavItems } from "@/common/hooks/use-nav-items";
 import AppSidebar from "@/components/app-sidebar";
 import BottomNav from "@/components/bottom-nav";
@@ -31,8 +31,8 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 
 function RootComponent() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  /* La portada y el login traen su propio encabezado: sin menús de la app aunque haya sesión. */
-  const isChromeless = CHROMELESS_ROUTES.includes(pathname);
+  /* Las rutas públicas y el login traen su propio encabezado: sin menús de la app aunque haya sesión. */
+  const isChromeless = isChromelessPath(pathname);
   /* El hueco para la barra inferior solo se reserva cuando la barra existe (hay sesión). */
   const hasBottomNav = useNavItems().length > 0 && !isChromeless;
   /* Con sesión, todos tienen menú lateral. */
