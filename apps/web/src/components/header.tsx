@@ -30,7 +30,8 @@ export default function Header() {
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
         <div className="flex min-w-0 items-center gap-4">
-          <Link to="/dashboard" className="flex items-center gap-2 font-heading text-lg font-extrabold text-primary">
+          {/* La marca lleva a la página web; el panel queda en el menú lateral y la barra inferior. */}
+          <Link to="/" className="flex items-center gap-2 font-heading text-lg font-extrabold text-primary">
             <img src="/logo.png" alt="" className="size-9" />
             Juveco Samán
           </Link>

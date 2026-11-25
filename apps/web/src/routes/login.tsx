@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { Link, createFileRoute, redirect } from "@tanstack/react-router";
 
 import { ModeToggle } from "@/components/mode-toggle";
 import SignInForm from "@/components/sign-in-form";
@@ -28,13 +28,17 @@ function LoginPage() {
       </div>
 
       <div className="relative w-full max-w-107.5">
-        <div className="mb-6 flex flex-col items-center gap-3 text-center">
+        {/* El logo y el nombre llevan a la página web, como en el panel. */}
+        <Link
+          to="/"
+          className="mb-6 flex flex-col items-center gap-3 rounded-xl text-center transition-opacity hover:opacity-80"
+        >
           <img src="/logo.png" alt="Logo de Juveco Samán" className="size-28 drop-shadow-xl" />
           <div>
             <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground">Juveco Samán</h1>
             <p className="mt-1 text-muted-foreground">Junta Vecinal Comunal Samán</p>
           </div>
-        </div>
+        </Link>
 
         <div className="overflow-hidden rounded-[2rem] bg-card shadow-sheet ring-1 ring-border">
           <div aria-hidden className="rainbow-band h-1" />

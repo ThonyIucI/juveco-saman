@@ -1,6 +1,7 @@
 import { IconButton } from "@juveco/ui/components/icon-button";
 import { userRoleLabels } from "@juveco/shared/roles";
-import { ChevronRight, LogOut, X } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ChevronRight, Globe, LogOut, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 
@@ -52,7 +53,16 @@ function SidebarPanel({ onClose }: ISidebarPanelProps) {
       </nav>
 
       {/* El pie se separa con sombra, no con borde (como el pie de la modal). */}
-      <div className="px-3 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] shadow-edge-top">
+      <div className="space-y-1 px-3 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] shadow-edge-top">
+        {/* La portada pública se ve igual con sesión: este es el camino desde el panel. */}
+        <Link
+          to="/"
+          onClick={onClose}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 font-heading text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Globe className="size-5" />
+          Ver la página web
+        </Link>
         <button
           type="button"
           onClick={confirmSignOut.on}
