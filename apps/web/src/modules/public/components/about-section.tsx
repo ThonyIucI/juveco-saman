@@ -1,9 +1,10 @@
 import { BOARD, FUNCTIONS, SITE } from "@/modules/public/data/site";
 
+import Expandable from "./expandable";
 import { Reveal, RevealGroup, RevealItem } from "./reveal";
 import SiteSection from "./site-section";
 
-/** Nosotros: qué es la Juveco, qué hace y quiénes forman la directiva. Todo en filas compactas. */
+/** Nosotros: qué es la Juveco, qué hace y quiénes forman la directiva (tras «Ver directiva»). Todo en filas compactas. */
 export default function AboutSection() {
   return (
     <SiteSection id="nosotros" eyebrow="Nosotros" title="Somos la junta de vecinos de Samán">
@@ -28,10 +29,8 @@ export default function AboutSection() {
       </div>
 
       {BOARD.length > 0 && (
-        <div className="mt-12">
-          <Reveal>
-            <h3 className="font-heading text-xl font-semibold text-foreground">Directiva · {SITE.term}</h3>
-          </Reveal>
+        <Expandable label="Ver directiva" className="mt-8">
+          <h3 className="pt-4 font-heading text-xl font-semibold text-foreground">Directiva {SITE.term}</h3>
           <RevealGroup className="mt-4 grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
             {BOARD.map((member) => (
               <RevealItem key={`${member.role}-${member.name}`} className="border-b border-border py-3">
@@ -40,7 +39,7 @@ export default function AboutSection() {
               </RevealItem>
             ))}
           </RevealGroup>
-        </div>
+        </Expandable>
       )}
     </SiteSection>
   );

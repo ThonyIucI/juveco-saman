@@ -92,7 +92,7 @@ export default function HeroCarousel({ hasEvent = true }: { hasEvent?: boolean }
           className="max-w-xl text-white"
         >
           <p className="mb-2 text-xs font-semibold tracking-widest text-gold uppercase">{SITE.fullName}</p>
-          <h1 className="font-heading text-2xl leading-tight font-bold tracking-tight">{SITE.tagline}</h1>
+          <h1 className="font-heading text-2xl leading-tight font-semibold tracking-tight">{SITE.tagline}</h1>
           <p className="mt-3 text-base text-white/85">{SITE.intro}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             {hasEvent && (

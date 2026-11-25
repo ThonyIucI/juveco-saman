@@ -3,8 +3,25 @@ import { useState } from "react";
 
 import { type ISiteProject, PROJECTS, siteProjectStatusLabels } from "@/modules/public/data/site";
 
+import Expandable from "./expandable";
 import { RevealGroup, RevealItem } from "./reveal";
 import SiteSection from "./site-section";
+
+/* Se ven las primeras obras; las de la gestión anterior, tras «Ver más obras». */
+const VISIBLE_PROJECTS = 3;
+const hiddenProjects = PROJECTS.slice(VISIBLE_PROJECTS);
+
+function ProjectGrid({ projects }: { projects: ISiteProject[] }) {
+  return (
+    <RevealGroup className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {projects.map((project) => (
+        <RevealItem key={project.id}>
+          <ProjectCard project={project} />
+        </RevealItem>
+      ))}
+    </RevealGroup>
+  );
+}
 
 /** Los proyectos de la Juveco (obras para el barrio), cada uno con su foto. */
 export default function ProjectsSection() {
@@ -16,13 +33,14 @@ export default function ProjectsSection() {
       title="Lo que estamos construyendo"
       intro="Obras que gestionamos juntos para mejorar Samán."
     >
-      <RevealGroup className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {PROJECTS.map((project) => (
-          <RevealItem key={project.id}>
-            <ProjectCard project={project} />
-          </RevealItem>
-        ))}
-      </RevealGroup>
+      <ProjectGrid projects={PROJECTS.slice(0, VISIBLE_PROJECTS)} />
+      {hiddenProjects.length > 0 && (
+        <Expandable label="Ver más obras" className="mt-4">
+          <div className="pt-4">
+            <ProjectGrid projects={hiddenProjects} />
+          </div>
+        </Expandable>
+      )}
     </SiteSection>
   );
 }

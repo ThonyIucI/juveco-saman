@@ -5,6 +5,7 @@ import { Wallet } from "lucide-react";
 
 import AccountsBar, { INCOME_SOURCE_STYLES } from "./accounts-bar";
 import CountUp from "./count-up";
+import Expandable from "./expandable";
 import { Reveal, RevealGroup, RevealItem } from "./reveal";
 
 const EXPENSE_SWATCH_CLASS = "bg-white/50";
@@ -57,12 +58,32 @@ function Lines({ title, lines }: ILinesProps) {
   );
 }
 
+/** «Gracias a»: quienes apoyaron, solo con el nombre y sin montos. */
+function Supporters({ names }: { names: string[] }) {
+  if (names.length === 0) {
+    return null;
+  }
+  return (
+    <div>
+      <p className="text-sm font-medium text-white/80">Gracias a</p>
+      <ul className="mt-2 flex flex-wrap gap-2">
+        {names.map((name) => (
+          <li key={name} className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm">
+            {name}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 const withSwatch = (lines: IPublicAccountLine[], swatchClass: string) =>
   lines.map((line) => ({ ...line, swatchClass }));
 
 /**
  * Cuentas claras (Thony, 2026-11-25): tres cifras, la barra de dónde vino la plata, cada
  * concepto con su monto y, al pie, a quién agradecer. Montos por concepto, nunca por persona.
+ * Se ven las cifras y la barra; los conceptos y el «Gracias a» van tras «Ver el detalle».
  * Va sobre fondo azul marino.
  */
 export default function AccountsPanel({ event }: { event: IPublicProject }) {
@@ -77,10 +98,16 @@ export default function AccountsPanel({ event }: { event: IPublicProject }) {
       </Reveal>
 
       {isEmpty ? (
-        <Reveal className="mt-6 flex items-center gap-3 rounded-lg border border-dashed border-white/25 p-5">
-          <Wallet aria-hidden className="size-6 shrink-0 text-gold" />
-          <p className="text-base text-white/90">Todavía no hay movimientos. Aquí verás cuánto entra y en qué se usa.</p>
-        </Reveal>
+        <>
+          <Reveal className="mt-6 flex items-center gap-3 rounded-lg border border-dashed border-white/25 p-5">
+            <Wallet aria-hidden className="size-6 shrink-0 text-gold" />
+            <p className="text-base text-white/90">Todavía no hay movimientos. Aquí verás cuánto entra y en qué se usa.</p>
+          </Reveal>
+          {/* Un estado vacío no se esconde: si ya hay quien apoyó, se agradece a la vista. */}
+          <div className="mt-6">
+            <Supporters names={supporters} />
+          </div>
+        </>
       ) : (
         <>
           <RevealGroup className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -99,30 +126,22 @@ export default function AccountsPanel({ event }: { event: IPublicProject }) {
             <AccountsBar incomes={accounts.incomes} />
           </Reveal>
 
-          <Reveal className="mt-8 grid gap-8 md:grid-cols-2 md:gap-12">
-            <Lines
-              title="Lo que entró"
-              lines={accounts.incomes.map((line) => ({
-                ...line,
-                swatchClass: INCOME_SOURCE_STYLES[line.source].swatchClass,
-              }))}
-            />
-            <Lines title="En qué se usó" lines={withSwatch(accounts.expenses, EXPENSE_SWATCH_CLASS)} />
-          </Reveal>
+          <Expandable label="Ver el detalle" isOnNavy className="mt-4">
+            <div className="space-y-8 pt-4">
+              <div className="grid gap-8 md:grid-cols-2 md:gap-12">
+                <Lines
+                  title="Lo que entró"
+                  lines={accounts.incomes.map((line) => ({
+                    ...line,
+                    swatchClass: INCOME_SOURCE_STYLES[line.source].swatchClass,
+                  }))}
+                />
+                <Lines title="En qué se usó" lines={withSwatch(accounts.expenses, EXPENSE_SWATCH_CLASS)} />
+              </div>
+              <Supporters names={supporters} />
+            </div>
+          </Expandable>
         </>
-      )}
-
-      {supporters.length > 0 && (
-        <Reveal className="mt-8">
-          <p className="text-sm font-medium text-white/80">Gracias a</p>
-          <ul className="mt-2 flex flex-wrap gap-2">
-            {supporters.map((name) => (
-              <li key={name} className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm">
-                {name}
-              </li>
-            ))}
-          </ul>
-        </Reveal>
       )}
     </div>
   );

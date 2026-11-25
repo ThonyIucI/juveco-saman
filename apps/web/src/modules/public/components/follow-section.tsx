@@ -5,36 +5,42 @@ import FacebookIcon from "@/common/components/icons/facebook-icon";
 import TikTokIcon from "@/common/components/icons/tiktok-icon";
 import { FACEBOOK_URL, TIKTOK_URL, TIKTOK_USERNAME } from "@/modules/public/data/social";
 
+import FacebookPage from "./facebook-page";
 import { Reveal } from "./reveal";
 import SiteSection from "./site-section";
 
 const TIKTOK_SCRIPT_SRC = "https://www.tiktok.com/embed.js";
 
 /**
- * Síguenos: los últimos videos de TikTok con su embed oficial de creador (sin llave) y los
- * botones a cada red. El plugin de Facebook no va: en celular corta las publicaciones
- * (Thony, 2026-11-25).
+ * Síguenos: los últimos videos de TikTok (embed oficial de creador, sin llave) y las
+ * publicaciones de Facebook (plugin oficial de página, con el ancho medido del contenedor
+ * para que no se corte en celular), lado a lado en escritorio y apilados en celular; y los
+ * botones a cada red (Thony, 2026-11-25).
  */
 export default function FollowSection() {
   return (
     <SiteSection id="siguenos" tone="muted" eyebrow="Síguenos" title="Lo último en nuestras redes">
-      <div className="grid items-start gap-8 lg:grid-cols-[1.4fr_1fr]">
-        <Reveal>
+      <Reveal className="mb-8 space-y-3">
+        <p className="max-w-2xl text-base text-foreground">
+          Publicamos avisos, fotos y resultados de cada actividad. Síguenos para enterarte primero.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline" })}>
+            <TikTokIcon className="size-5" />@{TIKTOK_USERNAME}
+          </a>
+          <a href={FACEBOOK_URL} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline" })}>
+            <FacebookIcon className="size-5" />
+            Facebook
+          </a>
+        </div>
+      </Reveal>
+
+      <div className="grid items-stretch gap-6 lg:grid-cols-2">
+        <Reveal className="min-w-0 overflow-hidden rounded-lg border border-border bg-card p-3">
           <TikTokFeed />
         </Reveal>
-        <Reveal delay={0.1} className="space-y-3">
-          <p className="text-base text-foreground">
-            Publicamos avisos, fotos y resultados de cada actividad. Síguenos para enterarte primero.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline" })}>
-              <TikTokIcon className="size-5" />@{TIKTOK_USERNAME}
-            </a>
-            <a href={FACEBOOK_URL} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline" })}>
-              <FacebookIcon className="size-5" />
-              Facebook
-            </a>
-          </div>
+        <Reveal delay={0.1} className="min-w-0 rounded-lg border border-border bg-card p-3">
+          <FacebookPage />
         </Reveal>
       </div>
     </SiteSection>
