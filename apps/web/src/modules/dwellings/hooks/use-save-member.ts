@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useRequest } from "@/common/hooks/use-request";
 import { createMemberRequest, updateMemberRequest } from "@/modules/dwellings/services/dwelling.service";
 
-/** Agrega un integrante a la vivienda (con su familia, si hace falta) o edita al que ya está. */
+/** Agrega o edita a un integrante de la vivienda: su persona, su parentesco y su jefatura. */
 export const useSaveMember = () => {
   const { loading, handleRequest } = useRequest<IDwellingDetailResource>();
 

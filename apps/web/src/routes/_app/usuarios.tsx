@@ -26,7 +26,7 @@ import UserFormModal from "@/modules/users/components/user-form-modal";
 import UserMobileList from "@/modules/users/components/user-mobile-list";
 import UserTable from "@/modules/users/components/user-table";
 import { useDeleteUser } from "@/modules/users/hooks/use-delete-user";
-import { useDocumentLookup } from "@/modules/users/hooks/use-document-lookup";
+import { useDocumentUserIds } from "@/modules/users/hooks/use-document-user-ids";
 import { useListUsers } from "@/modules/users/hooks/use-list-users";
 import {
   EMPTY_USER_FILTERS,
@@ -96,7 +96,7 @@ function UsersPage() {
 
   const normalizedTerm = term.trim().toLowerCase();
   /* La lista no trae el DNI: uno completo se busca en el servidor. */
-  const documentUserIds = useDocumentLookup(term);
+  const documentUserIds = useDocumentUserIds(term);
   const visible = users
     .filter(
       (user) =>

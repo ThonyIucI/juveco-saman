@@ -26,6 +26,11 @@ import {
   FAMILY_CONTACT_PHONE_REQUIRED_MESSAGE,
   FAMILY_MEMBER_REQUIRED_MESSAGE,
   FAMILY_RELATIONSHIP_INVALID_MESSAGE,
+  MEMBERS_BATCH_DUPLICATE_MESSAGE,
+  MEMBERS_BATCH_EMPTY_MESSAGE,
+  MEMBERS_BATCH_MAX,
+  MEMBERS_BATCH_ONE_HEAD_MESSAGE,
+  MEMBERS_BATCH_TOO_MANY_MESSAGE,
 } from "@juveco/shared/families";
 import { NEIGHBORHOOD_INVALID_MESSAGE, isKnownNeighborhood } from "@juveco/shared/neighborhoods";
 import { z } from "zod";
@@ -113,18 +118,48 @@ const contactSchema = z
   })
   .nullable();
 
+/* El jefe no tiene parentesco que elegir: es «Jefe(a)». Sin él, el servidor usa «Hijo(a)». */
+const relationshipSchema = z
+  .enum(EFamilyRelationship, FAMILY_RELATIONSHIP_INVALID_MESSAGE)
+  .refine((relationship) => relationship !== EFamilyRelationship.HEAD, FAMILY_RELATIONSHIP_INVALID_MESSAGE)
+  .optional();
+
 /* Los campos de un integrante, iguales al crear y al editar. */
 const memberFields = {
   /* Con `userId` se actualizan sus datos con `person`; sin él, `person` crea a la persona. */
   person: personSchema.optional(),
   isHead: z.boolean(),
-  /* El jefe no tiene parentesco que elegir: es «Jefe(a)». Sin él, el servidor usa «Hijo(a)». */
-  relationship: z
-    .enum(EFamilyRelationship, FAMILY_RELATIONSHIP_INVALID_MESSAGE)
-    .refine((relationship) => relationship !== EFamilyRelationship.HEAD, FAMILY_RELATIONSHIP_INVALID_MESSAGE)
-    .optional(),
+  relationship: relationshipSchema,
   contact: contactSchema.default(null),
 };
+
+/* Una fila de «Agregar integrantes»: la persona ya existe (la fila la crea antes, si hace falta). */
+const batchMemberSchema = z.object({
+  userId: z.string().min(1, FAMILY_MEMBER_REQUIRED_MESSAGE),
+  isHead: z.boolean(),
+  relationship: relationshipSchema,
+});
+
+/* Varias personas a la vez: ninguna repetida y, a lo sumo, un jefe. */
+export const createMembersBatchSchema = z
+  .object({
+    /* Un id de familia de la vivienda o «NEW». */
+    familyId: z.string().min(1).optional(),
+    members: z
+      .array(batchMemberSchema)
+      .min(1, MEMBERS_BATCH_EMPTY_MESSAGE)
+      .max(MEMBERS_BATCH_MAX, MEMBERS_BATCH_TOO_MANY_MESSAGE),
+    contact: contactSchema.default(null),
+  })
+  .superRefine((body, context) => {
+    const userIds = body.members.map((member) => member.userId);
+    if (new Set(userIds).size !== userIds.length) {
+      context.addIssue({ code: "custom", path: ["members"], message: MEMBERS_BATCH_DUPLICATE_MESSAGE });
+    }
+    if (body.members.filter((member) => member.isHead).length > 1) {
+      context.addIssue({ code: "custom", path: ["members"], message: MEMBERS_BATCH_ONE_HEAD_MESSAGE });
+    }
+  });
 
 /* Una persona nueva necesita sus datos: sin `userId`, `person` es obligatorio. */
 export const createMemberSchema = z
@@ -141,4 +176,5 @@ export const createMemberSchema = z
 export const updateMemberSchema = z.object(memberFields);
 
 export type TCreateMemberBody = z.infer<typeof createMemberSchema>;
+export type TCreateMembersBatchBody = z.infer<typeof createMembersBatchSchema>;
 export type TUpdateMemberBody = z.infer<typeof updateMemberSchema>;

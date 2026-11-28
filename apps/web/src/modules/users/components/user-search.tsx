@@ -9,8 +9,8 @@ import InitialsAvatar, { avatarColorOf } from "@/common/components/initials-avat
 import NeighborhoodBadge from "@/common/components/neighborhood-badge";
 import SearchInput from "@/common/components/search-input";
 import type { IPersonInitialValues } from "@/common/utils/person-form";
-import { useDocumentLookup } from "@/modules/users/hooks/use-document-lookup";
-import { looksLikePhone, matchesUserSearch } from "@/modules/users/utils/user-search";
+import { useDocumentUserIds } from "@/modules/users/hooks/use-document-user-ids";
+import { looksLikeDocumentNumber, looksLikePhone, matchesUserSearch } from "@/modules/users/utils/user-search";
 
 import UserFormModal from "./user-form-modal";
 
@@ -40,7 +40,14 @@ interface IUserSearchProps {
    * escrito en vez de abrir la modal de Usuarios, y la card elegida no se edita desde acá.
    */
   onStartCreate?: (values: IPersonInitialValues) => void;
+  /** El texto de la primera opción; por defecto «Crear «lo escrito»». */
+  createLabel?: (term: string) => string;
+  /** Debajo del nombre del elegido (p. ej. su DNI), cuando se conoce. */
+  detail?: string | null;
+  placeholder?: string;
 }
+
+const defaultCreateLabel = (term: string) => `Crear «${term}»`;
 
 /**
  * Buscador para elegir a una persona, como el de las órdenes de id-pos (`SearchClientMulti`): se escribe nombre, número o usuario y aparecen los que coinciden;
@@ -58,6 +65,9 @@ export default function UserSearch({
   onChange,
   onCreated,
   onStartCreate,
+  createLabel = defaultCreateLabel,
+  detail,
+  placeholder = "Busca usuario por nombre, número o DNI",
 }: IUserSearchProps) {
   const listId = useId();
   const [term, setTerm] = useState("");
@@ -66,7 +76,7 @@ export default function UserSearch({
   /* El elegido se edita tocando su card (Thony, 2026-11-07). */
   const [editTarget, setEditTarget] = useState<IUserResource | null>(null);
   /* La lista cargada no trae el DNI: uno completo se busca en el servidor. */
-  const documentUserIds = useDocumentLookup(term);
+  const documentUserIds = useDocumentUserIds(term);
 
   /*
     La modal de edición va también cuando hay alguien elegido. Al guardar, la lista se entera
@@ -114,6 +124,7 @@ export default function UserSearch({
           */}
           <p className="line-clamp-2 font-heading font-medium wrap-anywhere text-foreground">{fullName(value)}</p>
           {/* El barrio, no el número (Thony, 2026-11-07); sin barrio no se pone nada. */}
+          {detail && <p className="text-sm text-muted-foreground tabular-nums">{detail}</p>}
           {value.neighborhood && <NeighborhoodBadge neighborhood={value.neighborhood} />}
         </div>
         </div>
@@ -142,7 +153,12 @@ export default function UserSearch({
 
   const openCreate = () => {
     const typed = term.trim();
-    const values: IPersonInitialValues = looksLikePhone(typed) ? { phone: phoneOfTyped(typed) } : { firstName: typed };
+    /* Ocho dígitos es un DNI: se pregunta antes que el teléfono, que también son dígitos. */
+    const values: IPersonInitialValues = looksLikeDocumentNumber(typed)
+      ? { documentNumber: typed }
+      : looksLikePhone(typed)
+        ? { phone: phoneOfTyped(typed) }
+        : { firstName: typed };
     setIsOpen(false);
     if (onStartCreate) {
       setTerm("");
@@ -175,7 +191,7 @@ export default function UserSearch({
           id={id}
           icon={UserRound}
           isCompact
-          placeholder="Busca usuario por nombre, número o DNI"
+          placeholder={placeholder}
           aria-label="Buscar usuario por nombre, número, usuario o DNI"
           aria-expanded={isListShown}
           aria-controls={listId}
@@ -208,7 +224,7 @@ export default function UserSearch({
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
                   <Plus className="size-5" />
                 </span>
-                <span className="truncate">Crear «{term.trim()}»</span>
+                <span className="truncate">{createLabel(term.trim())}</span>
               </button>
             </li>
             {results.map((user) => (

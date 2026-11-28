@@ -11,8 +11,11 @@ interface IOptionCardsProps<TValue extends string> {
   /** El id del `Label` que nombra al grupo. */
   labelledBy: string;
   options: IOptionCard<TValue>[];
-  value: TValue;
+  /** «» = ninguna elegida (solo con `onClear`). */
+  value: TValue | "";
   onChange: (value: TValue) => void;
+  /** Para un dato opcional: tocar la opción ya elegida la desmarca y llama a esto. */
+  onClear?: () => void;
 }
 
 /**
@@ -24,6 +27,7 @@ export default function OptionCards<TValue extends string>({
   options,
   value,
   onChange,
+  onClear,
 }: IOptionCardsProps<TValue>) {
   return (
     <div
@@ -40,7 +44,7 @@ export default function OptionCards<TValue extends string>({
             type="button"
             role="radio"
             aria-checked={isSelected}
-            onClick={() => onChange(optionValue)}
+            onClick={() => (isSelected && onClear ? onClear() : onChange(optionValue))}
             className={cn(
               "flex h-control cursor-pointer items-center justify-center gap-2 rounded-lg border text-sm font-semibold transition-colors outline-none focus-visible:ring-4 focus-visible:ring-ring/30",
               isSelected

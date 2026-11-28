@@ -41,9 +41,18 @@ import { usePersonFormMatches } from "@/modules/users/hooks/use-person-form-matc
 import { useUpdateUser } from "@/modules/users/hooks/use-update-user";
 import type { IEditAccessPayload, IGrantAccessPayload } from "@/modules/users/services/user.service";
 
-import { PersonCensusFields, PersonNameFields } from "./person-fields";
+import {
+  NameMatchesWarning,
+  PersonBirthDateField,
+  PersonConditionFields,
+  PersonDocumentField,
+  PersonGenderField,
+  PersonNameFields,
+} from "./person-fields";
 
 const FORM_ID = "user-form";
+/* Subtítulo pequeño de cada sección del formulario (Principal, Contacto, Prioridad). */
+const SECTION_TITLE_CLASS = "text-sm font-semibold text-foreground";
 
 /* Hoy el único rol que se puede dar al crear es administrador; el superadmin es solo Thony. */
 const ASSIGNABLE_ROLES = [EUserRole.ADMIN] as const;
@@ -297,9 +306,18 @@ export default function UserFormModal({
         }}
         className="space-y-4"
       >
+        <div className="space-y-4">
+        <p className={SECTION_TITLE_CLASS}>Principal</p>
         <PersonNameFields form={form} />
 
         <div className="grid gap-4 sm:grid-cols-2">
+          <PersonDocumentField form={form} documentMatch={documentMatch} onViewMatch={viewMatch} />
+          <PersonBirthDateField form={form} />
+        </div>
+        <NameMatchesWarning nameMatches={nameMatches} />
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <PersonGenderField form={form} />
           <form.Field name="neighborhoodId">
             {(field) => (
               <div className="space-y-2">
@@ -323,7 +341,11 @@ export default function UserFormModal({
               </div>
             )}
           </form.Field>
+        </div>
+        </div>
 
+        <div className="space-y-4 border-t border-border pt-4">
+          <p className={SECTION_TITLE_CLASS}>Contacto</p>
           {/* Un solo campo: número o usuario de WhatsApp. El otro no se borra al cambiar. */}
           <form.Subscribe
             selector={(state) => ({
@@ -387,16 +409,10 @@ export default function UserFormModal({
           </form.Subscribe>
         </div>
 
-        {/* Datos del censo: todos opcionales. Separados por una línea fina, como el acceso. */}
+        {/* Prioridad: todo opcional. Las secciones se separan con una línea fina, como el acceso. */}
         <div className="space-y-4 border-t border-border pt-4">
-          <p className="text-sm font-semibold text-foreground">Datos del censo (opcional)</p>
-
-          <PersonCensusFields
-            form={form}
-            documentMatch={documentMatch}
-            nameMatches={nameMatches}
-            onViewMatch={viewMatch}
-          />
+          <p className={SECTION_TITLE_CLASS}>Prioridad</p>
+          <PersonConditionFields form={form} />
         </div>
 
         {canShowAccess && (

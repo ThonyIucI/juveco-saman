@@ -4,21 +4,20 @@ import {
   FAMILY_CONTACT_NAME_MAX_LENGTH,
   FAMILY_CONTACT_NAME_REQUIRED_MESSAGE,
   FAMILY_CONTACT_PHONE_REQUIRED_MESSAGE,
-  FAMILY_NOT_CHOSEN_MESSAGE,
   FAMILY_RELATIONSHIP_INVALID_MESSAGE,
   type IFamilyContact,
   type IFamilyMemberResource,
-  type IFamilyMemberSaveInput,
   type IFamilyMemberUpdateInput,
   type IFamilyResource,
-  NEW_FAMILY,
   isFamilyRelationship,
 } from "@juveco/shared/families";
 import { type IPhone, phoneError } from "@juveco/shared/phones";
+import type { IUserDetailResource } from "@juveco/shared/users";
 import z from "zod";
 
 import {
   EMPTY_PHONE,
+  type IPersonInitialValues,
   buildPersonDefaults,
   personFormSchema,
   toDetailsPayload,
@@ -29,42 +28,37 @@ import {
 export const DEFAULT_RELATIONSHIP = EFamilyRelationship.CHILD;
 
 /**
- * El formulario de un integrante: los campos de la persona (los del formulario de usuario) más
- * lo de su lugar en la vivienda. `familyChoice`: «» = la familia por defecto, un id, o `NEW_FAMILY`.
+ * El formulario de una persona que integra una vivienda, por pasos: los campos de la persona (los
+ * del formulario de usuario) más su lugar en la familia. Al crearla desde una fila de «Agregar
+ * integrantes» el parentesco y la jefatura vienen de la fila; al editarla, se cambian en el paso
+ * Principal.
  */
-export const buildMemberFormSchema = (isFamilyRequired: boolean) =>
-  personFormSchema
-    .extend({
-      /* El id de la persona elegida en el buscador; «» = una persona nueva. */
-      userId: z.string(),
-      isHead: z.boolean(),
-      relationship: z.string(),
-      familyChoice: z.string(),
-      contactName: z.string().trim().max(FAMILY_CONTACT_NAME_MAX_LENGTH, FAMILY_CONTACT_NAME_LENGTH_MESSAGE),
-      contactPhone: z.object({ countryPrefix: z.string(), number: z.string() }),
-    })
-    .superRefine((value, context) => {
-      if (!value.isHead && !isNonHeadRelationship(value.relationship)) {
-        context.addIssue({ code: "custom", path: ["relationship"], message: FAMILY_RELATIONSHIP_INVALID_MESSAGE });
-      }
-      if (isFamilyRequired && value.familyChoice === "") {
-        context.addIssue({ code: "custom", path: ["familyChoice"], message: FAMILY_NOT_CHOSEN_MESSAGE });
-      }
-      if (isContactAsked(value)) {
-        addContactIssues(value, context);
-      }
-    });
+export const memberPersonSchema = personFormSchema
+  .extend({
+    isHead: z.boolean(),
+    relationship: z.string(),
+    contactName: z.string().trim().max(FAMILY_CONTACT_NAME_MAX_LENGTH, FAMILY_CONTACT_NAME_LENGTH_MESSAGE),
+    contactPhone: z.object({ countryPrefix: z.string(), number: z.string() }),
+  })
+  .superRefine((value, context) => {
+    if (!value.isHead && !isNonHeadRelationship(value.relationship)) {
+      context.addIssue({ code: "custom", path: ["relationship"], message: FAMILY_RELATIONSHIP_INVALID_MESSAGE });
+    }
+    if (isContactAsked(value)) {
+      addContactIssues(value, context);
+    }
+  });
 
-export type TMemberFormValues = z.input<ReturnType<typeof buildMemberFormSchema>>;
+export type TMemberPersonValues = z.input<typeof memberPersonSchema>;
 
 const isNonHeadRelationship = (value: string): boolean =>
   isFamilyRelationship(value) && value !== EFamilyRelationship.HEAD;
 
 /* El contacto alternativo solo se pide al jefe sin celular. */
-export const isContactAsked = (value: Pick<TMemberFormValues, "isHead" | "phone">): boolean =>
+export const isContactAsked = (value: Pick<TMemberPersonValues, "isHead" | "phone">): boolean =>
   value.isHead && value.phone.number.trim() === "";
 
-const addContactIssues = (value: TMemberFormValues, context: z.RefinementCtx) => {
+const addContactIssues = (value: TMemberPersonValues, context: z.RefinementCtx) => {
   const hasName = value.contactName !== "";
   const hasNumber = value.contactPhone.number.trim() !== "";
   if (hasNumber) {
@@ -81,49 +75,46 @@ const addContactIssues = (value: TMemberFormValues, context: z.RefinementCtx) =>
   }
 };
 
-interface INewMemberDefaultsOptions {
-  /** La vivienda todavía no tiene integrantes: el primero es el jefe. */
-  isFirst: boolean;
-  familyChoice?: string;
+interface INewMemberPersonOptions {
+  /** Lo que ya se escribió en el buscador de la fila (su DNI, su nombre o su celular). */
+  initialValues?: IPersonInitialValues;
+  isHead: boolean;
+  relationship: string;
 }
 
-export const buildNewMemberDefaults = ({ isFirst, familyChoice = "" }: INewMemberDefaultsOptions): TMemberFormValues => ({
-  ...buildPersonDefaults(),
-  userId: "",
-  isHead: isFirst,
-  relationship: DEFAULT_RELATIONSHIP,
-  familyChoice,
+/** Una persona nueva que se crea desde una fila: lo escrito en el buscador y el lugar de la fila. */
+export const buildNewMemberPersonDefaults = ({
+  initialValues,
+  isHead,
+  relationship,
+}: INewMemberPersonOptions): TMemberPersonValues => ({
+  ...buildPersonDefaults(undefined, initialValues),
+  isHead,
+  relationship,
   contactName: "",
   contactPhone: EMPTY_PHONE,
 });
 
-/** Para editar: lo que ya se sabe del integrante y de su familia; el resto llega al cargar a la persona. */
-export const buildEditMemberDefaults = (member: IFamilyMemberResource, family: IFamilyResource | null): TMemberFormValues => {
+/** Valores de relleno mientras no hay una persona a la que abrir el formulario (modal cerrada o cargando). */
+export const EMPTY_MEMBER_PERSON: TMemberPersonValues = buildNewMemberPersonDefaults({
+  isHead: false,
+  relationship: DEFAULT_RELATIONSHIP,
+});
+
+/** Para editar: la persona con sus datos del censo (ya cargados) y su lugar en la familia. */
+export const buildEditMemberDefaults = (
+  member: IFamilyMemberResource,
+  family: IFamilyResource | null,
+  detailed: IUserDetailResource,
+): TMemberPersonValues => {
   const isHead = member.relationship === EFamilyRelationship.HEAD;
   return {
-    ...buildPersonDefaults(),
-    firstName: member.firstName,
-    paternalLastName: member.paternalLastName ?? "",
-    maternalLastName: member.maternalLastName ?? "",
-    phone: member.phone ?? EMPTY_PHONE,
-    userId: member.userId,
+    ...buildPersonDefaults(detailed),
     isHead,
     relationship: isHead ? DEFAULT_RELATIONSHIP : member.relationship,
-    familyChoice: "",
     contactName: family?.contact?.name ?? "",
     contactPhone: family?.contact?.phone ?? EMPTY_PHONE,
   };
-};
-
-/** La familia de la vivienda donde cae la persona, según lo elegido; `null` si va en una nueva. */
-export const findTargetFamily = (families: IFamilyResource[], familyChoice: string): IFamilyResource | null => {
-  if (familyChoice === NEW_FAMILY) {
-    return null;
-  }
-  if (familyChoice) {
-    return families.find((family) => family.id === familyChoice) ?? null;
-  }
-  return families.length === 1 ? (families[0] ?? null) : null;
 };
 
 export const headOf = (family: IFamilyResource | null): IFamilyMemberResource | undefined =>
@@ -135,29 +126,13 @@ const toContact = (name: string, phone: IPhone): IFamilyContact | null => {
   return trimmedName && number ? { name: trimmedName, phone: { countryPrefix: phone.countryPrefix, number } } : null;
 };
 
-/** Qué parte de la persona se manda: lo que todavía no se cargó no se manda, para no pisarlo. */
-export interface IMemberPayloadOptions {
-  canSendPerson: boolean;
-  canSendDetails: boolean;
-}
+/** El contacto alternativo del formulario; `null` si no se pide (tiene celular o no es jefe) o está vacío. */
+export const contactOf = (value: TMemberPersonValues): IFamilyContact | null =>
+  isContactAsked(value) ? toContact(value.contactName, value.contactPhone) : null;
 
-export const toMemberUpdatePayload = (
-  value: TMemberFormValues,
-  { canSendPerson, canSendDetails }: IMemberPayloadOptions,
-): IFamilyMemberUpdateInput => ({
-  person: canSendPerson
-    ? { ...toPersonPayload(value), ...(canSendDetails && { details: toDetailsPayload(value) }) }
-    : undefined,
+export const toMemberUpdatePayload = (value: TMemberPersonValues): IFamilyMemberUpdateInput => ({
+  person: { ...toPersonPayload(value), details: toDetailsPayload(value) },
   isHead: value.isHead,
   relationship: value.isHead ? undefined : (value.relationship as EFamilyRelationship),
-  contact: isContactAsked(value) ? toContact(value.contactName, value.contactPhone) : null,
-});
-
-export const toMemberCreatePayload = (
-  value: TMemberFormValues,
-  options: IMemberPayloadOptions,
-): IFamilyMemberSaveInput => ({
-  ...toMemberUpdatePayload(value, options),
-  userId: value.userId || undefined,
-  familyId: value.familyChoice || undefined,
+  contact: contactOf(value),
 });

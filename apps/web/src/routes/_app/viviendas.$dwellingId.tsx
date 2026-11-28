@@ -1,4 +1,4 @@
-import { Button, buttonVariants } from "@juveco/ui/components/button";
+import { buttonVariants } from "@juveco/ui/components/button";
 import { IconButton } from "@juveco/ui/components/icon-button";
 import { Skeleton } from "@juveco/ui/components/skeleton";
 import {
@@ -10,7 +10,7 @@ import {
 import { type IFamilyMemberResource, type IFamilyResource, familyNameOf } from "@juveco/shared/families";
 import { fullName } from "@juveco/shared/people";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { BrickWall, MapPin, Pencil, UserPlus, Zap } from "lucide-react";
+import { BrickWall, MapPin, Pencil, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import ConfirmModal from "@/common/components/confirm-modal";
@@ -29,34 +29,36 @@ import { useDeleteFamily } from "@/modules/dwellings/hooks/use-delete-family";
 import { useDeleteMember } from "@/modules/dwellings/hooks/use-delete-member";
 import { useGetDwelling } from "@/modules/dwellings/hooks/use-get-dwelling";
 import { headOf } from "@/modules/dwellings/utils/member-form";
-import { useListUsers } from "@/modules/users/hooks/use-list-users";
 
 export const Route = createFileRoute("/_app/viviendas/$dwellingId")({
   component: DwellingPage,
 });
 
+/* Los datos en 1 columna en celular, 2 en escritorio y 3 en pantallas anchas (cada par etiqueta · valor). */
+const DATA_LIST_COLUMNS =
+  "md:grid-cols-[repeat(2,max-content_minmax(0,1fr))] md:gap-x-8 xl:grid-cols-[repeat(3,max-content_minmax(0,1fr))]";
+
 /**
- * Detalle de una vivienda: sus datos y la lista de integrantes. Cada escritura (integrante o
- * familia) responde la vivienda completa y la pantalla se reemplaza, sin recargar.
+ * Detalle de una vivienda: sus datos a todo el ancho arriba y, debajo, los integrantes (tabla en
+ * escritorio, vista compacta en celular). Cada escritura (integrante o familia) responde la vivienda
+ * completa y la pantalla se reemplaza, sin recargar.
  */
 function DwellingPage() {
   const { dwellingId } = Route.useParams();
   const navigate = useNavigate();
   const GetDwelling = useGetDwelling();
-  const ListUsers = useListUsers();
   const DeleteFamily = useDeleteFamily();
   const DeleteMember = useDeleteMember();
 
   const showDwellingForm = useBoolean();
   const showMemberForm = useBoolean();
-  const [memberTarget, setMemberTarget] = useState<IFamilyMemberResource | undefined>();
+  const [memberTarget, setMemberTarget] = useState<IFamilyMemberResource | null>(null);
   const [removeMemberTarget, setRemoveMemberTarget] = useState<IFamilyMemberResource | null>(null);
   const [deleteFamilyTarget, setDeleteFamilyTarget] = useState<IFamilyResource | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
     GetDwelling.handler(dwellingId, controller.signal);
-    ListUsers.handler(controller.signal);
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dwellingId]);
@@ -66,7 +68,7 @@ function DwellingPage() {
   const goBack = () => navigate({ to: "/viviendas" });
 
   const openAddMember = () => {
-    setMemberTarget(undefined);
+    setMemberTarget(null);
     showMemberForm.on();
   };
 
@@ -75,11 +77,7 @@ function DwellingPage() {
     showMemberForm.on();
   };
 
-  /* Quien se acaba de crear o editar entra a la lista de búsqueda sin recargar la página. */
-  const handleSaved = (saved: IDwellingDetailResource) => {
-    GetDwelling.onReplace(saved);
-    ListUsers.handler();
-  };
+  const handleSaved = (saved: IDwellingDetailResource) => GetDwelling.onReplace(saved);
 
   const confirmDeleteFamily = async () => {
     if (!deleteFamilyTarget) {
@@ -122,26 +120,10 @@ function DwellingPage() {
           subtitle={dwelling && <NeighborhoodBadge neighborhood={dwelling.neighborhood} hasIcon={false} />}
           action={
             dwelling && (
-              /* Una sola acción principal (agregar integrante); editar, ícono con borde. En celular, ambos íconos. */
-              <div className="flex shrink-0 items-center gap-2">
-                <IconButton label="Editar vivienda" size="md" isBordered onClick={showDwellingForm.on}>
-                  <Pencil />
-                </IconButton>
-                <IconButton
-                  label="Agregar integrante"
-                  size="md"
-                  tone="primary"
-                  isFilled
-                  className="md:hidden"
-                  onClick={openAddMember}
-                >
-                  <UserPlus />
-                </IconButton>
-                <Button type="button" className="hidden md:inline-flex" onClick={openAddMember}>
-                  <UserPlus />
-                  Agregar integrante
-                </Button>
-              </div>
+              /* Agregar integrantes va en la fila «⊕» al pie de la tabla; aquí solo editar la vivienda. */
+              <IconButton label="Editar vivienda" size="md" isBordered onClick={showDwellingForm.on}>
+                <Pencil />
+              </IconButton>
             )
           }
         />
@@ -151,15 +133,15 @@ function DwellingPage() {
         <Loadable
           isLoading={isLoading}
           skeleton={
-            <div className="grid gap-4 lg:grid-cols-3">
-              <Skeleton className="h-52 w-full rounded-sm" />
-              <Skeleton className="h-52 w-full rounded-sm lg:col-span-2" />
+            <div className="space-y-4">
+              <Skeleton className="h-32 w-full rounded-sm" />
+              <Skeleton className="h-64 w-full rounded-sm" />
             </div>
           }
         >
           {dwelling && (
-            /* En escritorio, los datos a la izquierda y los integrantes a la derecha; en celular, uno debajo del otro. */
-            <div className="grid items-start gap-4 lg:grid-cols-3">
+            /* Los datos arriba y los integrantes debajo, los dos a todo el ancho. */
+            <div className="space-y-4">
               <DetailSection
                 title="Datos"
                 isBordered
@@ -172,7 +154,7 @@ function DwellingPage() {
                   )
                 }
               >
-                <DetailList>
+                <DetailList className={DATA_LIST_COLUMNS}>
                   <DetailRow icon={Zap} label="Medidor">
                     {dwelling.meterNumber}
                   </DetailRow>
@@ -188,14 +170,13 @@ function DwellingPage() {
                 )}
               </DetailSection>
 
-              <div className="lg:col-span-2">
-                <MemberList
-                  families={dwelling.families}
-                  onEditMember={openEditMember}
-                  onRemoveMember={setRemoveMemberTarget}
-                  onDeleteFamily={setDeleteFamilyTarget}
-                />
-              </div>
+              <MemberList
+                families={dwelling.families}
+                onEditMember={openEditMember}
+                onRemoveMember={setRemoveMemberTarget}
+                onDeleteFamily={setDeleteFamilyTarget}
+                onAddMember={openAddMember}
+              />
             </div>
           )}
         </Loadable>
@@ -212,7 +193,6 @@ function DwellingPage() {
         open={showMemberForm.active}
         dwelling={dwelling}
         member={memberTarget}
-        users={ListUsers.users}
         onSaved={handleSaved}
         onClose={showMemberForm.off}
       />

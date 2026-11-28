@@ -127,6 +127,8 @@ export type TPersonFormValues = z.input<typeof personFormSchema>;
 /** Lo que llega ya escrito al crear desde un buscador («Crear «Ana»»), o el último barrio. */
 export interface IPersonInitialValues {
   firstName?: string;
+  /** Un DNI ya escrito en el buscador. */
+  documentNumber?: string;
   neighborhoodId?: string;
   /** Ya separado en prefijo y número: «+51 987…» no puede quedar como «51987…». */
   phone?: IPhone;
@@ -182,6 +184,8 @@ export const buildPersonDefaults = (
   whatsappUsername: user?.whatsappUsername ?? "",
   note: user?.note ?? "",
   ...buildDetailsDefaults(user && "details" in user ? user.details : undefined),
+  documentNumber:
+    user && "details" in user ? (user.details.documentNumber ?? "") : (initialValues?.documentNumber ?? ""),
 });
 
 /** Cómo se muestra el WhatsApp en el formulario: un solo campo a la vez. */

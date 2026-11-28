@@ -6,9 +6,12 @@
 import type { INeighborhood } from "./neighborhoods";
 import type { IPersonInput, IPersonName } from "./people";
 import type { IPhone } from "./phones";
-import type { EUserCondition, IUserProfileInput } from "./user-profiles";
+import type { EGender, EUserCondition, IUserProfileInput } from "./user-profiles";
 
 export const FAMILY_CONTACT_NAME_MAX_LENGTH = 120;
+
+/** Cuántas personas caben en un solo «Agregar integrantes». */
+export const MEMBERS_BATCH_MAX = 20;
 
 /** En `familyId`: la persona va en una familia nueva de la vivienda. */
 export const NEW_FAMILY = "NEW";
@@ -19,6 +22,10 @@ export const FAMILY_NOT_CHOSEN_MESSAGE = "Elige a qué familia de la vivienda pe
 export const FAMILY_CONTACT_NAME_LENGTH_MESSAGE = "El nombre del contacto va hasta 120 letras.";
 export const FAMILY_CONTACT_NAME_REQUIRED_MESSAGE = "Escribe a quién pertenece ese número.";
 export const FAMILY_CONTACT_PHONE_REQUIRED_MESSAGE = "Escribe el número del contacto.";
+export const MEMBERS_BATCH_EMPTY_MESSAGE = "Agrega al menos un integrante.";
+export const MEMBERS_BATCH_TOO_MANY_MESSAGE = `Se pueden agregar hasta ${MEMBERS_BATCH_MAX} integrantes a la vez.`;
+export const MEMBERS_BATCH_DUPLICATE_MESSAGE = "Hay una persona repetida en la lista.";
+export const MEMBERS_BATCH_ONE_HEAD_MESSAGE = "Solo una persona puede ser jefe(a) de hogar.";
 
 /** El jefe no se quita ni se deja de marcar como jefe sin que otro tome su lugar. */
 export const headRemoveBlockedMessage = (name: string): string =>
@@ -89,6 +96,9 @@ export interface IFamilyMemberResource extends IPersonName {
   relationship: EFamilyRelationship;
   neighborhood: INeighborhood | null;
   phone: IPhone | null;
+  /** DNI; `null` si no tiene o no se sabe. */
+  documentNumber: string | null;
+  gender: EGender | null;
   /** «AAAA-MM-DD»; `null` si no se sabe. */
   birthDate: string | null;
   /** Años cumplidos hoy (Lima); `null` sin fecha de nacimiento. */
@@ -123,6 +133,23 @@ export interface IFamilyMemberSaveInput {
   /** Respecto al jefe; solo cuando no es jefe. */
   relationship?: EFamilyRelationship;
   /** Solo si es jefe y no tiene teléfono. */
+  contact: IFamilyContact | null;
+}
+
+/** Una fila de «Agregar integrantes»: una persona que ya existe y su lugar en la familia. */
+export interface IFamilyMembersBatchItem {
+  userId: string;
+  isHead: boolean;
+  /** Respecto al jefe; solo cuando no es jefe. */
+  relationship?: EFamilyRelationship;
+}
+
+/** Varias personas a la vez, en una sola escritura: o entran todas o no entra ninguna. */
+export interface IFamilyMembersBatchInput {
+  /** El id de una familia de la vivienda o `NEW_FAMILY`. Sin él: la única familia, o una nueva si no hay. */
+  familyId?: string;
+  members: IFamilyMembersBatchItem[];
+  /** Solo si el jefe de la lista no tiene teléfono. */
   contact: IFamilyContact | null;
 }
 

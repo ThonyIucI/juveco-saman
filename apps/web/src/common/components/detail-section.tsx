@@ -13,13 +13,22 @@ interface IDetailSectionProps {
   className?: string;
   /** Borde gris y radio chico en vez de sombra, como las cards de actividades (Thony, 2026-11-07). */
   isBordered?: boolean;
+  /** Sin relleno en el cuerpo: para una tabla o lista que llega de borde a borde. */
+  isFlush?: boolean;
 }
 
 /**
  * Card con título de un detalle («Cuenta», «Nota»…), como las de id-pos: el encabezado va
  * sobre un fondo más oscuro que el cuerpo.
  */
-export function DetailSection({ title, action, children, className, isBordered = false }: IDetailSectionProps) {
+export function DetailSection({
+  title,
+  action,
+  children,
+  className,
+  isBordered = false,
+  isFlush = false,
+}: IDetailSectionProps) {
   return (
     <section
       className={cn(
@@ -37,18 +46,23 @@ export function DetailSection({ title, action, children, className, isBordered =
         <h3 className="font-heading text-sm font-bold text-foreground">{title}</h3>
         {action}
       </div>
-      <div className="px-4 py-3">{children}</div>
+      <div className={isFlush ? undefined : "px-4 py-3"}>{children}</div>
     </section>
   );
 }
 
 /**
  * Las filas `DetailRow` de una sección. Comparten columnas (etiqueta · valor): todos los
- * valores arrancan en el mismo punto, sin importar lo largo de cada etiqueta.
+ * valores arrancan en el mismo punto, sin importar lo largo de cada etiqueta. Con `className`
+ * se reparte en más columnas (cada fila ocupa un par etiqueta · valor).
  */
-export function DetailList({ children }: { children: ReactNode }) {
+export function DetailList({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className="grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-3">{children}</div>
+    <div
+      className={cn("grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-3", className)}
+    >
+      {children}
+    </div>
   );
 }
 

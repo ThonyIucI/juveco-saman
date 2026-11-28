@@ -9,7 +9,7 @@ import {
 } from "@juveco/shared/phones";
 import { cn } from "@juveco/ui/lib/utils";
 import type { CountryCode } from "libphonenumber-js";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, type LucideIcon } from "lucide-react";
 import { type ChangeEvent, type ClipboardEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import ReactSelect, { components, type DropdownIndicatorProps } from "react-select";
 
@@ -28,6 +28,8 @@ interface IPhoneInputProps {
   onBlur?: () => void;
   isInvalid?: boolean;
   disabled?: boolean;
+  /** Ícono junto al número (p. ej. el teléfono), para que el campo se reconozca de un vistazo. */
+  icon?: LucideIcon;
 }
 
 const PHONE_PLACEHOLDER = "Ingresa el número";
@@ -70,7 +72,7 @@ function Chevron(props: DropdownIndicatorProps<ICountryOption, false>) {
  * El país va con react-select, como el resto de listas que crecen: búsqueda, teclado y
  * lector de pantalla resueltos.
  */
-export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, disabled }: IPhoneInputProps) {
+export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, disabled, icon: Icon }: IPhoneInputProps) {
   /*
     El país se guarda acá y no se deduce siempre del prefijo: +1 son EE. UU., Canadá y
     otros, y la bandera tiene que ser la que se eligió.
@@ -222,6 +224,8 @@ export default function PhoneInput({ id, value, onChange, onBlur, isInvalid, dis
       />
 
       <span aria-hidden className="my-3 w-px shrink-0 bg-border" />
+
+      {Icon && <Icon aria-hidden className="ml-3 size-4.5 shrink-0 self-center text-muted-foreground" />}
 
       <input
         ref={inputRef}

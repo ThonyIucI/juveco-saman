@@ -17,7 +17,7 @@ import {
 } from "@juveco/shared/families";
 import { type INeighborhood, neighborhoodOf } from "@juveco/shared/neighborhoods";
 import { fullName } from "@juveco/shared/people";
-import type { EUserCondition } from "@juveco/shared/user-profiles";
+import type { EGender, EUserCondition } from "@juveco/shared/user-profiles";
 import { eq } from "drizzle-orm";
 
 import { notFound } from "./errors";
@@ -58,6 +58,8 @@ interface IMemberRow {
   relationship: EFamilyRelationship;
   user: TUserRow;
   birthDate: string | null;
+  documentNumber: string | null;
+  gender: EGender | null;
 }
 
 /* Todos los integrantes (de una vivienda, o de todas si no se pasa `dwellingId`). */
@@ -69,6 +71,8 @@ const selectMemberRows = async (db: TDb, dwellingId?: string): Promise<IMemberRo
       relationship: familyMembers.relationship,
       user: users,
       birthDate: userProfiles.birthDate,
+      documentNumber: userProfiles.documentNumber,
+      gender: userProfiles.gender,
     })
     .from(familyMembers)
     .innerJoin(families, eq(families.id, familyMembers.familyId))
@@ -120,6 +124,8 @@ const toMemberResource = (
   relationship: row.relationship,
   neighborhood: neighborhoodOf(row.user.neighborhoodId),
   phone: toPhoneResource(row.user),
+  documentNumber: row.documentNumber,
+  gender: row.gender,
   birthDate: row.birthDate,
   age: row.birthDate ? ageOn(row.birthDate, today) : null,
   conditions: [...(conditions.get(row.user.id) ?? [])].sort(),

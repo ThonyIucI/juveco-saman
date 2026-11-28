@@ -16,7 +16,7 @@ import { and, eq } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 
 import { dwellingCodeOf } from "./dwelling-resources";
-import type { TCreateMemberBody, TUpdateMemberBody } from "./dwelling-input";
+import type { TCreateMemberBody, TCreateMembersBatchBody, TUpdateMemberBody } from "./dwelling-input";
 import { badRequest, conflict, notFound } from "./errors";
 import { newId } from "./ids";
 import { createPersonRecord, updatePersonRecord } from "./person-records";
@@ -164,6 +164,56 @@ export const addMember = async (db: TDb, dwelling: TDwellingRow, body: TCreateMe
     }
     throw error;
   }
+};
+
+/**
+ * Agrega a varias personas que ya existen, de una sola vez y en un único `db.batch`: o entran
+ * todas o no entra ninguna. Antes de escribir se revisa a cada una (existe y no integra otra
+ * familia), así el error nombra a quien lo causó. Mismas reglas de jefe y familia que `addMember`:
+ * en una familia nueva el jefe es quien lleva la estrella (o, sin estrella, la primera fila); en una
+ * existente, quien la lleva pasa a ser el jefe y el anterior queda como «Otro pariente».
+ */
+export const addMembers = async (db: TDb, dwelling: TDwellingRow, body: TCreateMembersBatchBody): Promise<void> => {
+  const family: TFamilyRow | null = await resolveTargetFamily(db, dwelling.id, body.familyId);
+
+  const userRows: TUserRow[] = [];
+  for (const member of body.members) {
+    const userRow = await findUserRow(db, member.userId);
+    await assertPersonFree(db, userRow.id);
+    userRows.push(userRow);
+  }
+
+  const flaggedIndex = body.members.findIndex((member) => member.isHead);
+  const headIndex = flaggedIndex >= 0 ? flaggedIndex : family === null ? 0 : -1;
+  const headUser = headIndex >= 0 ? userRows[headIndex] : undefined;
+  const contact = contactColumns(body.contact, headUser === undefined || hasPhone(headUser));
+  const familyId = family?.id ?? newId();
+  const statements: TStatement[] = [];
+
+  if (!family) {
+    statements.push(db.insert(families).values({ id: familyId, dwellingId: dwelling.id, ...contact }));
+  } else if (headUser) {
+    const formerHead = await findCurrentHead(db, family.id);
+    if (formerHead) {
+      statements.push(
+        db.update(familyMembers).set({ relationship: FORMER_HEAD_RELATIONSHIP }).where(eq(familyMembers.id, formerHead.id)),
+      );
+    }
+    statements.push(db.update(families).set(contact).where(eq(families.id, family.id)));
+  }
+
+  body.members.forEach((member, index) => {
+    statements.push(
+      db.insert(familyMembers).values({
+        id: newId(),
+        familyId,
+        userId: member.userId,
+        relationship: index === headIndex ? EFamilyRelationship.HEAD : (member.relationship ?? DEFAULT_RELATIONSHIP),
+      }),
+    );
+  });
+
+  await runBatch(db, statements);
 };
 
 const findMemberRow = async (db: TDb, dwellingId: string, memberId: string) => {

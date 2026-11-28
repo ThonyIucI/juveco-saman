@@ -12,10 +12,11 @@ import { isKnownNeighborhood, neighborhoodOf } from "@juveco/shared/neighborhood
 import { and, eq, max, ne, sql } from "drizzle-orm";
 import { Hono } from "hono";
 
-import { addMember, removeMember, updateMember } from "../lib/dwelling-members";
+import { addMember, addMembers, removeMember, updateMember } from "../lib/dwelling-members";
 import {
   createDwellingSchema,
   createMemberSchema,
+  createMembersBatchSchema,
   updateDwellingSchema,
   updateMemberSchema,
 } from "../lib/dwelling-input";
@@ -35,6 +36,7 @@ export const DWELLING_ROUTES = {
   DWELLING: "/dwellings/:id",
   FAMILY: "/dwellings/:id/families/:familyId",
   MEMBERS: "/dwellings/:id/members",
+  MEMBERS_BATCH: "/dwellings/:id/members/batch",
   MEMBER: "/dwellings/:id/members/:memberId",
 } as const;
 
@@ -178,6 +180,15 @@ export const dwellingRoutes = new Hono<TAppEnv>()
     const db = createDb();
     const dwelling = await findDwellingRow(db, context.req.param("id"));
     await addMember(db, dwelling, context.req.valid("json"));
+
+    return ok(context, await findDwellingDetail(db, dwelling.id), 201);
+  })
+
+  /* Varias personas a la vez, atómico: si una ya integra otra familia, no se guarda ninguna. */
+  .post(DWELLING_ROUTES.MEMBERS_BATCH, requireAuth, validateJson(createMembersBatchSchema), async (context) => {
+    const db = createDb();
+    const dwelling = await findDwellingRow(db, context.req.param("id"));
+    await addMembers(db, dwelling, context.req.valid("json"));
 
     return ok(context, await findDwellingDetail(db, dwelling.id), 201);
   })

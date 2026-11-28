@@ -54,6 +54,11 @@ Aprobado por Thony el 2026-11-28.
       - Una estrellita marca «Es jefe(a) de hogar».
       - La familia se crea sola con el primer integrante. Una segunda familia se elige solo si hace falta, con un enlace discreto.
     - Desaparece el formulario «Agregar familia».
+15. **Ajuste de integrantes** (Thony, 2026-11-28; manda sobre la 14 donde choquen):
+    - **Detalle:** «Datos» a todo el ancho arriba. Debajo, «Integrantes» como tabla en escritorio y vista compacta en celular.
+    - **Alta:** «Agregar integrantes» es una lista repetible. Cada fila tiene su buscador por DNI, que crea a la persona si no existe, más parentesco y ⭐. Se guarda todo junto.
+    - **Formulario de persona** por pasos, con el DNI primero: DNI → Principal → Contacto → Prioridad. El género va como grupo de botones.
+    - **Autocompletar con DNI:** se deja el punto preparado. El proveedor (cuenta propia de consulta RENIEC) se conecta después; no se usa el gateway de id-pos.
 13. **Nuevo orden de trabajo** (el ítem creció; se pasa del tope de 4 slices):
     - **2 (ajuste):** diseño, pasos 1–3 sin fotos, mapa y material.
     - **2b:** formulario público con solicitudes y revisión.
