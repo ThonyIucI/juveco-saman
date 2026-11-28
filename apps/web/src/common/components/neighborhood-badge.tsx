@@ -22,7 +22,7 @@ const NEIGHBORHOOD_COLOR_CLASS: Record<string, string> = {
 
 interface INeighborhoodBadgeProps {
   /** `null`: «Sin barrio» en gris. */
-  neighborhood: INeighborhood | null;
+  neighborhood: Pick<INeighborhood, "id" | "name"> | null;
   /** El globito de mapa va solo en las cards; en el select de barrio, sin él (Thony, 2026-11-07). */
   hasIcon?: boolean;
 }

@@ -42,3 +42,11 @@ export const addMonths = (iso: string, months: number): string => {
 /** Días de `from` a `to`: negativo si `to` ya pasó. */
 export const daysBetween = (from: string, to: string): number =>
   Math.round((toUtc(to).getTime() - toUtc(from).getTime()) / MS_PER_DAY);
+
+/** Años cumplidos el día `today` por quien nació el `birthDate` (ambas «AAAA-MM-DD»). */
+export const ageOn = (birthDate: string, today: string): number => {
+  const [birthYear, birthMonth, birthDay] = birthDate.split("-").map(Number) as [number, number, number];
+  const [year, month, day] = today.split("-").map(Number) as [number, number, number];
+  const hadBirthday = month > birthMonth || (month === birthMonth && day >= birthDay);
+  return year - birthYear - (hadBirthday ? 0 : 1);
+};

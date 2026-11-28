@@ -16,6 +16,7 @@ import { activityRoutes } from "./routes/activities";
 import { activityFinanceRoutes } from "./routes/activity-finances";
 import { activityIncomeRoutes } from "./routes/activity-incomes";
 import { activityTeamRoutes } from "./routes/activity-teams";
+import { dwellingRoutes } from "./routes/dwellings";
 import { healthRoutes } from "./routes/health";
 import { internalRoutes } from "./routes/internal";
 import { meRoutes } from "./routes/me";
@@ -69,6 +70,7 @@ app
   .route("/", activityFinanceRoutes)
   .route("/", activityIncomeRoutes)
   .route("/", activityTeamRoutes)
+  .route("/", dwellingRoutes)
   .route("/", publicRoutes)
   .route("/", internalRoutes);
 

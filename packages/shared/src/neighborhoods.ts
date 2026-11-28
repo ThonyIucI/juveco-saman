@@ -8,6 +8,8 @@
 export interface INeighborhood {
   id: string;
   name: string;
+  /** Iniciales para el código de vivienda («SR» → «SR-0001»). Solo en la constante, no en la base. */
+  prefix: string;
 }
 
 export const NEIGHBORHOOD_IDS = {
@@ -20,11 +22,11 @@ export const NEIGHBORHOOD_IDS = {
 
 /** En el orden en que se muestran en los selects. */
 export const NEIGHBORHOODS: readonly INeighborhood[] = [
-  { id: NEIGHBORHOOD_IDS.SANTA_ROSA, name: "Santa Rosa" },
-  { id: NEIGHBORHOOD_IDS.RAMON_CASTILLA, name: "Ramón Castilla" },
-  { id: NEIGHBORHOOD_IDS.MARIA_AUXILIADORA, name: "María Auxiliadora" },
-  { id: NEIGHBORHOOD_IDS.EL_PATIO, name: "El Patio" },
-  { id: NEIGHBORHOOD_IDS.NUEVA_ESPERANZA, name: "Nueva Esperanza" },
+  { id: NEIGHBORHOOD_IDS.SANTA_ROSA, name: "Santa Rosa", prefix: "SR" },
+  { id: NEIGHBORHOOD_IDS.RAMON_CASTILLA, name: "Ramón Castilla", prefix: "RC" },
+  { id: NEIGHBORHOOD_IDS.MARIA_AUXILIADORA, name: "María Auxiliadora", prefix: "MA" },
+  { id: NEIGHBORHOOD_IDS.EL_PATIO, name: "El Patio", prefix: "EP" },
+  { id: NEIGHBORHOOD_IDS.NUEVA_ESPERANZA, name: "Nueva Esperanza", prefix: "NE" },
 ];
 
 const NEIGHBORHOODS_BY_ID = new Map(NEIGHBORHOODS.map((neighborhood) => [neighborhood.id, neighborhood]));

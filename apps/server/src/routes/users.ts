@@ -2,6 +2,7 @@ import { createDb } from "@juveco/db";
 import { authUsers } from "@juveco/db/schema/auth";
 import { activityItems } from "@juveco/db/schema/activity-items";
 import { activityPrizes } from "@juveco/db/schema/activity-prizes";
+import { familyMembers } from "@juveco/db/schema/families";
 import { userProfiles } from "@juveco/db/schema/user-profiles";
 import { users } from "@juveco/db/schema/users";
 import { isIsoDate } from "@juveco/shared/dates";
@@ -380,6 +381,14 @@ export const userRoutes = new Hono<TAppEnv>()
       .get();
     if (donatedPrize) {
       throw conflict(`«${fullName(current.user)}» donó un premio: primero cambia el donante o elimina ese premio.`);
+    }
+    const familyMember = await db
+      .select({ id: familyMembers.id })
+      .from(familyMembers)
+      .where(eq(familyMembers.userId, id))
+      .get();
+    if (familyMember) {
+      throw conflict(`«${fullName(current.user)}» integra una familia del padrón: primero quítala de su familia.`);
     }
     await db.delete(users).where(eq(users.id, id));
 

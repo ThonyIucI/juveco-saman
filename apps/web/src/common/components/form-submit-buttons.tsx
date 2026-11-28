@@ -8,6 +8,8 @@ interface IFormSubmitButtonsProps {
   label: string;
   /** Solo al crear: muestra «Crear y seguir creando», que guarda y deja el formulario abierto. */
   onSubmitAndContinue?: () => void;
+  /** Texto del botón de «seguir»; por defecto «Crear y seguir creando». */
+  continueLabel?: string;
 }
 
 /**
@@ -19,6 +21,7 @@ export default function FormSubmitButtons({
   isSubmitting,
   label,
   onSubmitAndContinue,
+  continueLabel = "Crear y seguir creando",
 }: IFormSubmitButtonsProps) {
   return (
     <>
@@ -33,7 +36,7 @@ export default function FormSubmitButtons({
             }
           }}
         >
-          Crear y seguir creando
+          {continueLabel}
         </Button>
       )}
       {/* Ancho mínimo: un «Crear» corto no queda como un botón angosto (Thony, 2026-11-09). */}

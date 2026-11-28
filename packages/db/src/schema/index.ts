@@ -6,6 +6,8 @@ export * from "./activity-prizes";
 export * from "./activity-items";
 export * from "./activity-teams";
 export * from "./auth";
+export * from "./dwellings";
+export * from "./families";
 export * from "./neighborhoods";
 export * from "./user-profiles";
 export * from "./projects";
