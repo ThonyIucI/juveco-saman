@@ -199,10 +199,28 @@ export default function MemberFormModal({ open, dwelling, member, onSaved, onClo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentMatch, isEdit]);
 
+  /*
+    Se cambió el DNI de alguien ya registrado: se desvincula y se limpian sus datos (menos el DNI
+    nuevo y su lugar en la familia), para que entren los del nuevo DNI.
+  */
   useEffect(() => {
-    if (linked && documentNumber !== (linked.details.documentNumber ?? "")) {
-      setLinked(null);
+    if (!linked || documentNumber === (linked.details.documentNumber ?? "")) {
+      return;
     }
+    const current = form.state.values;
+    setLinked(null);
+    form.reset(
+      {
+        ...EMPTY_MEMBER_PERSON,
+        documentNumber,
+        isHead: current.isHead,
+        relationship: current.relationship,
+        contactName: current.contactName,
+        contactPhone: current.contactPhone,
+      },
+      { keepDefaultValues: true },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentNumber, linked]);
 
   /* Al pasar la jefatura a otra persona, el jefe anterior queda como «Otro pariente»: se avisa. */
