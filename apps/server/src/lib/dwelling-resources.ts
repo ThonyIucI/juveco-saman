@@ -151,7 +151,6 @@ const toDwellingResource = (row: TDwellingRow, summary: IDwellingSummary): IDwel
   status: row.status,
   wallMaterial: row.wallMaterial,
   wallMaterialOther: row.wallMaterialOther,
-  observation: row.observation,
   note: row.note,
   createdAt: row.createdAt.toISOString(),
   ...summary,
@@ -192,7 +191,6 @@ export const findDwellingDetail = async (db: TDb, id: string): Promise<IDwelling
     id: family.id,
     dwellingId: family.dwellingId,
     contact: toContact(family),
-    note: family.note,
     members: (membersByFamily.get(family.id) ?? [])
       .sort(compareMembers)
       .map((member) => toMemberResource(member, conditions, today)),

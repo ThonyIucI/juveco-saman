@@ -119,7 +119,6 @@ export interface IDwellingInput {
   wallMaterial: EWallMaterial | null;
   /** Solo con material «Otro»: qué material es (máx. 120). */
   wallMaterialOther: string | null;
-  observation: string | null;
   note: string | null;
 }
 

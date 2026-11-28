@@ -5,15 +5,14 @@ import type {
   IDwellingResource,
   IMeterMatchResource,
 } from "@juveco/shared/dwellings";
-import type { IFamilyCreateInput, IFamilyMemberInput, IFamilyUpdateInput } from "@juveco/shared/families";
+import type { IFamilyMemberSaveInput, IFamilyMemberUpdateInput } from "@juveco/shared/families";
 
 import { apiRequest } from "@/lib/api";
 
 const DWELLINGS_PATH = "/dwellings";
 const dwellingPath = (dwellingId: string) => `${DWELLINGS_PATH}/${dwellingId}`;
-const familiesPath = (dwellingId: string) => `${dwellingPath(dwellingId)}/families`;
-const familyPath = (dwellingId: string, familyId: string) => `${familiesPath(dwellingId)}/${familyId}`;
-const membersPath = (dwellingId: string, familyId: string) => `${familyPath(dwellingId, familyId)}/members`;
+const familyPath = (dwellingId: string, familyId: string) => `${dwellingPath(dwellingId)}/families/${familyId}`;
+const membersPath = (dwellingId: string) => `${dwellingPath(dwellingId)}/members`;
 
 /** Las viviendas con su resumen, de la más nueva a la más vieja. */
 export const listDwellingsRequest = (signal?: AbortSignal) =>
@@ -42,29 +41,15 @@ export const updateDwellingRequest = (dwellingId: string, payload: IDwellingInpu
 export const deleteDwellingRequest = (dwellingId: string) =>
   apiRequest<{ id: string }>(dwellingPath(dwellingId), { method: "DELETE" });
 
-/* Las escrituras de familias e integrantes responden la vivienda completa, ya al día. */
-export const createFamilyRequest = (dwellingId: string, payload: IFamilyCreateInput) =>
-  apiRequest<IDwellingDetailResource>(familiesPath(dwellingId), { method: "POST", body: payload });
+/* Las escrituras de integrantes y familias responden la vivienda completa, ya al día. */
+export const createMemberRequest = (dwellingId: string, payload: IFamilyMemberSaveInput) =>
+  apiRequest<IDwellingDetailResource>(membersPath(dwellingId), { method: "POST", body: payload });
 
-export const updateFamilyRequest = (dwellingId: string, familyId: string, payload: IFamilyUpdateInput) =>
-  apiRequest<IDwellingDetailResource>(familyPath(dwellingId, familyId), { method: "PATCH", body: payload });
+export const updateMemberRequest = (dwellingId: string, memberId: string, payload: IFamilyMemberUpdateInput) =>
+  apiRequest<IDwellingDetailResource>(`${membersPath(dwellingId)}/${memberId}`, { method: "PATCH", body: payload });
+
+export const deleteMemberRequest = (dwellingId: string, memberId: string) =>
+  apiRequest<IDwellingDetailResource>(`${membersPath(dwellingId)}/${memberId}`, { method: "DELETE" });
 
 export const deleteFamilyRequest = (dwellingId: string, familyId: string) =>
   apiRequest<IDwellingDetailResource>(familyPath(dwellingId, familyId), { method: "DELETE" });
-
-export const createMemberRequest = (dwellingId: string, familyId: string, payload: IFamilyMemberInput) =>
-  apiRequest<IDwellingDetailResource>(membersPath(dwellingId, familyId), { method: "POST", body: payload });
-
-export const updateMemberRequest = (
-  dwellingId: string,
-  familyId: string,
-  memberId: string,
-  payload: Pick<IFamilyMemberInput, "relationship">,
-) =>
-  apiRequest<IDwellingDetailResource>(`${membersPath(dwellingId, familyId)}/${memberId}`, {
-    method: "PATCH",
-    body: payload,
-  });
-
-export const deleteMemberRequest = (dwellingId: string, familyId: string, memberId: string) =>
-  apiRequest<IDwellingDetailResource>(`${membersPath(dwellingId, familyId)}/${memberId}`, { method: "DELETE" });

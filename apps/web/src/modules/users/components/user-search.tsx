@@ -1,7 +1,7 @@
 import { IconButton } from "@juveco/ui/components/icon-button";
 import type { IUserResource } from "@juveco/shared/users";
 import { fullName } from "@juveco/shared/people";
-import { DEFAULT_COUNTRY, DEFAULT_COUNTRY_PREFIX, onlyDigits, parseFullPhone } from "@juveco/shared/phones";
+import { DEFAULT_COUNTRY, DEFAULT_COUNTRY_PREFIX, type IPhone, onlyDigits, parseFullPhone } from "@juveco/shared/phones";
 import { Plus, UserRound, X } from "lucide-react";
 import { type KeyboardEvent, useId, useState } from "react";
 
@@ -17,6 +17,14 @@ import UserFormModal from "./user-form-modal";
 /* Más resultados no ayudan: si no está entre los primeros, se escribe más. */
 const MAX_RESULTS = 6;
 
+/* «+51 987 654 321» se separa en prefijo y número, como al pegarlo en el campo. */
+const phoneOfTyped = (typed: string): IPhone => {
+  const parsed = parseFullPhone(typed, DEFAULT_COUNTRY);
+  return parsed
+    ? { countryPrefix: parsed.countryPrefix, number: parsed.number }
+    : { countryPrefix: DEFAULT_COUNTRY_PREFIX, number: onlyDigits(typed) };
+};
+
 interface IUserSearchProps {
   /** Para que un `<Label htmlFor>` apunte al buscador. */
   id?: string;
@@ -25,8 +33,13 @@ interface IUserSearchProps {
   value: IUserResource | null;
   isInvalid?: boolean;
   onChange: (user: IUserResource | null) => void;
-  /** Uno creado o editado desde acá: la lista de usuarios se entera. */
-  onCreated: (user: IUserResource) => void;
+  /** Uno creado o editado desde acá: la lista de usuarios se entera. Sin `onStartCreate`, es obligatorio. */
+  onCreated?: (user: IUserResource) => void;
+  /**
+   * Con él, la persona nueva se arma en el formulario de quien llama: «Crear «…»» le pasa lo
+   * escrito en vez de abrir la modal de Usuarios, y la card elegida no se edita desde acá.
+   */
+  onStartCreate?: (values: IPersonInitialValues) => void;
 }
 
 /**
@@ -44,6 +57,7 @@ export default function UserSearch({
   isInvalid,
   onChange,
   onCreated,
+  onStartCreate,
 }: IUserSearchProps) {
   const listId = useId();
   const [term, setTerm] = useState("");
@@ -58,11 +72,11 @@ export default function UserSearch({
     La modal de edición va también cuando hay alguien elegido. Al guardar, la lista se entera
     y la card se actualiza: el elegido se busca por id en esa lista.
   */
-  const editModal = (
+  const editModal = onStartCreate ? null : (
     <UserFormModal
       open={editTarget !== null}
       user={editTarget ?? undefined}
-      onSaved={onCreated}
+      onSaved={(saved) => onCreated?.(saved)}
       onClose={() => setEditTarget(null)}
     />
   );
@@ -74,18 +88,22 @@ export default function UserSearch({
       <div className="flex items-center gap-3 rounded-lg bg-primary/8 px-3 py-2 ring-1 ring-primary/20">
         {/* `div` con rol de botón: adentro van párrafos, que un `<button>` no admite. */}
         <div
-          role="button"
-          tabIndex={0}
-          title="Editar usuario"
-          aria-label={`Editar a ${fullName(value)}`}
-          onClick={() => setEditTarget(value)}
+          role={onStartCreate ? undefined : "button"}
+          tabIndex={onStartCreate ? undefined : 0}
+          title={onStartCreate ? undefined : "Editar usuario"}
+          aria-label={onStartCreate ? undefined : `Editar a ${fullName(value)}`}
+          onClick={onStartCreate ? undefined : () => setEditTarget(value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
+            if (!onStartCreate && (event.key === "Enter" || event.key === " ")) {
               event.preventDefault();
               setEditTarget(value);
             }
           }}
-          className="-m-1 flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-md p-1 text-left outline-none hover:bg-primary/5 focus-visible:ring-4 focus-visible:ring-ring/30"
+          className={
+            onStartCreate
+              ? "flex min-w-0 flex-1 items-center gap-3"
+              : "-m-1 flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-md p-1 text-left outline-none hover:bg-primary/5 focus-visible:ring-4 focus-visible:ring-ring/30"
+          }
         >
         <InitialsAvatar name={fullName(value)} color={avatarColorOf(fullName(value))} />
         <div className="min-w-0 flex-1">
@@ -124,18 +142,14 @@ export default function UserSearch({
 
   const openCreate = () => {
     const typed = term.trim();
-    if (!looksLikePhone(typed)) {
-      setCreateValues({ firstName: typed });
-    } else {
-      /* «+51 987 654 321» se separa en prefijo y número, como al pegarlo en el campo. */
-      const parsed = parseFullPhone(typed, DEFAULT_COUNTRY);
-      setCreateValues({
-        phone: parsed
-          ? { countryPrefix: parsed.countryPrefix, number: parsed.number }
-          : { countryPrefix: DEFAULT_COUNTRY_PREFIX, number: onlyDigits(typed) },
-      });
-    }
+    const values: IPersonInitialValues = looksLikePhone(typed) ? { phone: phoneOfTyped(typed) } : { firstName: typed };
     setIsOpen(false);
+    if (onStartCreate) {
+      setTerm("");
+      onStartCreate(values);
+      return;
+    }
+    setCreateValues(values);
   };
 
   /* Enter elige el primero; si no hay ninguno, abre crear. */
@@ -224,15 +238,17 @@ export default function UserSearch({
         )}
       </div>
 
+      {!onStartCreate && (
       <UserFormModal
         open={createValues !== null}
         initialValues={createValues ?? undefined}
         onSaved={(created) => {
-          onCreated(created);
+          onCreated?.(created);
           choose(created);
         }}
         onClose={() => setCreateValues(null)}
       />
+      )}
     </>
   );
 }

@@ -29,8 +29,6 @@ export const dwellings = sqliteTable(
     /* Solo con material OTHER: qué material es; máx. 120 en la validación. */
     wallMaterialOther: text("wall_material_other"),
     /* Máx. 500. */
-    observation: text("observation"),
-    /* Máx. 500. */
     note: text("note"),
     ...timestamps(),
   },

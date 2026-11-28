@@ -9,7 +9,7 @@ export const dwellingCountsLabel = (dwelling: Pick<IDwellingResource, "familyCou
 
 /** Los jefes en una línea; sin familias, un texto que lo dice. */
 export const headNamesLabel = (dwelling: Pick<IDwellingResource, "headNames">): string =>
-  dwelling.headNames.length > 0 ? dwelling.headNames.join(", ") : "Sin familias todavía";
+  dwelling.headNames.length > 0 ? dwelling.headNames.join(", ") : "Sin familias";
 
 /** «12 años», «1 año», «Menos de 1 año»; `null` si no se sabe. */
 export const ageLabel = (age: number | null): string | null => {

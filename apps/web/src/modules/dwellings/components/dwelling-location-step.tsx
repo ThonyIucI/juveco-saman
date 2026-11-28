@@ -13,8 +13,9 @@ import type { IFlyTarget, TMapLayer } from "./dwelling-location-map";
 const DwellingLocationMap = lazy(() => import("./dwelling-location-map"));
 
 const LAYER_OPTIONS: readonly { value: TMapLayer; label: string }[] = [
-  { value: "satellite", label: "Satélite" },
+  /* Calles primero: sus mosaicos pesan menos y cargan más rápido que el satélite. */
   { value: "streets", label: "Calles" },
+  { value: "satellite", label: "Satélite" },
 ];
 
 const formatCoordinate = (value: number) => value.toFixed(DWELLING_COORDINATE_DECIMALS);
@@ -30,7 +31,7 @@ interface IDwellingLocationStepProps {
  */
 export default function DwellingLocationStep({ position, onChange }: IDwellingLocationStepProps) {
   const CurrentPosition = useCurrentPosition();
-  const [layer, setLayer] = useState<TMapLayer>("satellite");
+  const [layer, setLayer] = useState<TMapLayer>("streets");
   const [flyTarget, setFlyTarget] = useState<IFlyTarget | null>(null);
 
   const locateMe = async () => {

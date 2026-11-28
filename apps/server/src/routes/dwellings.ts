@@ -1,7 +1,6 @@
 import { createDb } from "@juveco/db";
 import { dwellings } from "@juveco/db/schema/dwellings";
 import { families, familyMembers } from "@juveco/db/schema/families";
-import { users } from "@juveco/db/schema/users";
 import {
   DWELLING_NEIGHBORHOOD_REQUIRED_MESSAGE,
   type IMeterMatchResource,
@@ -9,34 +8,21 @@ import {
   dwellingHasFamiliesMessage,
   formatDwellingCode,
 } from "@juveco/shared/dwellings";
-import {
-  EFamilyRelationship,
-  FAMILY_HEAD_LOCKED_MESSAGE,
-  personInOtherFamilyMessage,
-} from "@juveco/shared/families";
 import { isKnownNeighborhood, neighborhoodOf } from "@juveco/shared/neighborhoods";
-import { fullName } from "@juveco/shared/people";
 import { and, eq, max, ne, sql } from "drizzle-orm";
 import { Hono } from "hono";
 
+import { addMember, removeMember, updateMember } from "../lib/dwelling-members";
 import {
   createDwellingSchema,
-  createFamilySchema,
-  familyMemberSchema,
+  createMemberSchema,
   updateDwellingSchema,
-  updateFamilyMemberSchema,
-  updateFamilySchema,
+  updateMemberSchema,
 } from "../lib/dwelling-input";
-import {
-  dwellingCodeOf,
-  findDwellingDetail,
-  findDwellingRow,
-  listDwellings,
-} from "../lib/dwelling-resources";
+import { dwellingCodeOf, findDwellingDetail, findDwellingRow, listDwellings } from "../lib/dwelling-resources";
 import type { TAppEnv } from "../lib/app-env";
-import { badRequest, conflict, forbidden, notFound } from "../lib/errors";
+import { badRequest, conflict, notFound } from "../lib/errors";
 import { newId } from "../lib/ids";
-import { toPhoneColumns } from "../lib/phone-input";
 import { ok } from "../lib/response";
 import { validateJson } from "../lib/validator";
 import { requireAuth } from "../middleware/require-role";
@@ -47,15 +33,12 @@ export const DWELLING_ROUTES = {
   NEXT_CODE: "/dwellings/next-code",
   METER_MATCHES: "/dwellings/meter-matches",
   DWELLING: "/dwellings/:id",
-  FAMILIES: "/dwellings/:id/families",
   FAMILY: "/dwellings/:id/families/:familyId",
-  MEMBERS: "/dwellings/:id/families/:familyId/members",
-  MEMBER: "/dwellings/:id/families/:familyId/members/:memberId",
+  MEMBERS: "/dwellings/:id/members",
+  MEMBER: "/dwellings/:id/members/:memberId",
 } as const;
 
 const FAMILY_NOT_FOUND = "No encontramos esa familia.";
-const MEMBER_NOT_FOUND = "No encontramos a ese integrante.";
-const PERSON_NOT_FOUND = "No encontramos a esa persona.";
 const METER_QUERY_MESSAGE = "Indica el número de medidor.";
 const MAX_METER_MATCHES = 5;
 
@@ -91,61 +74,6 @@ const findFamilyRow = async (db: TDb, dwellingId: string, familyId: string) => {
   }
   return row;
 };
-
-const findMemberRow = async (db: TDb, familyId: string, memberId: string) => {
-  const row = await db
-    .select()
-    .from(familyMembers)
-    .where(and(eq(familyMembers.id, memberId), eq(familyMembers.familyId, familyId)))
-    .get();
-  if (!row) {
-    throw notFound(MEMBER_NOT_FOUND);
-  }
-  return row;
-};
-
-const findUserRow = async (db: TDb, id: string) => {
-  const row = await db.select().from(users).where(eq(users.id, id)).get();
-  if (!row) {
-    throw badRequest(PERSON_NOT_FOUND);
-  }
-  return row;
-};
-
-/* Una persona integra una sola familia: si ya está en una, se dice en qué vivienda. */
-const assertPersonFree = async (db: TDb, userId: string) => {
-  const found = await db
-    .select({ user: users, dwelling: dwellings })
-    .from(familyMembers)
-    .innerJoin(families, eq(families.id, familyMembers.familyId))
-    .innerJoin(dwellings, eq(dwellings.id, families.dwellingId))
-    .innerJoin(users, eq(users.id, familyMembers.userId))
-    .where(eq(familyMembers.userId, userId))
-    .get();
-  if (found) {
-    throw conflict(personInOtherFamilyMessage(fullName(found.user), dwellingCodeOf(found.dwelling)));
-  }
-};
-
-/*
-  El contacto alternativo solo se guarda si el jefe no tiene teléfono: con teléfono, el jefe
-  ya es el contacto y lo que llegue se ignora.
-*/
-const contactColumns = (
-  contact: { name: string; phone: Parameters<typeof toPhoneColumns>[0] } | null,
-  headHasPhone: boolean,
-) => {
-  const effective = headHasPhone ? null : contact;
-  const phone = toPhoneColumns(effective?.phone ?? null);
-  return {
-    contactName: effective?.name ?? null,
-    contactCountryPrefix: phone.countryPrefix,
-    contactPhone: phone.phone,
-  };
-};
-
-const hasPhone = (user: { countryPrefix: string | null; phone: string | null }): boolean =>
-  Boolean(user.countryPrefix && user.phone);
 
 /**
  * Viviendas, sus familias y los integrantes (empadronamiento). Solo administradores. Cada
@@ -232,53 +160,6 @@ export const dwellingRoutes = new Hono<TAppEnv>()
     return ok(context, { id: current.id });
   })
 
-  /* La familia y su jefe juntos: D1 aplica el `batch` entero o nada. */
-  .post(DWELLING_ROUTES.FAMILIES, requireAuth, validateJson(createFamilySchema), async (context) => {
-    const body = context.req.valid("json");
-    const db = createDb();
-    const dwelling = await findDwellingRow(db, context.req.param("id"));
-    const head = await findUserRow(db, body.headId);
-    await assertPersonFree(db, head.id);
-
-    const familyId = newId();
-    await db.batch([
-      db.insert(families).values({
-        id: familyId,
-        dwellingId: dwelling.id,
-        ...contactColumns(body.contact, hasPhone(head)),
-        note: body.note,
-      }),
-      db.insert(familyMembers).values({
-        id: newId(),
-        familyId,
-        userId: head.id,
-        relationship: EFamilyRelationship.HEAD,
-      }),
-    ]);
-
-    return ok(context, await findDwellingDetail(db, dwelling.id), 201);
-  })
-
-  .patch(DWELLING_ROUTES.FAMILY, requireAuth, validateJson(updateFamilySchema), async (context) => {
-    const body = context.req.valid("json");
-    const db = createDb();
-    const dwelling = await findDwellingRow(db, context.req.param("id"));
-    const family = await findFamilyRow(db, dwelling.id, context.req.param("familyId"));
-    const head = await db
-      .select({ user: users })
-      .from(familyMembers)
-      .innerJoin(users, eq(users.id, familyMembers.userId))
-      .where(and(eq(familyMembers.familyId, family.id), eq(familyMembers.relationship, EFamilyRelationship.HEAD)))
-      .get();
-
-    await db
-      .update(families)
-      .set({ ...contactColumns(body.contact, head ? hasPhone(head.user) : false), note: body.note })
-      .where(eq(families.id, family.id));
-
-    return ok(context, await findDwellingDetail(db, dwelling.id));
-  })
-
   /* Borra la familia y sus integrantes (nunca a las personas). */
   .delete(DWELLING_ROUTES.FAMILY, requireAuth, async (context) => {
     const db = createDb();
@@ -292,39 +173,19 @@ export const dwellingRoutes = new Hono<TAppEnv>()
     return ok(context, await findDwellingDetail(db, dwelling.id));
   })
 
-  .post(DWELLING_ROUTES.MEMBERS, requireAuth, validateJson(familyMemberSchema), async (context) => {
-    const body = context.req.valid("json");
+  /* La persona, su familia y su jefatura en una sola escritura; la familia se crea sola si hace falta. */
+  .post(DWELLING_ROUTES.MEMBERS, requireAuth, validateJson(createMemberSchema), async (context) => {
     const db = createDb();
     const dwelling = await findDwellingRow(db, context.req.param("id"));
-    const family = await findFamilyRow(db, dwelling.id, context.req.param("familyId"));
-    const person = await findUserRow(db, body.userId);
-    await assertPersonFree(db, person.id);
-
-    await db.insert(familyMembers).values({
-      id: newId(),
-      familyId: family.id,
-      userId: person.id,
-      relationship: body.relationship,
-    });
+    await addMember(db, dwelling, context.req.valid("json"));
 
     return ok(context, await findDwellingDetail(db, dwelling.id), 201);
   })
 
-  /* Solo cambia el parentesco; el jefe no se toca. */
-  .patch(DWELLING_ROUTES.MEMBER, requireAuth, validateJson(updateFamilyMemberSchema), async (context) => {
-    const body = context.req.valid("json");
+  .patch(DWELLING_ROUTES.MEMBER, requireAuth, validateJson(updateMemberSchema), async (context) => {
     const db = createDb();
     const dwelling = await findDwellingRow(db, context.req.param("id"));
-    const family = await findFamilyRow(db, dwelling.id, context.req.param("familyId"));
-    const member = await findMemberRow(db, family.id, context.req.param("memberId"));
-    if (member.relationship === EFamilyRelationship.HEAD) {
-      throw forbidden(FAMILY_HEAD_LOCKED_MESSAGE);
-    }
-
-    await db
-      .update(familyMembers)
-      .set({ relationship: body.relationship })
-      .where(eq(familyMembers.id, member.id));
+    await updateMember(db, dwelling, context.req.param("memberId"), context.req.valid("json"));
 
     return ok(context, await findDwellingDetail(db, dwelling.id));
   })
@@ -332,12 +193,7 @@ export const dwellingRoutes = new Hono<TAppEnv>()
   .delete(DWELLING_ROUTES.MEMBER, requireAuth, async (context) => {
     const db = createDb();
     const dwelling = await findDwellingRow(db, context.req.param("id"));
-    const family = await findFamilyRow(db, dwelling.id, context.req.param("familyId"));
-    const member = await findMemberRow(db, family.id, context.req.param("memberId"));
-    if (member.relationship === EFamilyRelationship.HEAD) {
-      throw forbidden(FAMILY_HEAD_LOCKED_MESSAGE);
-    }
-    await db.delete(familyMembers).where(eq(familyMembers.id, member.id));
+    await removeMember(db, dwelling, context.req.param("memberId"));
 
     return ok(context, await findDwellingDetail(db, dwelling.id));
   });

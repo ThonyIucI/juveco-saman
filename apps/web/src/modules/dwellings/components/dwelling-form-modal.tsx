@@ -1,7 +1,6 @@
 import { Button } from "@juveco/ui/components/button";
 import { Label } from "@juveco/ui/components/label";
 import { Textarea } from "@juveco/ui/components/textarea";
-import { cn } from "@juveco/ui/lib/utils";
 import {
   DEFAULT_DWELLING_STATUS,
   DWELLING_METER_MAX_LENGTH,
@@ -22,7 +21,7 @@ import {
 } from "@juveco/shared/dwellings";
 import { NEIGHBORHOODS } from "@juveco/shared/neighborhoods";
 import { useForm, useStore } from "@tanstack/react-form";
-import { TriangleAlert } from "lucide-react";
+import { ChevronLeft, ChevronRight, TriangleAlert, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import ConfirmModal from "@/common/components/confirm-modal";
@@ -32,6 +31,7 @@ import InfoTip from "@/common/components/info-tip";
 import Modal from "@/common/components/modal";
 import NeighborhoodBadge from "@/common/components/neighborhood-badge";
 import Select, { type IOption } from "@/common/components/select";
+import Stepper from "@/common/components/stepper";
 import TextField from "@/common/components/text-field";
 import type { ICoordinates } from "@/common/hooks/use-current-position";
 import { useFindMeterMatches } from "@/modules/dwellings/hooks/use-find-meter-matches";
@@ -59,7 +59,6 @@ interface IDwellingFormValues {
   wallMaterial: EWallMaterial | "";
   wallMaterialOther: string;
   position: ICoordinates | null;
-  observation: string;
   note: string;
 }
 
@@ -72,7 +71,7 @@ const STEPS: readonly { title: string; fields: readonly TFieldName[] }[] = [
     fields: ["neighborhoodId", "meterNumber", "status", "wallMaterial", "wallMaterialOther"],
   },
   { title: "Ubicación", fields: ["position"] },
-  { title: "Notas", fields: ["observation", "note"] },
+  { title: "Nota", fields: ["note"] },
 ];
 const FIRST_STEP = 0;
 const LAST_STEP = STEPS.length - 1;
@@ -87,7 +86,6 @@ const buildDefaults = (dwelling?: IDwellingResource): IDwellingFormValues => ({
     dwelling && dwelling.latitude !== null && dwelling.longitude !== null
       ? { latitude: dwelling.latitude, longitude: dwelling.longitude }
       : null,
-  observation: dwelling?.observation ?? "",
   note: dwelling?.note ?? "",
 });
 
@@ -100,7 +98,6 @@ const toPayload = (value: IDwellingFormValues): IDwellingInput => {
     status: isDwellingStatus(value.status) ? value.status : DEFAULT_DWELLING_STATUS,
     wallMaterial: material,
     wallMaterialOther: material === EWallMaterial.OTHER ? value.wallMaterialOther.trim() || null : null,
-    observation: value.observation.trim() || null,
     note: value.note.trim() || null,
   };
 };
@@ -124,8 +121,8 @@ interface IDwellingFormModalProps {
 }
 
 /**
- * Registrar o editar una vivienda en tres pasos: Vivienda, Ubicación (mapa con pin) y Notas.
- * Los tres pasos quedan montados (los inactivos ocultos), así «Atrás» no pierde lo escrito.
+ * Registrar o editar una vivienda en tres pasos: Vivienda, Ubicación (mapa con pin) y Nota.
+ * Los tres pasos quedan montados (los inactivos ocultos), así «Anterior» no pierde lo escrito.
  * Al crear, al elegir el barrio se muestra el código que le tocará («SR-0001») y al guardar
  * una confirmación lo repite; si no tiene medidor, la confirmación lo advierte. Un medidor
  * repetido solo avisa: varias casas pueden compartirlo. Al editar se puede saltar a cualquier paso.
@@ -236,7 +233,7 @@ export default function DwellingFormModal({ open, dwelling, onSaved, onClose }: 
 
   const goBack = () => setStep(Math.max(FIRST_STEP, step - 1));
 
-  /* Al editar se salta a cualquier paso; al crear, atrás libre y adelante de a un paso con validación. */
+  /* Atrás, libre. Adelante: al editar se salta directo; al crear, de a un paso y validando. */
   const goToStep = (target: number) => {
     if (isEdit || target <= step) {
       setStep(target);
@@ -288,51 +285,31 @@ export default function DwellingFormModal({ open, dwelling, onSaved, onClose }: 
           <form.Subscribe selector={(state) => state.isSubmitting}>
             {(isSubmitting) => (
               <>
-                {step > FIRST_STEP && !isEdit && (
-                  <Button type="button" variant="outline" onClick={goBack}>
-                    Atrás
+                {/* Anterior y Siguiente siempre a la vista; guardar, en el último paso (o siempre, al editar). */}
+                <Button type="button" variant="outline" disabled={step === FIRST_STEP} onClick={goBack}>
+                  <ChevronLeft />
+                  Anterior
+                </Button>
+                {!isLastStep && (
+                  <Button type="button" variant={isEdit ? "outline" : "default"} onClick={goNext}>
+                    Siguiente
+                    <ChevronRight />
                   </Button>
                 )}
-                {showSubmit ? (
+                {showSubmit && (
                   <FormSubmitButtons
                     formId={FORM_ID}
                     isSubmitting={isSubmitting}
                     label={isEdit ? "Guardar cambios" : "Registrar vivienda"}
                   />
-                ) : (
-                  <Button type="button" className="min-w-32" onClick={goNext}>
-                    Siguiente
-                  </Button>
                 )}
               </>
             )}
           </form.Subscribe>
         }
       >
-        <div className="mb-4 space-y-1">
-          <p className="text-sm font-semibold text-foreground">
-            Paso {step + 1} de {STEPS.length} · {STEPS[step].title}
-          </p>
-          <ol className="flex gap-1.5">
-            {STEPS.map((item, index) => (
-              <li key={item.title} className="flex-1">
-                <button
-                  type="button"
-                  aria-label={`Paso ${index + 1}: ${item.title}`}
-                  aria-current={index === step ? "step" : undefined}
-                  onClick={() => goToStep(index)}
-                  className="group block w-full cursor-pointer rounded-full py-2 outline-none focus-visible:ring-4 focus-visible:ring-ring/30"
-                >
-                  <span
-                    className={cn(
-                      "block h-1.5 w-full rounded-full transition-colors",
-                      index <= step ? "bg-primary" : "bg-muted group-hover:bg-primary/30",
-                    )}
-                  />
-                </button>
-              </li>
-            ))}
-          </ol>
+        <div className="mb-5">
+          <Stepper steps={STEPS} current={step} onStepClick={goToStep} />
         </div>
 
         <form
@@ -363,10 +340,15 @@ export default function DwellingFormModal({ open, dwelling, onSaved, onClose }: 
                 <div className="space-y-2">
                   <Label htmlFor={field.name}>Barrio</Label>
                   {isEdit && dwelling ? (
-                    /* El barrio no cambia: el código lleva sus iniciales. */
-                    <div className="flex h-control items-center">
-                      <NeighborhoodBadge neighborhood={dwelling.neighborhood} hasIcon={false} />
-                    </div>
+                    /* El barrio no cambia (el código lleva sus iniciales): el mismo select, bloqueado. */
+                    <Select
+                      inputId={field.name}
+                      options={NEIGHBORHOOD_OPTIONS}
+                      isDisabled
+                      isSearchable={false}
+                      value={NEIGHBORHOOD_OPTIONS.find((option) => option.value === dwelling.neighborhood.id) ?? null}
+                      onChange={() => undefined}
+                    />
                   ) : (
                     <Select
                       inputId={field.name}
@@ -398,6 +380,8 @@ export default function DwellingFormModal({ open, dwelling, onSaved, onClose }: 
                   <TextField
                     id={field.name}
                     label="Número de medidor (opcional)"
+                    icon={Zap}
+                    inputMode="numeric"
                     autoComplete="off"
                     maxLength={DWELLING_METER_MAX_LENGTH}
                     placeholder="Ingresa el número de medidor"
@@ -497,29 +481,8 @@ export default function DwellingFormModal({ open, dwelling, onSaved, onClose }: 
             )}
           </div>
 
-          {/* Paso 3 · Notas. Más adelante, acá van las fotos (slice 2c). */}
+          {/* Paso 3 · Nota. Más adelante, acá van las fotos (slice 2c). */}
           <div hidden={step !== 2} className="space-y-4">
-            <form.Field name="observation">
-              {(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor={field.name}>Observación (opcional)</Label>
-                  <Textarea
-                    id={field.name}
-                    name={field.name}
-                    rows={3}
-                    maxLength={DWELLING_TEXT_MAX_LENGTH}
-                    placeholder="Ingresa una observación"
-                    aria-invalid={field.state.meta.errors.length > 0}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    className={TEXTAREA_CLASS}
-                  />
-                  <FieldError errors={field.state.meta.errors} />
-                </div>
-              )}
-            </form.Field>
-
             <form.Field name="note">
               {(field) => (
                 <div className="space-y-2">
@@ -529,7 +492,7 @@ export default function DwellingFormModal({ open, dwelling, onSaved, onClose }: 
                     name={field.name}
                     rows={3}
                     maxLength={DWELLING_TEXT_MAX_LENGTH}
-                    placeholder="Ingresa una nota"
+                    placeholder="Ingresa una nota: referencias, daños, lo que haga falta"
                     aria-invalid={field.state.meta.errors.length > 0}
                     value={field.state.value}
                     onBlur={field.handleBlur}

@@ -48,6 +48,12 @@ Aprobado por Thony el 2026-11-28.
     - **Subida:** las fotos se comprimen en el navegador antes de subir, a 1600 px de lado mayor y en JPEG. Máximo 5 por vivienda.
     - **Ver las fotos:** los archivos en Drive son privados. El admin los ve a través del servidor, nunca con un enlace público.
     - **Carpeta raíz por entorno:** su nombre sale de la variable `DRIVE_ROOT_FOLDER`, que por defecto es `Viviendas`. En local, `.dev.vars` usa `Viviendas (pruebas)` con las mismas credenciales. La app crea esa carpeta la primera vez (con `drive.file` no ve carpetas creadas a mano) y la busca por nombre entre las suyas.
+14. **Integrantes primero, familias en segundo plano** (Thony, 2026-11-28). Casi toda vivienda tiene una sola familia, así que no se crea la familia antes que su gente:
+    - **El detalle muestra «Integrantes»** como lista plana, con el jefe primero y marcado con ⭐. Solo si hay **más de una familia** se agrupa por familia, con el título «Familia <apellidos del jefe>».
+    - **La acción primaria es «Agregar integrante».** El formulario trae los datos de la persona: se busca si ya está registrada o se llena ahí mismo.
+      - Una estrellita marca «Es jefe(a) de hogar».
+      - La familia se crea sola con el primer integrante. Una segunda familia se elige solo si hace falta, con un enlace discreto.
+    - Desaparece el formulario «Agregar familia».
 13. **Nuevo orden de trabajo** (el ítem creció; se pasa del tope de 4 slices):
     - **2 (ajuste):** diseño, pasos 1–3 sin fotos, mapa y material.
     - **2b:** formulario público con solicitudes y revisión.

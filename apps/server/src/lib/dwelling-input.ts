@@ -19,21 +19,18 @@ import {
   EWallMaterial,
 } from "@juveco/shared/dwellings";
 import {
+  EFamilyRelationship,
   FAMILY_CONTACT_NAME_LENGTH_MESSAGE,
   FAMILY_CONTACT_NAME_MAX_LENGTH,
   FAMILY_CONTACT_NAME_REQUIRED_MESSAGE,
   FAMILY_CONTACT_PHONE_REQUIRED_MESSAGE,
-  FAMILY_HEAD_REQUIRED_MESSAGE,
   FAMILY_MEMBER_REQUIRED_MESSAGE,
-  FAMILY_NOTE_LENGTH_MESSAGE,
-  FAMILY_NOTE_MAX_LENGTH,
-  FAMILY_RELATIONSHIP_HEAD_MESSAGE,
   FAMILY_RELATIONSHIP_INVALID_MESSAGE,
-  EFamilyRelationship,
 } from "@juveco/shared/families";
 import { NEIGHBORHOOD_INVALID_MESSAGE, isKnownNeighborhood } from "@juveco/shared/neighborhoods";
 import { z } from "zod";
 
+import { personSchema } from "./person-input";
 import { phoneSchema } from "./phone-input";
 
 /** Validación de viviendas, familias e integrantes. Los textos vacíos se guardan como `null`. */
@@ -65,7 +62,6 @@ const dwellingInputShape = {
     DWELLING_WALL_MATERIAL_OTHER_MAX_LENGTH,
     DWELLING_WALL_MATERIAL_OTHER_LENGTH_MESSAGE,
   ),
-  observation: optionalText(DWELLING_TEXT_MAX_LENGTH, DWELLING_TEXT_LENGTH_MESSAGE),
   note: optionalText(DWELLING_TEXT_MAX_LENGTH, DWELLING_TEXT_LENGTH_MESSAGE),
 };
 
@@ -106,8 +102,6 @@ export const createDwellingSchema = z
   })
   .transform(withoutStaleOtherMaterial);
 
-const personIdSchema = (message: string) => z.string(message).min(1, message);
-
 const contactSchema = z
   .object({
     name: z
@@ -119,23 +113,32 @@ const contactSchema = z
   })
   .nullable();
 
-const familyNoteSchema = optionalText(FAMILY_NOTE_MAX_LENGTH, FAMILY_NOTE_LENGTH_MESSAGE);
-
-export const updateFamilySchema = z.object({
-  contact: contactSchema,
-  note: familyNoteSchema,
-});
-
-export const createFamilySchema = updateFamilySchema.extend({
-  headId: personIdSchema(FAMILY_HEAD_REQUIRED_MESSAGE),
-});
-
-/* El jefe no se elige acá: nace con la familia. */
-export const familyMemberSchema = z.object({
-  userId: personIdSchema(FAMILY_MEMBER_REQUIRED_MESSAGE),
+/* Los campos de un integrante, iguales al crear y al editar. */
+const memberFields = {
+  /* Con `userId` se actualizan sus datos con `person`; sin él, `person` crea a la persona. */
+  person: personSchema.optional(),
+  isHead: z.boolean(),
+  /* El jefe no tiene parentesco que elegir: es «Jefe(a)». Sin él, el servidor usa «Hijo(a)». */
   relationship: z
     .enum(EFamilyRelationship, FAMILY_RELATIONSHIP_INVALID_MESSAGE)
-    .refine((relationship) => relationship !== EFamilyRelationship.HEAD, FAMILY_RELATIONSHIP_HEAD_MESSAGE),
-});
+    .refine((relationship) => relationship !== EFamilyRelationship.HEAD, FAMILY_RELATIONSHIP_INVALID_MESSAGE)
+    .optional(),
+  contact: contactSchema.default(null),
+};
 
-export const updateFamilyMemberSchema = familyMemberSchema.pick({ relationship: true });
+/* Una persona nueva necesita sus datos: sin `userId`, `person` es obligatorio. */
+export const createMemberSchema = z
+  .object({
+    userId: z.string().min(1).optional(),
+    /* Un id de familia de la vivienda o «NEW». */
+    familyId: z.string().min(1).optional(),
+    ...memberFields,
+  })
+  .refine((body) => body.userId !== undefined || body.person !== undefined, {
+    message: FAMILY_MEMBER_REQUIRED_MESSAGE,
+  });
+
+export const updateMemberSchema = z.object(memberFields);
+
+export type TCreateMemberBody = z.infer<typeof createMemberSchema>;
+export type TUpdateMemberBody = z.infer<typeof updateMemberSchema>;

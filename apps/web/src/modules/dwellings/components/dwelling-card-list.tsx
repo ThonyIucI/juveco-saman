@@ -64,7 +64,7 @@ export default function DwellingCardList({ dwellings, isLoading, buildActions, o
                 <span className="font-mono text-primary tabular-nums">{dwelling.code}</span>{" "}
                 {headNamesLabel(dwelling)}
               </p>
-              <p className="text-sm text-muted-foreground">{dwellingCountsLabel(dwelling)}</p>
+              {dwelling.familyCount > 0 && <p className="text-sm text-muted-foreground">{dwellingCountsLabel(dwelling)}</p>}
             </div>
             <RowActions actions={buildActions(dwelling)} isBordered />
           </div>

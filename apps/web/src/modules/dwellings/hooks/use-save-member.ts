@@ -1,28 +1,25 @@
 import type { IDwellingDetailResource } from "@juveco/shared/dwellings";
-import type { IFamilyMemberInput, IFamilyMemberResource, IFamilyResource } from "@juveco/shared/families";
-import { fullName } from "@juveco/shared/people";
+import type { IFamilyMemberSaveInput, IFamilyMemberUpdateInput } from "@juveco/shared/families";
 import { toast } from "sonner";
 
 import { useRequest } from "@/common/hooks/use-request";
 import { createMemberRequest, updateMemberRequest } from "@/modules/dwellings/services/dwelling.service";
 
-type TRelationshipChange = Pick<IFamilyMemberInput, "relationship">;
-
-/** Agrega un integrante a una familia, o cambia el parentesco del que se pasa. */
+/** Agrega un integrante a la vivienda (con su familia, si hace falta) o edita al que ya está. */
 export const useSaveMember = () => {
   const { loading, handleRequest } = useRequest<IDwellingDetailResource>();
 
-  const create = (family: IFamilyResource, payload: IFamilyMemberInput, personName: string) =>
+  const create = (dwellingId: string, payload: IFamilyMemberSaveInput, personName: string) =>
     handleRequest(async () => {
-      const saved = await createMemberRequest(family.dwellingId, family.id, payload);
+      const saved = await createMemberRequest(dwellingId, payload);
       toast.success(`«${personName}» agregado`);
       return saved;
     });
 
-  const update = (family: IFamilyResource, member: IFamilyMemberResource, payload: TRelationshipChange) =>
+  const update = (dwellingId: string, memberId: string, payload: IFamilyMemberUpdateInput, personName: string) =>
     handleRequest(async () => {
-      const saved = await updateMemberRequest(family.dwellingId, family.id, member.id, payload);
-      toast.success(`«${fullName(member)}» actualizado`);
+      const saved = await updateMemberRequest(dwellingId, memberId, payload);
+      toast.success(`«${personName}» actualizado`);
       return saved;
     });
 

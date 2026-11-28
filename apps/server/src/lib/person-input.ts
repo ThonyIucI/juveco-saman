@@ -16,6 +16,7 @@ import {
 import { z } from "zod";
 
 import { phoneSchema } from "./phone-input";
+import { userProfileSchema } from "./user-profile-input";
 
 /**
  * Validación de los datos de una persona. Los textos opcionales llegan vacíos o `null` y se
@@ -62,3 +63,12 @@ export const personExtraFields = {
   whatsappUsername: whatsappUsernameSchema.optional(),
   note: noteSchema.optional(),
 };
+
+/** Una persona completa: nombres, el resto de sus datos y los del censo (`details`). */
+export const personSchema = z.object({
+  firstName: firstNameSchema,
+  ...personExtraFields,
+  details: userProfileSchema.optional(),
+});
+
+export type TPersonBody = z.infer<typeof personSchema>;

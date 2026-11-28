@@ -50,12 +50,14 @@ interface IModalProps {
 interface IScrollEdges {
   /** El cuerpo ya no está arriba del todo: el encabezado proyecta sombra. */
   isScrolled: boolean;
+  /** Queda contenido por debajo: el pie proyecta sombra en vez de la línea. */
+  hasMoreBelow: boolean;
 }
 
 /** Sombra del encabezado solo cuando el cuerpo ya bajó (el pie la lleva siempre). */
 const useScrollEdges = (enabled: boolean) => {
   const bodyRef = useRef<HTMLDivElement | null>(null);
-  const [edges, setEdges] = useState<IScrollEdges>({ isScrolled: false });
+  const [edges, setEdges] = useState<IScrollEdges>({ isScrolled: false, hasMoreBelow: false });
 
   const measure = useCallback(() => {
     const body = bodyRef.current;
@@ -63,7 +65,13 @@ const useScrollEdges = (enabled: boolean) => {
       return;
     }
     const isScrolled = body.scrollTop > EDGE_TOLERANCE;
-    setEdges((previous) => (previous.isScrolled === isScrolled ? previous : { isScrolled }));
+    /* Queda contenido debajo del pie: el pie lleva sombra; si no, solo una línea. */
+    const hasMoreBelow = body.scrollHeight - body.clientHeight - body.scrollTop > EDGE_TOLERANCE;
+    setEdges((previous) =>
+      previous.isScrolled === isScrolled && previous.hasMoreBelow === hasMoreBelow
+        ? previous
+        : { isScrolled, hasMoreBelow },
+    );
   }, []);
 
   /* El alto cambia al abrir el teclado o al aparecer un error de validación. */
@@ -253,10 +261,15 @@ export default function Modal({
             {footer && (
               /* Lado a lado siempre: en celular se reparten el ancho, en escritorio van a la derecha. */
               /*
-                Como en el saas: el pie **siempre** se separa del cuerpo con una sombra hacia
-                arriba (nunca con borde), haya scroll o no.
+                Sombra hacia arriba solo si queda contenido debajo (hay scroll); si todo se ve,
+                una línea fina (Thony, 2026-11-28).
               */
-              <div className="relative z-10 flex shrink-0 gap-2 bg-card px-5 pt-3 pb-4 shadow-edge-top *:flex-1 sm:justify-end sm:*:flex-none">
+              <div
+                className={cn(
+                  "relative z-10 flex shrink-0 gap-2 border-t bg-card px-5 pt-3 pb-4 transition-shadow duration-200 *:flex-1 sm:justify-end sm:*:flex-none",
+                  edges.hasMoreBelow ? "border-transparent shadow-edge-top" : "border-border",
+                )}
+              >
                 {footer}
               </div>
             )}

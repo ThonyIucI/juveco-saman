@@ -21,12 +21,11 @@ import { z } from "zod";
 
 import type { TAppEnv } from "../lib/app-env";
 import { badRequest, conflict, forbidden, notFound } from "../lib/errors";
-import { newId } from "../lib/ids";
-import { findUserByDocument, loadUserProfile, saveUserProfile } from "../lib/user-profiles";
+import { findUserByDocument, loadUserProfile } from "../lib/user-profiles";
 import { userProfileSchema } from "../lib/user-profile-input";
-import { assertDocumentAvailable, assertPhoneAvailable, assertUsernameAvailable } from "../lib/person-guards";
-import { firstNameSchema, personExtraFields } from "../lib/person-input";
-import { type TPhoneInput, toPhoneColumns, toPhoneResource } from "../lib/phone-input";
+import { firstNameSchema, personExtraFields, personSchema } from "../lib/person-input";
+import { createPersonRecord, updatePersonRecord } from "../lib/person-records";
+import { toPhoneResource } from "../lib/phone-input";
 import { ok } from "../lib/response";
 import {
   assertEmailAvailable,
@@ -53,11 +52,7 @@ const MATCHES_QUERY_MESSAGE = "Indica el DNI, o los nombres, el apellido paterno
 const MAX_MATCHES = 5;
 
 /* `access` es opcional: con él, la persona se crea ya con su login (solo el superadmin). */
-const createUserSchema = z.object({
-  firstName: firstNameSchema,
-  ...personExtraFields,
-  /* Datos del censo: opcionales. */
-  details: userProfileSchema.optional(),
+const createUserSchema = personSchema.extend({
   access: grantAccessSchema.optional(),
 });
 
@@ -126,22 +121,6 @@ const toMatchResource = (row: TUserRow): IPersonMatchResource => ({
   maternalLastName: row.maternalLastName,
 });
 
-const toMatch = (row: TUserRow | undefined) => (row ? { id: row.id, label: fullName(row) } : undefined);
-
-const findByPhone = (db: TDb) => async (phone: NonNullable<TPhoneInput>) => {
-  const row = await db
-    .select()
-    .from(users)
-    .where(and(eq(users.countryPrefix, phone.countryPrefix), eq(users.phone, phone.number)))
-    .get();
-  return toMatch(row);
-};
-
-const findByDocument = (db: TDb) => async (documentNumber: string) => {
-  const row = await findUserByDocument(db, documentNumber);
-  return toMatch(row?.user);
-};
-
 const collapseSpaces = (value: string | undefined) => (value ?? "").trim().replace(/\s+/g, " ");
 
 /* Quién ya tiene ese DNI: a lo sumo uno. */
@@ -172,16 +151,6 @@ const matchesByNameAndBirthDate = async (
     .filter((row) => row.user.id !== exceptId)
     .slice(0, MAX_MATCHES)
     .map((row) => toMatchResource(row.user));
-};
-
-/* Con la misma expresión del índice único. */
-const findByUsername = (db: TDb) => async (usernameLower: string) => {
-  const row = await db
-    .select()
-    .from(users)
-    .where(sql`lower(${users.whatsappUsername}) = ${usernameLower}`)
-    .get();
-  return toMatch(row);
 };
 
 /**
@@ -239,76 +208,37 @@ export const userRoutes = new Hono<TAppEnv>()
   })
 
   .post(USER_ROUTES.USERS, requireAuth, validateJson(createUserSchema), async (context) => {
-    const { access, details, ...body } = context.req.valid("json");
-    const phone = body.phone ?? null;
-    const whatsappUsername = body.whatsappUsername ?? null;
+    const { access, ...body } = context.req.valid("json");
     const db = createDb();
 
     if (access && context.var.user.role !== EUserRole.SUPERADMIN) {
       throw forbidden("Solo el superadmin puede dar acceso a la app.");
     }
-    await assertPhoneAvailable({ phone, findByPhone: findByPhone(db) });
-    await assertUsernameAvailable({ username: whatsappUsername, findByUsername: findByUsername(db) });
-    await assertDocumentAvailable({ documentNumber: details?.documentNumber, findByDocument: findByDocument(db) });
     if (access) {
       await assertEmailAvailable(db, access.email);
     }
-
-    const [created] = await db
-      .insert(users)
-      .values({
-        id: newId(),
-        firstName: body.firstName,
-        paternalLastName: body.paternalLastName ?? null,
-        maternalLastName: body.maternalLastName ?? null,
-        neighborhoodId: body.neighborhoodId ?? null,
-        ...toPhoneColumns(phone),
-        whatsappUsername,
-        note: body.note ?? null,
-      })
-      .returning();
-
-    /* Sin sus datos del censo la persona no debe quedar a medias: si falla, se deshace el alta. */
-    if (details) {
-      try {
-        await saveUserProfile(db, created!.id, details);
-      } catch (error) {
-        await db.delete(users).where(eq(users.id, created!.id));
-        throw error;
-      }
-    }
+    const created = await createPersonRecord(db, body);
 
     if (!access) {
-      return ok(context, toUserResource(created!, null), 201);
+      return ok(context, toUserResource(created, null), 201);
     }
 
     /* Sin login la persona no debe quedar a medias: si falla, se deshace el alta. */
     try {
-      const withAccess = await grantLogin({ db, auth: context.var.auth, person: created!, access });
+      const withAccess = await grantLogin({ db, auth: context.var.auth, person: created, access });
       return ok(context, toUserResource(withAccess, access.email), 201);
     } catch (error) {
-      await db.delete(users).where(eq(users.id, created!.id));
+      await db.delete(users).where(eq(users.id, created.id));
       throw error;
     }
   })
 
   .patch(USER_ROUTES.USER, requireAuth, validateJson(updateUserSchema), async (context) => {
     const id = context.req.param("id");
-    const { access, details, ...body } = context.req.valid("json");
+    const { access, ...body } = context.req.valid("json");
     const db = createDb();
 
     const current = await findUser(db, id);
-    await assertPhoneAvailable({ phone: body.phone, findByPhone: findByPhone(db), exceptId: id });
-    await assertUsernameAvailable({
-      username: body.whatsappUsername,
-      findByUsername: findByUsername(db),
-      exceptId: id,
-    });
-    await assertDocumentAvailable({
-      documentNumber: details?.documentNumber,
-      findByDocument: findByDocument(db),
-      exceptId: id,
-    });
     if (access !== undefined) {
       assertCanEditAccess(context.var.user, current.user);
     }
@@ -319,26 +249,10 @@ export const userRoutes = new Hono<TAppEnv>()
       await assertEmailAvailable(db, access.email, id);
     }
 
-    const personChanges = {
-      ...(body.firstName !== undefined && { firstName: body.firstName }),
-      ...(body.paternalLastName !== undefined && { paternalLastName: body.paternalLastName }),
-      ...(body.maternalLastName !== undefined && { maternalLastName: body.maternalLastName }),
-      ...(body.neighborhoodId !== undefined && { neighborhoodId: body.neighborhoodId }),
-      ...(body.phone !== undefined && toPhoneColumns(body.phone)),
-      ...(body.whatsappUsername !== undefined && { whatsappUsername: body.whatsappUsername }),
-      ...(body.note !== undefined && { note: body.note }),
-    };
-    /* Si solo cambió el acceso no hay nada que actualizar en la persona. */
-    const [person] =
-      Object.keys(personChanges).length > 0
-        ? await db.update(users).set(personChanges).where(eq(users.id, id)).returning()
-        : [current.user];
-    if (details) {
-      await saveUserProfile(db, id, details);
-    }
+    const person = await updatePersonRecord(db, current.user, body);
 
     if (access === undefined) {
-      return ok(context, toUserResource(person!, current.email));
+      return ok(context, toUserResource(person, current.email));
     }
     if (access === null) {
       return ok(context, toUserResource(await revokeLogin(db, id), null));
@@ -347,13 +261,13 @@ export const userRoutes = new Hono<TAppEnv>()
       const withAccess = await grantLogin({
         db,
         auth: context.var.auth,
-        person: person!,
+        person,
         access: { role: EUserRole.ADMIN, email: access.email, password: access.password! },
       });
       return ok(context, toUserResource(withAccess, access.email));
     }
     await updateLogin({ db, auth: context.var.auth, personId: id, email: access.email, password: access.password });
-    return ok(context, toUserResource(person!, access.email));
+    return ok(context, toUserResource(person, access.email));
   })
 
   /* Quien entra a la app no se borra desde acá: primero habría que quitarle el acceso. */

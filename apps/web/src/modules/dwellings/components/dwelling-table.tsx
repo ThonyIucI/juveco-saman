@@ -61,7 +61,9 @@ export default function DwellingTable({ dwellings, isLoading, buildActions, onOp
                     <span className="block max-w-md truncate font-heading font-semibold text-foreground">
                       {headNamesLabel(dwelling)}
                     </span>
-                    <span className="block text-sm text-muted-foreground">{dwellingCountsLabel(dwelling)}</span>
+                    {dwelling.familyCount > 0 && (
+                      <span className="block text-sm text-muted-foreground">{dwellingCountsLabel(dwelling)}</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <NeighborhoodBadge neighborhood={dwelling.neighborhood} hasIcon={false} />

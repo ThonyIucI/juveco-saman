@@ -1,39 +1,79 @@
-# Notas de Thony: slice 2, vuelta 1
+# Notas de Thony: slice 2, vuelta 2
 
-Probé el detalle de una vivienda y el formulario. Lo nuevo está en el plan: **decisiones 8, 9, 10 y 13**. En esta vuelta va solo el **slice 2 (ajuste)**. El formulario público (2b) y las fotos en Drive (2c) **no** van todavía: deja el paso 3 con observación y nota, y el lugar listo para las fotos.
+La vuelta 1 ya se aplicó. Después, Claude (Opus) corrigió a mano:
+- el detalle de la vivienda: cabecera con estado y barrio; «Datos» a la izquierda y las familias a la derecha;
+- los pasos numerados del formulario y los botones Anterior/Siguiente;
+- el campo único «Nota»: se quitó `observation` del esquema, la API y la web;
+- el ícono del medidor y el barrio bloqueado al editar;
+- el mapa, que abre en «Calles»;
+- el pie del modal: sombra solo si hay scroll.
 
-## Fallos de diseño (en el detalle `/viviendas/$dwellingId`)
+**No deshagas nada de eso.**
 
-1. **El código se parte en el celular** («MA-» arriba, «0001» abajo), porque el botón «Agregar familia» le quita ancho.
-   - El código nunca se corta (`whitespace-nowrap`).
-   - En el celular, el botón primario no compite con el título: va como ícono con borde o en su propia fila, a todo el ancho, debajo de la cabecera.
-2. **La card de datos no tiene orden:**
-   - el badge de estado y «0 familias · 0 personas» van sueltos arriba, con otro estilo que las filas;
-   - las filas tienen demasiado aire vertical;
-   - «Abrir en Maps» queda sangrado y desalineado respecto de las filas.
+Esta vuelta es **una sola cosa: la experiencia de integrantes** (decisión 14 del plan). Hoy, crear primero una familia con su jefe y después sus miembros es una mala experiencia. Casi toda casa tiene una sola familia, y lo que necesito son los datos de las personas.
 
-   Arréglalo así:
-   - una grilla etiqueta/valor alineada y compacta, con el estado como una fila más («Estado: [badge]»);
-   - los conteos en la cabecera de la card o en el título de la sección de familias;
-   - las acciones (Maps y, a futuro, Fotos) alineadas al pie de la card o en su cabecera.
-3. **El título de la card («Vivienda») repite la cabecera de la página.** Ponle algo útil, como «Datos de la vivienda».
-4. **«Paredes: Otro» no dice nada.** Debe mostrar lo que se especificó (decisión 9).
-5. Revisa la misma página y el formulario a **360 px de ancho**: nada se corta ni se monta, y la barra inferior de 5 entradas no se aprieta.
-6. Respeta las reglas de diseño del proyecto: `docs/tecnico/convenciones.md` y los componentes comunes que ya existen (cards, botones de ícono con borde, una sola acción primaria por vista).
+## 1. Detalle de la vivienda (`routes/_app/viviendas.$dwellingId.tsx`)
 
-## Formulario de vivienda (decisiones 8–10)
+- **Acción primaria de la cabecera:** «Agregar integrante» (ícono `UserPlus`), en lugar de «Agregar familia». Mismo patrón: `Button` en escritorio e `IconButton` relleno en celular, ambos de 44 px. Editar sigue como ícono con borde.
+- **Sección de la derecha:** se llama **«Integrantes»**, con el total a la derecha («7 personas»).
+  - **Con 0 o 1 familia:** una sola lista plana.
+    - Arriba va el jefe, con ⭐ (`Star` relleno, color de marca) al lado del nombre. Debajo, los demás.
+    - Cada fila: avatar, nombre completo, «parentesco · edad», badges de condiciones y, si tiene, el celular.
+    - Acciones: editar como ícono directo; «Quitar de la vivienda» en `⋯`.
+  - **Con 2 o más familias:** la misma lista, agrupada.
+    - Cada grupo lleva un subtítulo «Familia Quispe Mamani» (apellidos paterno y materno del jefe) y su conteo.
+    - Su `⋯` tiene «Eliminar familia», solo si no le quedan integrantes o con confirmación.
+  - **Contacto alternativo:** si el jefe no tiene celular y la familia tiene uno, va como una línea bajo la fila del jefe: «Contacto: Rosa (vecina) · 999 999 999».
+  - **Vacío:** `EmptyState` «Todavía no hay integrantes», **sin** botón, porque la acción ya está arriba.
+- **La lista replica las listas que ya existen** (`movement-list.tsx`, `prize-list.tsx`): `DetailSection isBordered` con `ul divide-y`, filas `py-2.5` y `RowActions isBordered`. No inventes cards nuevas.
+- Se eliminan `family-card.tsx` y `family-form-modal.tsx`, y todo lo que solo ellos usaban.
 
-- **Tres pasos:** 1 Vivienda (barrio, medidor, estado, material), 2 Ubicación (mapa con pin) y 3 Notas (observación y nota). Arriba va un indicador «Paso 1 de 3 · Vivienda». «Siguiente» valida solo el paso actual y «Atrás» conserva lo escrito. La confirmación del código y del medidor sigue al guardar, al final.
-- **Mapa:** Leaflet con `react-leaflet`.
-  - Capa satelital Esri World Imagery por defecto, con un botón para pasar a calles (OpenStreetMap). Atribuciones visibles.
-  - Centro inicial: Samán (pon la constante con las coordenadas de la plaza; si no la sabes, usa el centro de las viviendas existentes o déjala anotada en el informe para que yo la complete). «Usar mi ubicación» centra el mapa y mueve el pin ahí.
-  - Tocar el mapa mueve el pin; el pin también se arrastra. Debajo se ven las coordenadas (6 decimales) y un botón «Quitar ubicación».
-  - Carga el mapa con import dinámico, para no engordar el resto de la app. Importa el CSS de Leaflet y arregla el ícono del marcador (el problema clásico de las rutas de imagen con Vite).
-- **Material:** ícono (i) con tooltip al lado de la etiqueta (hover en escritorio, toque en celular), con el texto de la decisión 9. Con «Otro», aparece el campo «Especifica el material» (obligatorio, máx. 120), que se guarda en una columna nueva y se muestra en el detalle como el material.
-- **Se quitan** los campos «enlace de Maps» y «carpeta de fotos (Drive)» del formulario, la API, los tipos y el esquema. «Abrir en Maps» se arma con las coordenadas: `https://www.google.com/maps?q=<lat>,<lng>`.
-- **Editar:** usa los mismos pasos y deja saltar a cualquiera (los pasos se pueden tocar).
+## 2. Formulario «Nuevo integrante» / «Editar integrante» (reemplaza `member-form-modal.tsx`)
 
-## Comandos
+Es una sola modal, en este orden:
 
-- `leaflet`, `react-leaflet` y `@types/leaflet` no están instalados: ponlos en el informe para que los instale yo.
-- Los cambios de esquema van en una migración nueva, encima de la 0017, que ya apliqué en local.
+1. **«¿Ya está registrado?»:** el buscador de personas de Usuarios (`user-search`), por DNI o nombre.
+   - Al elegir a alguien, sus datos llenan los campos de abajo y se pueden corregir.
+   - Si ya integra otra familia, el servidor lo rechaza como hoy.
+   - Si no se elige a nadie, se crea una persona nueva con los campos de abajo.
+2. **Datos de la persona,** los mismos del formulario de usuario (slice 1):
+   - nombres, apellido paterno y materno;
+   - DNI, fecha de nacimiento y género;
+   - condiciones (chips) y su detalle;
+   - celular.
+
+   **Extrae esos campos del `user-form-modal.tsx` a un componente reutilizable** (`PersonFields` o similar) y úsalo en los dos lugares, no los dupliques. Se mantienen los avisos de DNI repetido y de mismo nombre y fecha.
+3. **«⭐ Es jefe(a) de hogar»:** un interruptor con estrella.
+   - Si la familia todavía no tiene integrantes, viene prendido y bloqueado: el primero es el jefe.
+   - Si se prende en otra persona, pasa a ser el jefe y el jefe anterior queda con parentesco «Otro pariente». Un toast avisa: «Revisa el parentesco de <nombre>».
+4. **Parentesco con el jefe:** solo cuando no es jefe. Por defecto «Hijo(a)».
+5. **Contacto alternativo:** solo si es jefe y no tiene celular. Bloque opcional con a quién pertenece y el número (lo de hoy).
+6. **Familia:** escondido por defecto.
+   - Si la vivienda ya tiene integrantes, debajo va un enlace discreto «¿Es de otra familia de esta casa?».
+   - Al tocarlo aparece un select con las familias existentes («Familia Quispe Mamani») y «Nueva familia».
+   - Con «Nueva familia», la estrella queda prendida y bloqueada.
+   - Si la vivienda no tiene familias, se crea sola.
+
+**Pie:** «Guardar» y «Guardar y agregar otro». Este último guarda, limpia los campos de la persona y deja el foco en el buscador.
+
+## 3. API (`apps/server/src/routes/dwellings.ts`)
+
+- **`POST /dwellings/:id/members`** recibe `{ userId?, person?, familyId? | "NEW", isHead, relationship?, contact? }`.
+  - **Persona:** con `userId` se actualizan sus datos con `person`; sin él, se crea.
+  - **Reutiliza la lógica del slice 1** (alta de usuario, perfil de censo, guardia de DNI): las funciones de `lib/`, nunca una copia.
+  - **Familia:** sin familias, la crea. Con `"NEW"`, crea otra. Sin `familyId` y con una sola familia, usa esa.
+  - **Jefe:** con `isHead`, cambia el jefe.
+  - **Atómico:** todo con `db.batch` donde se pueda; donde no, deshace como en el alta de usuarios.
+  - Devuelve la vivienda completa.
+- **`PATCH /dwellings/:id/members/:memberId`:** lo mismo para editar (persona, parentesco, jefe, contacto).
+- **`DELETE` de un integrante:**
+  - Si es el único de su familia, se borra también la familia.
+  - Si es el jefe y quedan otros, lo rechaza: «Marca a otro integrante como jefe antes de quitar a <nombre>».
+  - La persona nunca se borra de Usuarios.
+- Quita los endpoints de familia que queden sin uso. El contacto alternativo se edita desde el formulario del jefe.
+- El esquema no cambia: `families`, `family_members` y el único jefe por familia siguen igual.
+
+## Reglas
+
+- **Diseño:** copia el esqueleto de lo existente (ver `docs/tecnico/convenciones.md` y las listas citadas). Botones de 44 px como máximo, una sola acción primaria e iconografía en los campos donde ayude.
+- **Informe:** di qué componente tomaste como modelo para la lista y para el formulario.
