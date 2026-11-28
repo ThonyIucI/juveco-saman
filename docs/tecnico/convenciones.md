@@ -127,6 +127,7 @@ Lo que sigue es propio de Juveco.
 
 - Esquema en `packages/db/src/schema/<tabla>.ts`. Tablas en plural.
 - Migraciones **solo** con `pnpm db:generate`, nunca SQL a mano.
+- Excepción, las migraciones de datos (repartir columnas, sembrar valores): el SQL va en `packages/db/src/data-migrations/<nombre>.sql` y `pnpm db:generate` lo convierte en migración detrás del cambio de esquema.
 - Escrituras de varias filas en `db.batch([...])`.
 - **La base local depende del `database_id`** de `wrangler.jsonc`: si cambia, wrangler usa
   otro archivo y la base local aparece vacía (pasó el 2026-11-07). Los datos siguen en el
