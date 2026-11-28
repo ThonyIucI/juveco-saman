@@ -40,18 +40,18 @@ import {
   NameMatchesWarning,
   PersonBirthDateField,
   PersonConditionFields,
+  DocumentLookupStatus,
   PersonDocumentField,
   PersonGenderField,
   PersonNameFields,
 } from "@/modules/users/components/person-fields";
-import { useDocumentLookup } from "@/modules/users/hooks/use-document-lookup";
+import { useDocumentAutofill } from "@/modules/users/hooks/use-document-autofill";
 import { useGetUser } from "@/modules/users/hooks/use-get-user";
 import { usePersonFormMatches } from "@/modules/users/hooks/use-person-form-matches";
 
 const FORM_ID = "member-form";
 const DOCUMENT_INPUT_ID = "documentNumber";
-const HEAD_LOCKED_HINT = "Para cambiar al jefe(a), marca la estrella en otra persona.";
-const NAME_FIELDS = ["firstName", "paternalLastName", "maternalLastName"] as const;
+const HEAD_LOCKED_HINT = "Para cambiarlo, actívalo en otra persona";
 
 type TTab = "main" | "extra";
 const MAIN_FIELDS = [
@@ -133,7 +133,8 @@ export default function MemberFormModal({ open, dwelling, member, onSaved, onClo
   const documentNumber = useStore(form.store, (state) => state.values.documentNumber);
   const exceptUserId = member?.userId ?? linked?.id;
   const { documentMatch, nameMatches } = usePersonFormMatches(form, exceptUserId);
-  const lookup = useDocumentLookup(linked ? "" : documentNumber);
+  /* RENIEC solo para una persona nueva: si ya está registrada (o se edita), no se consulta. */
+  const autofill = useDocumentAutofill(form, !isEdit && !linked && !documentMatch);
 
   const resetTo = (values: TMemberPersonValues) => {
     form.reset(values);
@@ -203,19 +204,6 @@ export default function MemberFormModal({ open, dwelling, member, onSaved, onClo
       setLinked(null);
     }
   }, [documentNumber, linked]);
-
-  /* La consulta de DNI (cuando se conecte) llena solo los nombres que estén vacíos. */
-  useEffect(() => {
-    if (!lookup) {
-      return;
-    }
-    for (const name of NAME_FIELDS) {
-      if (form.getFieldValue(name) === "") {
-        form.setFieldValue(name, lookup[name]);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lookup]);
 
   /* Al pasar la jefatura a otra persona, el jefe anterior queda como «Otro pariente»: se avisa. */
   const warnFormerHead = (value: TMemberPersonValues) => {
@@ -289,7 +277,7 @@ export default function MemberFormModal({ open, dwelling, member, onSaved, onClo
       open={open}
       title={isEdit ? "Editar integrante" : "Nuevo integrante"}
       subtitle={dwelling?.code}
-      width="lg"
+      width="xl"
       onClose={onClose}
       footer={
         <form.Subscribe selector={(state) => state.isSubmitting}>
@@ -342,6 +330,7 @@ export default function MemberFormModal({ open, dwelling, member, onSaved, onClo
                   Buscando sus datos…
                 </p>
               )}
+              {!linked && <DocumentLookupStatus isLooking={autofill.isLooking} isFilled={autofill.isFilled} />}
               {linked && !isLinking && (
                 <p role="status" className="flex items-center gap-1.5 text-sm font-medium text-success">
                   <CircleCheck aria-hidden className="size-4 shrink-0" />
@@ -353,6 +342,9 @@ export default function MemberFormModal({ open, dwelling, member, onSaved, onClo
             <PersonNameFields form={form} isFlat />
             <PersonBirthDateField form={form} />
             <PersonGenderField form={form} />
+            <div className="empty:hidden sm:col-span-2">
+              <NameMatchesWarning nameMatches={nameMatches} />
+            </div>
 
             <form.Field name="phone">
               {(field) => (
@@ -371,14 +363,12 @@ export default function MemberFormModal({ open, dwelling, member, onSaved, onClo
               )}
             </form.Field>
 
-            <div className="space-y-4 sm:col-span-2">
-              <NameMatchesWarning nameMatches={nameMatches} />
-              <MemberFamilyFields
-                form={form}
-                isHeadLocked={isHeadLocked}
-                headHint={isEdit && isMemberHead ? HEAD_LOCKED_HINT : null}
-              />
-            </div>
+            {/* Celular | Jefe(a) de hogar; debajo, el parentesco si no es jefe. */}
+            <MemberFamilyFields
+              form={form}
+              isHeadLocked={isHeadLocked}
+              headHint={isEdit && isMemberHead ? HEAD_LOCKED_HINT : null}
+            />
           </div>
 
           {/* Adicionales: prioridad, contacto alternativo y, si hace falta, otra familia de la casa. */}

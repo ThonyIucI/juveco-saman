@@ -1,0 +1,1 @@
+ALTER TABLE `dwellings` DROP COLUMN `observation`;

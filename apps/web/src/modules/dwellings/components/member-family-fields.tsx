@@ -1,7 +1,6 @@
 import { Label } from "@juveco/ui/components/label";
 import { Switch } from "@juveco/ui/components/switch";
 import { MEMBER_RELATIONSHIPS, familyRelationshipLabels } from "@juveco/shared/families";
-import { Star } from "lucide-react";
 
 import FieldError from "@/common/components/field-error";
 import Select, { type IOption } from "@/common/components/select";
@@ -23,22 +22,22 @@ interface IMemberFamilyFieldsProps {
 export default function MemberFamilyFields({ form, isHeadLocked, headHint }: IMemberFamilyFieldsProps) {
   return (
     <>
+      {/* Una celda de la grilla, del alto de los campos: va al lado del celular. */}
       <form.Field name="isHead">
         {(field) => (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between gap-4">
-              <Label htmlFor={field.name} className="flex items-center gap-2 font-semibold">
-                <Star aria-hidden className="size-4.5 fill-primary text-primary" />
-                Es jefe(a) de hogar
-              </Label>
+          <div className="space-y-2">
+            <Label htmlFor={field.name}>Jefe(a) de hogar</Label>
+            <div className="flex h-control items-center gap-3">
               <Switch
                 id={field.name}
                 checked={field.state.value}
                 disabled={isHeadLocked}
                 onCheckedChange={field.handleChange}
               />
+              <span className="text-sm text-muted-foreground">
+                {headHint ?? (field.state.value ? "Sí, responde por la familia" : "No")}
+              </span>
             </div>
-            {headHint && <p className="text-sm text-muted-foreground">{headHint}</p>}
           </div>
         )}
       </form.Field>
@@ -48,7 +47,7 @@ export default function MemberFamilyFields({ form, isHeadLocked, headHint }: IMe
           !isHead && (
             <form.Field name="relationship">
               {(field) => (
-                <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]">
+                <div className="space-y-2">
                   <Label htmlFor={field.name}>Parentesco con el jefe(a)</Label>
                   <Select
                     inputId={field.name}

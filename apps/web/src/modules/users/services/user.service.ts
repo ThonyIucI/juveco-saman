@@ -1,5 +1,5 @@
 import type { IPersonInput } from "@juveco/shared/people";
-import type { IUserProfileInput, IPersonMatchResource } from "@juveco/shared/user-profiles";
+import type { IDocumentLookupResource, IPersonMatchResource, IUserProfileInput } from "@juveco/shared/user-profiles";
 import type { EUserRole } from "@juveco/shared/roles";
 import type { IUserDetailResource, IUserResource } from "@juveco/shared/users";
 
@@ -49,6 +49,12 @@ export const findPersonMatchesRequest = (query: TPersonMatchQuery, signal?: Abor
   const params = new URLSearchParams(entries);
   return apiRequest<IPersonMatchResource[]>(`/users/matches?${params.toString()}`, { signal });
 };
+
+export const lookupDocumentRequest = (documentNumber: string, signal?: AbortSignal) =>
+  apiRequest<IDocumentLookupResource | null>(
+    `/users/document-lookup?${new URLSearchParams({ documentNumber }).toString()}`,
+    { signal },
+  );
 
 export const createUserRequest = (payload: ICreateUserPayload) =>
   apiRequest<IUserResource>("/users", { method: "POST", body: payload });

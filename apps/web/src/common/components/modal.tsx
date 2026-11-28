@@ -21,12 +21,14 @@ const EXIT_SECONDS = 0.18;
 /** Margen en px para considerar que el cuerpo llegó al borde (evita sombras por redondeo). */
 const EDGE_TOLERANCE = 2;
 
-type TModalWidth = "sm" | "md" | "lg";
+type TModalWidth = "sm" | "md" | "lg" | "xl";
 
 const WIDTH_CLASS: Record<TModalWidth, string> = {
   sm: "sm:max-w-sm",
   md: "sm:max-w-lg",
   lg: "sm:max-w-2xl",
+  /* Formularios de dos columnas con muchos campos (como «Nuevo cliente» de id-pos). */
+  xl: "sm:max-w-[52rem]",
 };
 
 interface IModalProps {

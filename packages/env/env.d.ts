@@ -18,6 +18,13 @@ export interface CloudflareEnv {
    * de 10 ingresos por archivo. No existe en `wrangler.jsonc` ni en producción.
    */
   DISABLE_RATE_LIMIT?: string;
+  /**
+   * Consulta de DNI (RENIEC) a través del servicio de identificación de id-pos. Sin estos, la
+   * consulta se apaga y los nombres se escriben a mano. URL base: la `IDENTIFICATION` de id-pos.
+   */
+  IDPOS_IDENTIFICATION_URL?: string;
+  /** Cabecera `I-Store` de id-pos, si el servicio la pide. */
+  IDPOS_STORE_ID?: string;
 }
 
 declare global {

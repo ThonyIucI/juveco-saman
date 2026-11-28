@@ -1,5 +1,6 @@
 import { Label } from "@juveco/ui/components/label";
 import { Textarea } from "@juveco/ui/components/textarea";
+import { cn } from "@juveco/ui/lib/utils";
 import { PERSON_NAME_MAX_LENGTH, fullName } from "@juveco/shared/people";
 import {
   CONDITION_NOTE_MAX_LENGTH,
@@ -7,13 +8,12 @@ import {
   EGender,
   type IPersonMatchResource,
   genderLabels,
-  isGender,
 } from "@juveco/shared/user-profiles";
 import type { ReactFormExtendedApi } from "@tanstack/react-form";
-import { IdCard, Mars, TriangleAlert, Venus } from "lucide-react";
+import { CircleCheck, IdCard, Loader2, Mars, TriangleAlert, Venus } from "lucide-react";
 
 import FieldError from "@/common/components/field-error";
-import OptionCards, { type IOptionCard } from "@/common/components/option-cards";
+import type { IOptionCard } from "@/common/components/option-cards";
 import TextField from "@/common/components/text-field";
 import { formatWrittenDateInput } from "@/common/utils/person-form";
 
@@ -158,6 +158,27 @@ export function PersonDocumentField({ form, documentMatch, onViewMatch, onUseMat
   );
 }
 
+/** Bajo el DNI: «Consultando RENIEC…» y luego «Datos de RENIEC completados». */
+export function DocumentLookupStatus({ isLooking, isFilled }: { isLooking: boolean; isFilled: boolean }) {
+  if (isLooking) {
+    return (
+      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Loader2 aria-hidden className="size-4 animate-spin" />
+        Consultando RENIEC…
+      </p>
+    );
+  }
+  if (isFilled) {
+    return (
+      <p role="status" className="flex items-center gap-1.5 text-sm font-medium text-success">
+        <CircleCheck aria-hidden className="size-4 shrink-0" />
+        Datos de RENIEC completados.
+      </p>
+    );
+  }
+  return null;
+}
+
 /** Fecha de nacimiento, escrita «día/mes/año». */
 export function PersonBirthDateField({ form }: IPersonFieldsProps) {
   return (
@@ -194,20 +215,47 @@ export function NameMatchesWarning({ nameMatches }: { nameMatches: IPersonMatchR
   );
 }
 
-/** Femenino o masculino, en botones; opcional: tocar el elegido lo desmarca. */
+/* Color de cada opción elegida: rosado para femenino, azul para masculino. */
+const GENDER_SELECTED_CLASS: Record<EGender, string> = {
+  [EGender.FEMALE]: "bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-200",
+  [EGender.MALE]: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200",
+};
+
+/**
+ * Femenino o masculino en **un solo grupo de botones unidos**. Opcional: tocar el elegido lo
+ * desmarca, y sin ninguno queda «sin especificar».
+ */
 export function PersonGenderField({ form }: IPersonFieldsProps) {
   return (
     <form.Field name="gender">
       {(field) => (
         <div className="space-y-2">
           <Label id={GENDER_LABEL_ID}>Género (opcional)</Label>
-          <OptionCards
-            labelledBy={GENDER_LABEL_ID}
-            options={GENDER_OPTIONS}
-            value={isGender(field.state.value) ? field.state.value : ""}
-            onChange={field.handleChange}
-            onClear={() => field.handleChange("")}
-          />
+          <div
+            role="radiogroup"
+            aria-labelledby={GENDER_LABEL_ID}
+            className="flex h-control divide-x divide-field-border overflow-hidden rounded-lg border border-field-border bg-field"
+          >
+            {GENDER_OPTIONS.map(({ value, label, icon: Icon }) => {
+              const isSelected = field.state.value === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={isSelected}
+                  onClick={() => field.handleChange(isSelected ? "" : value)}
+                  className={cn(
+                    "flex flex-1 cursor-pointer items-center justify-center gap-2 text-sm font-semibold transition-colors outline-none focus-visible:bg-muted",
+                    isSelected ? GENDER_SELECTED_CLASS[value] : "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  <Icon aria-hidden className="size-4.5" />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
           <FieldError errors={field.state.meta.errors} />
         </div>
       )}

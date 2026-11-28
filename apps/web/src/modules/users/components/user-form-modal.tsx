@@ -37,6 +37,7 @@ import {
 } from "@/common/utils/person-form";
 import { useCreateUser } from "@/modules/users/hooks/use-create-user";
 import { useGetUser } from "@/modules/users/hooks/use-get-user";
+import { useDocumentAutofill } from "@/modules/users/hooks/use-document-autofill";
 import { usePersonFormMatches } from "@/modules/users/hooks/use-person-form-matches";
 import { useUpdateUser } from "@/modules/users/hooks/use-update-user";
 import type { IEditAccessPayload, IGrantAccessPayload } from "@/modules/users/services/user.service";
@@ -45,6 +46,7 @@ import {
   NameMatchesWarning,
   PersonBirthDateField,
   PersonConditionFields,
+  DocumentLookupStatus,
   PersonDocumentField,
   PersonGenderField,
   PersonNameFields,
@@ -243,6 +245,8 @@ export default function UserFormModal({
 
   const isDirty = useStore(form.store, (state) => state.isDirty);
   const { documentMatch, nameMatches } = usePersonFormMatches(form, user?.id);
+  /* Al crear: con el DNI completo se autocompleta con RENIEC (si no es de alguien ya registrado). */
+  const autofill = useDocumentAutofill(form, !isEdit && !documentMatch);
 
   useEffect(() => {
     if (!open) {
@@ -311,7 +315,10 @@ export default function UserFormModal({
         <PersonNameFields form={form} />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <PersonDocumentField form={form} documentMatch={documentMatch} onViewMatch={viewMatch} />
+          <div className="space-y-1.5">
+            <PersonDocumentField form={form} documentMatch={documentMatch} onViewMatch={viewMatch} />
+            <DocumentLookupStatus isLooking={autofill.isLooking} isFilled={autofill.isFilled} />
+          </div>
           <PersonBirthDateField form={form} />
         </div>
         <NameMatchesWarning nameMatches={nameMatches} />

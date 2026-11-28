@@ -21,6 +21,7 @@ import { z } from "zod";
 
 import type { TAppEnv } from "../lib/app-env";
 import { badRequest, conflict, forbidden, notFound } from "../lib/errors";
+import { lookupDocument } from "../lib/document-lookup";
 import { findUserByDocument, loadUserProfile } from "../lib/user-profiles";
 import { userProfileSchema } from "../lib/user-profile-input";
 import { firstNameSchema, personExtraFields, personSchema } from "../lib/person-input";
@@ -42,6 +43,7 @@ export const USER_ROUTES = {
   USERS: "/users",
   /* Antes de `USER`: «matches» no es un id. */
   MATCHES: "/users/matches",
+  DOCUMENT_LOOKUP: "/users/document-lookup",
   USER: "/users/:id",
   USER_ACCESS: "/users/:id/access",
 } as const;
@@ -194,6 +196,15 @@ export const userRoutes = new Hono<TAppEnv>()
       throw badRequest(MATCHES_QUERY_MESSAGE);
     }
     return ok(context, await matchesByNameAndBirthDate(db, { firstName, paternalLastName, birthDate }, exceptId));
+  })
+
+  /* Autocompletar con el DNI (RENIEC vía id-pos). `null` si no se encontró o no está configurado. */
+  .get(USER_ROUTES.DOCUMENT_LOOKUP, requireAuth, async (context) => {
+    const documentNumber = collapseSpaces(context.req.query("documentNumber"));
+    if (!isValidDocumentNumber(documentNumber)) {
+      throw badRequest(DOCUMENT_NUMBER_INVALID_MESSAGE);
+    }
+    return ok(context, await lookupDocument(documentNumber));
   })
 
   .get(USER_ROUTES.USER, requireAuth, async (context) => {

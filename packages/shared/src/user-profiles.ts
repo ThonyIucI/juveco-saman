@@ -76,3 +76,13 @@ export const EMPTY_USER_PROFILE: IUserProfile = {
 export interface IPersonMatchResource extends IPersonName {
   id: string;
 }
+
+/** Lo que devuelve la consulta de DNI (RENIEC) para autocompletar a una persona nueva. */
+export interface IDocumentLookupResource {
+  firstName: string;
+  paternalLastName: string;
+  maternalLastName: string;
+  /** «AAAA-MM-DD», si vino. */
+  birthDate: string | null;
+  gender: EGender | null;
+}
