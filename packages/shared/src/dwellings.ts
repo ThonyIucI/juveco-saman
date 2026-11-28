@@ -10,8 +10,15 @@ import type { IFamilyResource } from "./families";
 import type { INeighborhood } from "./neighborhoods";
 
 export const DWELLING_METER_MAX_LENGTH = 20;
-export const DWELLING_URL_MAX_LENGTH = 500;
+export const DWELLING_WALL_MATERIAL_OTHER_MAX_LENGTH = 120;
 export const DWELLING_TEXT_MAX_LENGTH = 500;
+export const DWELLING_COORDINATE_DECIMALS = 6;
+
+/**
+ * Donde abre el mapa si la vivienda no tiene ubicación y no hay GPS.
+ * TODO (Thony): reemplazar por las coordenadas exactas de la plaza de Samán; estas son aproximadas.
+ */
+export const SAMAN_MAP_CENTER = { latitude: -15.3833, longitude: -70.1333 } as const;
 export const DWELLING_CODE_DIGITS = 4;
 
 export const DWELLING_LATITUDE_RANGE = { min: -90, max: 90 } as const;
@@ -19,8 +26,8 @@ export const DWELLING_LONGITUDE_RANGE = { min: -180, max: 180 } as const;
 
 export const DWELLING_NEIGHBORHOOD_REQUIRED_MESSAGE = "Elige el barrio de la vivienda.";
 export const DWELLING_METER_LENGTH_MESSAGE = "El medidor va hasta 20 caracteres.";
-export const DWELLING_URL_LENGTH_MESSAGE = "El enlace va hasta 500 caracteres.";
-export const DWELLING_URL_INVALID_MESSAGE = "Pega un enlace que empiece con http:// o https://.";
+export const DWELLING_WALL_MATERIAL_OTHER_REQUIRED_MESSAGE = "Especifica el material de las paredes.";
+export const DWELLING_WALL_MATERIAL_OTHER_LENGTH_MESSAGE = "El material va hasta 120 caracteres.";
 export const DWELLING_TEXT_LENGTH_MESSAGE = "El texto va hasta 500 letras.";
 export const DWELLING_LATITUDE_INVALID_MESSAGE = "La latitud va entre -90 y 90.";
 export const DWELLING_LONGITUDE_INVALID_MESSAGE = "La longitud va entre -180 y 180.";
@@ -87,16 +94,31 @@ export const wallMaterialLabels: Record<EWallMaterial, string> = {
 
 export const isWallMaterial = (value: string): value is EWallMaterial => value in wallMaterialLabels;
 
+/** Lo que se muestra como material: con «Otro», lo que se especificó. */
+export const wallMaterialText = (
+  material: EWallMaterial | null,
+  other: string | null,
+): string | null => {
+  if (!material) {
+    return null;
+  }
+  return material === EWallMaterial.OTHER && other ? other : wallMaterialLabels[material];
+};
+
+/** El enlace de Google Maps armado con las coordenadas; `null` sin ubicación. */
+export const mapsUrlOf = (latitude: number | null, longitude: number | null): string | null =>
+  latitude !== null && longitude !== null ? `https://www.google.com/maps?q=${latitude},${longitude}` : null;
+
 /** Lo que se escribe en el formulario de una vivienda. El barrio solo viaja al crear. */
 export interface IDwellingInput {
   /** `null` = sin medidor. */
   meterNumber: string | null;
   latitude: number | null;
   longitude: number | null;
-  mapsUrl: string | null;
   status: EDwellingStatus;
   wallMaterial: EWallMaterial | null;
-  photosUrl: string | null;
+  /** Solo con material «Otro»: qué material es (máx. 120). */
+  wallMaterialOther: string | null;
   observation: string | null;
   note: string | null;
 }

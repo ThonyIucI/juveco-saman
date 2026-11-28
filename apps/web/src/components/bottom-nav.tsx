@@ -38,12 +38,13 @@ export default function BottomNav() {
     >
       <ul className="mx-auto flex max-w-lg items-stretch">
         {items.map(({ to, shortLabel, icon: Icon }) => (
-          <li key={to} className="flex-1">
+          <li key={to} className="min-w-0 flex-1">
             <Link
               to={to}
               onClick={handleSectionClick(to)}
               className={cn(
-                "group flex flex-col items-center gap-1 px-2 py-2 font-heading text-xs font-medium text-muted-foreground transition-colors",
+                /* 5 entradas a 360 px: poco margen lateral y la etiqueta nunca se parte ni se corta. */
+                "group flex flex-col items-center gap-1 px-0.5 py-2 font-heading text-[11px] font-medium whitespace-nowrap text-muted-foreground transition-colors",
                 /* La actual, además de la píldora, con el texto en color y más peso. */
                 "[&.active]:font-semibold [&.active]:text-primary",
               )}

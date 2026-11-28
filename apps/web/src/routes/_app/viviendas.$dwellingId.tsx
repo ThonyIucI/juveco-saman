@@ -20,6 +20,7 @@ import PageBox from "@/common/components/page-box";
 import PageContainer from "@/common/components/page-container";
 import PageHeader from "@/common/components/page-header";
 import { useBoolean } from "@/common/hooks/use-boolean";
+import { useMediaQuery } from "@/common/hooks/use-media-query";
 import DwellingFormModal from "@/modules/dwellings/components/dwelling-form-modal";
 import DwellingInfoCard from "@/modules/dwellings/components/dwelling-info-card";
 import FamilyCard from "@/modules/dwellings/components/family-card";
@@ -28,11 +29,15 @@ import MemberFormModal from "@/modules/dwellings/components/member-form-modal";
 import { useDeleteFamily } from "@/modules/dwellings/hooks/use-delete-family";
 import { useDeleteMember } from "@/modules/dwellings/hooks/use-delete-member";
 import { useGetDwelling } from "@/modules/dwellings/hooks/use-get-dwelling";
+import { dwellingCountsLabel } from "@/modules/dwellings/utils/dwellings";
 import { useListUsers } from "@/modules/users/hooks/use-list-users";
 
 export const Route = createFileRoute("/_app/viviendas/$dwellingId")({
   component: DwellingPage,
 });
+
+/* El mismo corte que el `sm:` de Tailwind. */
+const DESKTOP_QUERY = "(min-width: 640px)";
 
 interface IMemberTarget {
   family: IFamilyResource;
@@ -50,6 +55,7 @@ function DwellingPage() {
   const ListUsers = useListUsers();
   const DeleteFamily = useDeleteFamily();
   const DeleteMember = useDeleteMember();
+  const isDesktop = useMediaQuery(DESKTOP_QUERY);
 
   const showDwellingForm = useBoolean();
   const showFamilyForm = useBoolean();
@@ -124,11 +130,20 @@ function DwellingPage() {
 
   const handleUserCreated = (user: IUserResource) => ListUsers.onUpsert(user);
 
+  /* La única acción primaria: en escritorio a la derecha del título; en el celular, en su fila, a todo el ancho. */
+  const addFamilyButton = (
+    <Button type="button" size="lg" className={isDesktop ? undefined : "w-full"} onClick={openAddFamily}>
+      <Plus />
+      Agregar familia
+    </Button>
+  );
+
   return (
     <PageContainer>
       <PageBox>
         <PageHeader
           title={dwelling?.code ?? "Vivienda"}
+          isTitleNowrap
           back={{ label: "Volver a las viviendas", onClick: goBack }}
           isLoadingSubtitle={isLoading}
           subtitle={dwelling && <NeighborhoodBadge neighborhood={dwelling.neighborhood} hasIcon={false} />}
@@ -139,13 +154,9 @@ function DwellingPage() {
               </IconButton>
             )
           }
-          action={
-            <Button type="button" size="lg" onClick={openAddFamily}>
-              <Plus />
-              Agregar familia
-            </Button>
-          }
+          action={isDesktop ? addFamilyButton : undefined}
         />
+        {!isDesktop && <div className="mt-3">{addFamilyButton}</div>}
       </PageBox>
 
       <PageBox isFill>
@@ -175,21 +186,27 @@ function DwellingPage() {
                   }
                 />
               ) : (
-                <div className="grid gap-4 lg:grid-cols-2">
-                  {dwelling.families.map((family) => (
-                    <FamilyCard
-                      key={family.id}
-                      family={family}
-                      onAddMember={openAddMember}
-                      onEditFamily={openEditFamily}
-                      onDeleteFamily={setDeleteFamilyTarget}
-                      onEditMember={openEditMember}
-                      onDeleteMember={(targetFamily, member) =>
-                        setDeleteMemberTarget({ family: targetFamily, member })
-                      }
-                    />
-                  ))}
-                </div>
+                <section className="space-y-3">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                    <h2 className="font-heading text-lg font-semibold text-foreground">Familias</h2>
+                    <p className="text-sm text-muted-foreground">{dwellingCountsLabel(dwelling)}</p>
+                  </div>
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    {dwelling.families.map((family) => (
+                      <FamilyCard
+                        key={family.id}
+                        family={family}
+                        onAddMember={openAddMember}
+                        onEditFamily={openEditFamily}
+                        onDeleteFamily={setDeleteFamilyTarget}
+                        onEditMember={openEditMember}
+                        onDeleteMember={(targetFamily, member) =>
+                          setDeleteMemberTarget({ family: targetFamily, member })
+                        }
+                      />
+                    ))}
+                  </div>
+                </section>
               )}
             </>
           )}

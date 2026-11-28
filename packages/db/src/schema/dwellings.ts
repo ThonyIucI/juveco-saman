@@ -24,12 +24,10 @@ export const dwellings = sqliteTable(
     localSequence: integer("local_sequence").notNull(),
     latitude: real("latitude"),
     longitude: real("longitude"),
-    /* Máx. 500 en la validación. */
-    mapsUrl: text("maps_url"),
     status: text("status").$type<EDwellingStatus>().default("NONE" as EDwellingStatus).notNull(),
     wallMaterial: text("wall_material").$type<EWallMaterial>(),
-    /* Carpeta de Google Drive; máx. 500. */
-    photosUrl: text("photos_url"),
+    /* Solo con material OTHER: qué material es; máx. 120 en la validación. */
+    wallMaterialOther: text("wall_material_other"),
     /* Máx. 500. */
     observation: text("observation"),
     /* Máx. 500. */

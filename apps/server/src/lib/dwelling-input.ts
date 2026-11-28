@@ -12,9 +12,9 @@ import {
   DWELLING_STATUS_INVALID_MESSAGE,
   DWELLING_TEXT_LENGTH_MESSAGE,
   DWELLING_TEXT_MAX_LENGTH,
-  DWELLING_URL_INVALID_MESSAGE,
-  DWELLING_URL_LENGTH_MESSAGE,
-  DWELLING_URL_MAX_LENGTH,
+  DWELLING_WALL_MATERIAL_OTHER_LENGTH_MESSAGE,
+  DWELLING_WALL_MATERIAL_OTHER_MAX_LENGTH,
+  DWELLING_WALL_MATERIAL_OTHER_REQUIRED_MESSAGE,
   EDwellingStatus,
   EWallMaterial,
 } from "@juveco/shared/dwellings";
@@ -43,14 +43,6 @@ const emptyToNull = (value: string) => (value === "" ? null : value);
 const optionalText = (maxLength: number, message: string) =>
   z.string(message).trim().max(maxLength, message).transform(emptyToNull).nullable();
 
-const urlSchema = z
-  .string(DWELLING_URL_INVALID_MESSAGE)
-  .trim()
-  .max(DWELLING_URL_MAX_LENGTH, DWELLING_URL_LENGTH_MESSAGE)
-  .refine((value) => value === "" || /^https?:\/\/\S+$/i.test(value), DWELLING_URL_INVALID_MESSAGE)
-  .transform(emptyToNull)
-  .nullable();
-
 export const neighborhoodRequiredSchema = z
   .string(DWELLING_NEIGHBORHOOD_REQUIRED_MESSAGE)
   .refine(isKnownNeighborhood, NEIGHBORHOOD_INVALID_MESSAGE);
@@ -67,10 +59,12 @@ const dwellingInputShape = {
     .min(DWELLING_LONGITUDE_RANGE.min, DWELLING_LONGITUDE_INVALID_MESSAGE)
     .max(DWELLING_LONGITUDE_RANGE.max, DWELLING_LONGITUDE_INVALID_MESSAGE)
     .nullable(),
-  mapsUrl: urlSchema,
   status: z.enum(EDwellingStatus, DWELLING_STATUS_INVALID_MESSAGE).default(DEFAULT_DWELLING_STATUS),
   wallMaterial: z.enum(EWallMaterial, DWELLING_MATERIAL_INVALID_MESSAGE).nullable(),
-  photosUrl: urlSchema,
+  wallMaterialOther: optionalText(
+    DWELLING_WALL_MATERIAL_OTHER_MAX_LENGTH,
+    DWELLING_WALL_MATERIAL_OTHER_LENGTH_MESSAGE,
+  ),
   observation: optionalText(DWELLING_TEXT_MAX_LENGTH, DWELLING_TEXT_LENGTH_MESSAGE),
   note: optionalText(DWELLING_TEXT_MAX_LENGTH, DWELLING_TEXT_LENGTH_MESSAGE),
 };
@@ -79,9 +73,25 @@ const dwellingInputShape = {
 const hasCoordinatesPair = (value: { latitude: number | null; longitude: number | null }) =>
   (value.latitude === null) === (value.longitude === null);
 
+/* Con «Otro» hay que decir cuál; con cualquier otro material, el texto sobra y se descarta. */
+const hasOtherMaterialText = (value: { wallMaterial: EWallMaterial | null; wallMaterialOther: string | null }) =>
+  value.wallMaterial !== EWallMaterial.OTHER || value.wallMaterialOther !== null;
+
+const withoutStaleOtherMaterial = <TValue extends { wallMaterial: EWallMaterial | null; wallMaterialOther: string | null }>(
+  value: TValue,
+): TValue => ({
+  ...value,
+  wallMaterialOther: value.wallMaterial === EWallMaterial.OTHER ? value.wallMaterialOther : null,
+});
+
 export const updateDwellingSchema = z
   .object(dwellingInputShape)
-  .refine(hasCoordinatesPair, { message: DWELLING_COORDINATES_PAIR_MESSAGE });
+  .refine(hasCoordinatesPair, { message: DWELLING_COORDINATES_PAIR_MESSAGE })
+  .refine(hasOtherMaterialText, {
+    path: ["wallMaterialOther"],
+    message: DWELLING_WALL_MATERIAL_OTHER_REQUIRED_MESSAGE,
+  })
+  .transform(withoutStaleOtherMaterial);
 
 export const createDwellingSchema = z
   .object({
@@ -89,7 +99,12 @@ export const createDwellingSchema = z
     neighborhoodId: neighborhoodRequiredSchema,
     expectedCode: z.string().min(1),
   })
-  .refine(hasCoordinatesPair, { message: DWELLING_COORDINATES_PAIR_MESSAGE });
+  .refine(hasCoordinatesPair, { message: DWELLING_COORDINATES_PAIR_MESSAGE })
+  .refine(hasOtherMaterialText, {
+    path: ["wallMaterialOther"],
+    message: DWELLING_WALL_MATERIAL_OTHER_REQUIRED_MESSAGE,
+  })
+  .transform(withoutStaleOtherMaterial);
 
 const personIdSchema = (message: string) => z.string(message).min(1, message);
 

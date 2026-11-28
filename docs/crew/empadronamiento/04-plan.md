@@ -21,6 +21,40 @@ Aprobado por Thony el 2026-11-28.
 6. **Material de paredes:** la lista del censo del INEI. Es decir, ladrillo o bloque de cemento, piedra o sillar con cal o cemento, adobe, tapia, quincha (caña con barro), piedra con barro, madera, triplay/calamina/estera y otro.
 7. **Implementación:** mientras Codex no tenga créditos, implementa Sonnet y revisa Opus.
 
+## Cambios tras probar el slice 2 (Thony, 2026-11-28; mandan sobre todo lo de abajo)
+
+8. **Formulario de vivienda por pasos**, en lugar de uno largo. El paso actual se ve arriba con su número y nombre; «Siguiente» valida solo ese paso y «Atrás» no pierde nada.
+   1. **Vivienda:** barrio, medidor, estado y material.
+   2. **Ubicación:** un mapa Leaflet con vista satelital (Esri World Imagery) y de calles (OpenStreetMap), sin clave de API.
+      - Abre centrado en Samán o en el GPS del celular, si se da permiso.
+      - Se toca el mapa o se arrastra el pin hasta la casa exacta. Las coordenadas salen del pin.
+      - Se quita el campo «enlace de Maps»: el botón «Abrir en Maps» se arma con las coordenadas.
+   3. **Evidencias y notas:** las fotos (decisión 12), la observación y la nota.
+9. **Material de paredes:** al lado de la etiqueta va un ícono (i) con tooltip (hover en escritorio, toque en celular): «Elige el material de las paredes. Si hay varios, el que más predomina». Con «Otro» aparece «Especifica el material», obligatorio, máx. 120.
+10. **Se quita el enlace a la carpeta de Drive.** Las fotos se suben en el formulario (decisión 12).
+11. **Formulario público, pendiente hasta aprobar.**
+    - Lo puede llenar cualquiera sin cuenta: voluntarios o las mismas familias. Debe ser lo más intuitivo posible, pensado para el celular y para gente que no maneja bien la tecnología.
+    - Pasos: Vivienda → Ubicación → Familias e integrantes → Fotos → «¿Quién llena?» (nombre y celular de quien envía) → Enviar.
+    - Lo enviado **no toca** usuarios ni viviendas: queda como **solicitud pendiente**. Un admin la revisa y recién al aprobarla:
+      - se crean la vivienda, sus familias y sus integrantes;
+      - **el código se asigna al aprobar**, para que el spam no gaste correlativos.
+    - **Al revisar,** cada persona con DNI que ya existe se muestra junto a la persona encontrada. Por defecto se vincula; el admin puede elegir crearla como nueva. El admin puede corregir antes de aprobar, o rechazar con motivo.
+    - **El formulario público no revela nada de la base:** no hay avisos de DNI repetido ni buscadores de personas.
+    - **Contra el abuso:** Cloudflare Turnstile (captcha gratuito y sin fricción), límite de envíos por IP y tope de tamaño en todo.
+    - Lo pendiente no cuenta en listas ni en el Excel.
+12. **Fotos en Google Drive por API**, con la cuenta Gmail personal de Thony. Una cuenta de servicio no sirve: no tiene espacio en un Drive personal.
+    - **Autorización:** Thony la da una vez (OAuth) y el refresh token queda como secreto del Worker.
+    - **Carpetas:** `Viviendas/<código> - Familia <apellidos del jefe>`. Mientras la solicitud está pendiente, las fotos van en `Viviendas/Pendientes/<id>`; al aprobarla, la carpeta se mueve y se renombra. Si cambia el jefe, se renombra.
+    - **Subida:** las fotos se comprimen en el navegador antes de subir, a 1600 px de lado mayor y en JPEG. Máximo 5 por vivienda.
+    - **Ver las fotos:** los archivos en Drive son privados. El admin los ve a través del servidor, nunca con un enlace público.
+    - **Carpeta raíz por entorno:** su nombre sale de la variable `DRIVE_ROOT_FOLDER`, que por defecto es `Viviendas`. En local, `.dev.vars` usa `Viviendas (pruebas)` con las mismas credenciales. La app crea esa carpeta la primera vez (con `drive.file` no ve carpetas creadas a mano) y la busca por nombre entre las suyas.
+13. **Nuevo orden de trabajo** (el ítem creció; se pasa del tope de 4 slices):
+    - **2 (ajuste):** diseño, pasos 1–3 sin fotos, mapa y material.
+    - **2b:** formulario público con solicitudes y revisión.
+    - **2c:** fotos a Drive.
+    - **3 y 4:** sin cambios.
+    - Los cambios de esquema van en una migración nueva, generada encima de la 0017.
+
 ---
 
 Esta propuesta arma el empadronamiento genérico de viviendas, familias y personas en **4 slices**: persona censable, registro de viviendas con sus familias, consulta con filtros y cambio de jefe, y por último el padrón en Excel.

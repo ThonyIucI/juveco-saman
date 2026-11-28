@@ -16,10 +16,20 @@ interface IPageHeaderProps {
   action?: ReactNode;
   /** Volver: un chevron a la izquierda del título, sin texto (Thony, 2026-11-11). */
   back?: { label: string; onClick: () => void };
+  /** El título nunca se parte en dos líneas (p. ej. un código como «MA-0001»). */
+  isTitleNowrap?: boolean;
 }
 
 /** Encabezado estándar de un módulo: título, contadores y la acción principal. */
-export default function PageHeader({ title, titleAction, subtitle, isLoadingSubtitle, action, back }: IPageHeaderProps) {
+export default function PageHeader({
+  title,
+  titleAction,
+  subtitle,
+  isLoadingSubtitle,
+  action,
+  back,
+  isTitleNowrap = false,
+}: IPageHeaderProps) {
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex min-w-0 items-start gap-1">
@@ -31,7 +41,11 @@ export default function PageHeader({ title, titleAction, subtitle, isLoadingSubt
         )}
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h1 className="font-heading text-xl font-semibold text-foreground">{title}</h1>
+            <h1
+              className={`font-heading text-xl font-semibold text-foreground ${isTitleNowrap ? "whitespace-nowrap" : ""}`}
+            >
+              {title}
+            </h1>
             {/*
               Sin alto propio: el botón (36 px) estiraba la fila del título (28 px) y dejaba
               aire de más antes del subtítulo (Thony, 2026-11-11).
