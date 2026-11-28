@@ -19,5 +19,11 @@ export const matchesUserSearch = (user: IUserResource, term: string): boolean =>
   );
 };
 
+/** Los nombres más cortos no sirven para buscar a alguien repetido. */
+export const MIN_PERSON_NAME_LENGTH_FOR_MATCH = 2;
+
+/** Si lo escrito es un DNI completo (8 dígitos): la lista cargada no lo trae, se pregunta al servidor. */
+export const looksLikeDocumentNumber = (term: string): boolean => /^\d{8}$/.test(term.trim());
+
 /** Si lo escrito parece un número (para llenar el número al crear desde el buscador). */
 export const looksLikePhone = (term: string): boolean => /^\+?[\d\s-]{6,}$/.test(term.trim());

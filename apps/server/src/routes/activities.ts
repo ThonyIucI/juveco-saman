@@ -149,10 +149,16 @@ const toItemResource = ({ item, buyer, seller, paidAmount }: IItemRow): IActivit
   buyer: {
     id: buyer.id,
     firstName: buyer.firstName,
-    lastName: buyer.lastName,
+    paternalLastName: buyer.paternalLastName,
+    maternalLastName: buyer.maternalLastName,
     neighborhood: neighborhoodOf(buyer.neighborhoodId),
   },
-  seller: { id: seller.id, firstName: seller.firstName, lastName: seller.lastName },
+  seller: {
+    id: seller.id,
+    firstName: seller.firstName,
+    paternalLastName: seller.paternalLastName,
+    maternalLastName: seller.maternalLastName,
+  },
   note: item.note,
   voidedAt: item.voidedAt?.toISOString() ?? null,
   replacesId: item.replacesId,
@@ -204,7 +210,12 @@ const toPaymentResource = ({ payment, collector }: IPaymentRow): IActivityItemPa
   itemId: payment.itemId,
   amount: payment.amount,
   method: payment.method,
-  collector: { id: collector.id, firstName: collector.firstName, lastName: collector.lastName },
+  collector: {
+    id: collector.id,
+    firstName: collector.firstName,
+    paternalLastName: collector.paternalLastName,
+    maternalLastName: collector.maternalLastName,
+  },
   createdAt: payment.createdAt.toISOString(),
 });
 

@@ -85,7 +85,8 @@ const paidAmountSql = sql<number>`coalesce((select sum(${activityTeamPayments.am
 const toPerson = (user: TUserRow): IActivityTeamPerson => ({
   id: user.id,
   firstName: user.firstName,
-  lastName: user.lastName,
+  paternalLastName: user.paternalLastName,
+  maternalLastName: user.maternalLastName,
   neighborhood: neighborhoodOf(user.neighborhoodId),
 });
 
@@ -127,7 +128,7 @@ const loadPlayers = async (db: TDb, teamIds: string[]): Promise<Map<string, IAct
     .from(activityTeamPlayers)
     .innerJoin(users, eq(users.id, activityTeamPlayers.userId))
     .where(inArray(activityTeamPlayers.teamId, teamIds))
-    .orderBy(asc(users.firstName), asc(users.lastName));
+    .orderBy(asc(users.firstName), asc(users.paternalLastName), asc(users.maternalLastName));
   for (const { teamId, user } of rows) {
     byTeam.get(teamId)?.push(toPerson(user));
   }
@@ -230,7 +231,12 @@ const toPaymentResource = ({ payment, collector }: IPaymentRow): IActivityTeamPa
   teamId: payment.teamId,
   amount: payment.amount,
   method: payment.method,
-  collector: { id: collector.id, firstName: collector.firstName, lastName: collector.lastName },
+  collector: {
+    id: collector.id,
+    firstName: collector.firstName,
+    paternalLastName: collector.paternalLastName,
+    maternalLastName: collector.maternalLastName,
+  },
   createdAt: payment.createdAt.toISOString(),
 });
 

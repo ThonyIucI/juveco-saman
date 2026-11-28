@@ -10,7 +10,7 @@
     }
   },
   "scripts": {
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate && node scripts/data-migrations.mjs"
   },
   "dependencies": {
     "@juveco/env": "workspace:*",

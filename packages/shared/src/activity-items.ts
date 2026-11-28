@@ -5,6 +5,7 @@
  * la misma actividad se deja guardar, pero se avisa.
  */
 import type { INeighborhood } from "./neighborhoods";
+import type { IPersonName } from "./people";
 
 export const ACTIVITY_ITEM_SERIAL_MAX_LENGTH = 20;
 
@@ -14,10 +15,8 @@ export const ACTIVITY_ITEM_BUYER_REQUIRED_MESSAGE = "Elige quién lo compró.";
 export const ACTIVITY_ITEM_SELLER_REQUIRED_MESSAGE = "Elige quién lo vendió.";
 
 /** Una persona del ítem, con lo justo para la card. */
-export interface IActivityItemPerson {
+export interface IActivityItemPerson extends IPersonName {
   id: string;
-  firstName: string;
-  lastName: string | null;
 }
 
 export interface IActivityItemBuyer extends IActivityItemPerson {

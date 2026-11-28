@@ -1,7 +1,8 @@
 import { NEIGHBORHOOD_INVALID_MESSAGE, isKnownNeighborhood } from "@juveco/shared/neighborhoods";
 import {
   FIRST_NAME_LENGTH_MESSAGE,
-  LAST_NAME_LENGTH_MESSAGE,
+  MATERNAL_LAST_NAME_LENGTH_MESSAGE,
+  PATERNAL_LAST_NAME_LENGTH_MESSAGE,
   PERSON_NAME_MAX_LENGTH,
   PERSON_NAME_MIN_LENGTH,
   PERSON_NOTE_LENGTH_MESSAGE,
@@ -34,7 +35,8 @@ export const firstNameSchema = z
 const optionalText = (maxLength: number, message: string) =>
   z.string(message).trim().max(maxLength, message).transform(collapseSpaces).transform(emptyToNull).nullable();
 
-export const lastNameSchema = optionalText(PERSON_NAME_MAX_LENGTH, LAST_NAME_LENGTH_MESSAGE);
+export const paternalLastNameSchema = optionalText(PERSON_NAME_MAX_LENGTH, PATERNAL_LAST_NAME_LENGTH_MESSAGE);
+export const maternalLastNameSchema = optionalText(PERSON_NAME_MAX_LENGTH, MATERNAL_LAST_NAME_LENGTH_MESSAGE);
 /* Se valida contra las constantes, sin consultar la tabla. */
 export const neighborhoodIdSchema = z
   .string(NEIGHBORHOOD_INVALID_MESSAGE)
@@ -53,7 +55,8 @@ export const whatsappUsernameSchema = z
 
 /** Los campos de persona que no son los nombres, todos opcionales. */
 export const personExtraFields = {
-  lastName: lastNameSchema.optional(),
+  paternalLastName: paternalLastNameSchema.optional(),
+  maternalLastName: maternalLastNameSchema.optional(),
   neighborhoodId: neighborhoodIdSchema.optional(),
   phone: phoneSchema.optional(),
   whatsappUsername: whatsappUsernameSchema.optional(),

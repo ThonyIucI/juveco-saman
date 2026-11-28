@@ -53,7 +53,7 @@ describe("premios, gastos y balance de una actividad", () => {
     const all = await dataOf<{ id: string; type: string }[]>(activities);
     activityId = all.find((activity) => activity.type === "BINGO")?.id ?? "";
 
-    const donor = await postJson("/api/v1/users", { firstName: "Rosa", lastName: "Donante" }, { cookie });
+    const donor = await postJson("/api/v1/users", { firstName: "Rosa", paternalLastName: "Donante" }, { cookie });
     donorId = (await dataOf<{ id: string }>(donor)).id;
   });
 
@@ -178,7 +178,7 @@ describe("premios, gastos y balance de una actividad", () => {
       await postJson(path("prizes"), { name: "Bicicleta", origin: "DONATED", donorId }, { cookie }),
     );
     const buyer = await dataOf<{ id: string }>(
-      await postJson("/api/v1/users", { firstName: "Lucho", lastName: "Ganador" }, { cookie }),
+      await postJson("/api/v1/users", { firstName: "Lucho", paternalLastName: "Ganador" }, { cookie }),
     );
     const item = await dataOf<{ id: string }>(
       await postJson(path("items"), { serial: "0777", buyerId: buyer.id }, { cookie }),

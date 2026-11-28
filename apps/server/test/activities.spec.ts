@@ -77,7 +77,7 @@ describe("/activities", () => {
 
     const buyer = await postJson(
       "/api/v1/users",
-      { firstName: "María", lastName: "Flores", neighborhoodId: NEIGHBORHOOD_IDS.EL_PATIO },
+      { firstName: "María", paternalLastName: "Flores", neighborhoodId: NEIGHBORHOOD_IDS.EL_PATIO },
       { cookie },
     );
     buyerId = (await buyer.json<IBody<{ id: string }>>()).data.id;

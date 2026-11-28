@@ -12,7 +12,7 @@ interface IBody<TData> {
 interface IUserData {
   id: string;
   firstName: string;
-  lastName: string | null;
+  paternalLastName: string | null;
   neighborhood: { id: string; name: string } | null;
   phone: { countryPrefix: string; number: string } | null;
   whatsappUsername: string | null;
@@ -62,7 +62,7 @@ describe("/users", () => {
     // Act
     const response = await create({
       firstName: "  Ana   María ",
-      lastName: "Pérez",
+      paternalLastName: "Pérez",
       neighborhoodId: NEIGHBORHOOD_IDS.SANTA_ROSA,
       phone: PERU_PHONE,
       whatsappUsername: "Ana.pe",
@@ -74,7 +74,7 @@ describe("/users", () => {
     expect(response.status).toBe(201);
     expect(body.data).toMatchObject({
       firstName: "Ana María",
-      lastName: "Pérez",
+      paternalLastName: "Pérez",
       neighborhood: { id: NEIGHBORHOOD_IDS.SANTA_ROSA, name: "Santa Rosa" },
       phone: PERU_PHONE,
       whatsappUsername: "Ana.pe",
@@ -85,11 +85,11 @@ describe("/users", () => {
   });
 
   it("solo los nombres son obligatorios: lo demás queda en null", async () => {
-    const response = await create({ firstName: "Luis", lastName: "" });
+    const response = await create({ firstName: "Luis", paternalLastName: "" });
     const body = await response.json<IBody<IUserData>>();
 
     expect(response.status).toBe(201);
-    expect(body.data).toMatchObject({ lastName: null, neighborhood: null, phone: null });
+    expect(body.data).toMatchObject({ paternalLastName: null, neighborhood: null, phone: null });
   });
 
   it("rechaza un barrio que no está en la lista", async () => {
@@ -142,7 +142,7 @@ describe("/users", () => {
 
   it("el superadmin da acceso: pasa a ADMIN y entra con su correo", async () => {
     // Arrange
-    const created = await createUser({ firstName: "Rosa", lastName: "Farias" });
+    const created = await createUser({ firstName: "Rosa", paternalLastName: "Farias" });
 
     // Act
     const response = await grantAccess(created.id, ADMIN_ACCESS);

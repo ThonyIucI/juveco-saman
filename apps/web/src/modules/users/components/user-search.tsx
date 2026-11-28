@@ -9,6 +9,7 @@ import InitialsAvatar, { avatarColorOf } from "@/common/components/initials-avat
 import NeighborhoodBadge from "@/common/components/neighborhood-badge";
 import SearchInput from "@/common/components/search-input";
 import type { IPersonInitialValues } from "@/common/utils/person-form";
+import { useDocumentLookup } from "@/modules/users/hooks/use-document-lookup";
 import { looksLikePhone, matchesUserSearch } from "@/modules/users/utils/user-search";
 
 import UserFormModal from "./user-form-modal";
@@ -50,6 +51,8 @@ export default function UserSearch({
   const [createValues, setCreateValues] = useState<IPersonInitialValues | null>(null);
   /* El elegido se edita tocando su card (Thony, 2026-11-07). */
   const [editTarget, setEditTarget] = useState<IUserResource | null>(null);
+  /* La lista cargada no trae el DNI: uno completo se busca en el servidor. */
+  const documentUserIds = useDocumentLookup(term);
 
   /*
     La modal de edición va también cuando hay alguien elegido. Al guardar, la lista se entera
@@ -107,7 +110,9 @@ export default function UserSearch({
 
   const normalizedTerm = term.trim().toLowerCase();
   const results = normalizedTerm
-    ? users.filter((user) => matchesUserSearch(user, normalizedTerm)).slice(0, MAX_RESULTS)
+    ? users
+        .filter((user) => documentUserIds.includes(user.id) || matchesUserSearch(user, normalizedTerm))
+        .slice(0, MAX_RESULTS)
     : [];
   const isListShown = isOpen && normalizedTerm.length > 0;
 
@@ -156,8 +161,8 @@ export default function UserSearch({
           id={id}
           icon={UserRound}
           isCompact
-          placeholder="Busca usuario por nombre o número"
-          aria-label="Buscar usuario por nombre, número o usuario"
+          placeholder="Busca usuario por nombre, número o DNI"
+          aria-label="Buscar usuario por nombre, número, usuario o DNI"
           aria-expanded={isListShown}
           aria-controls={listId}
           aria-invalid={isInvalid}

@@ -16,7 +16,9 @@ export const users = sqliteTable(
   {
     id: text("id").primaryKey(),
     firstName: text("first_name").notNull(),
-    lastName: text("last_name"),
+    /* Apellidos separados para poder relacionar parentescos; máx. 60 en la validación. */
+    paternalLastName: text("paternal_last_name"),
+    maternalLastName: text("maternal_last_name"),
     neighborhoodId: text("neighborhood_id").references(() => neighborhoods.id),
     /* Prefijo del país sin «+» («51»). Va con `phone`. */
     countryPrefix: text("country_prefix"),

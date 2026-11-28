@@ -54,7 +54,7 @@ describe("portada pública", () => {
   it("muestra premio con donante y quienes apoyaron, sin monto por persona", async () => {
     // Arrange
     const donor = await dataOf<{ id: string }>(
-      await postJson("/api/v1/users", { firstName: "Marta", lastName: "Apoyo" }, { cookie }),
+      await postJson("/api/v1/users", { firstName: "Marta", paternalLastName: "Apoyo" }, { cookie }),
     );
     await postJson(
       `/api/v1/activities/${bingoId}/prizes`,

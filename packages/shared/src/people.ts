@@ -9,14 +9,21 @@ export const PERSON_NAME_MAX_LENGTH = 60;
 export const PERSON_NOTE_MAX_LENGTH = 200;
 
 export const FIRST_NAME_LENGTH_MESSAGE = "Los nombres van de 2 a 60 letras.";
-export const LAST_NAME_LENGTH_MESSAGE = "Los apellidos van hasta 60 letras.";
+export const PATERNAL_LAST_NAME_LENGTH_MESSAGE = "El apellido paterno va hasta 60 letras.";
+export const MATERNAL_LAST_NAME_LENGTH_MESSAGE = "El apellido materno va hasta 60 letras.";
 export const PERSON_NOTE_LENGTH_MESSAGE = "La nota va hasta 200 letras.";
 
-/** Lo que se escribe en el formulario y viaja al crear o editar. */
-export interface IPersonInput {
+/** Cómo se llama una persona: nombres y los dos apellidos por separado. */
+export interface IPersonName {
   firstName: string;
   /** `null` si no se sabe. */
-  lastName: string | null;
+  paternalLastName: string | null;
+  /** `null` si no se sabe. */
+  maternalLastName: string | null;
+}
+
+/** Lo que se escribe en el formulario y viaja al crear o editar. */
+export interface IPersonInput extends IPersonName {
   /** Uno de `NEIGHBORHOODS`; `null` si no se sabe. */
   neighborhoodId: string | null;
   /** Su número de WhatsApp. `null` si no lo tiene. */
@@ -26,7 +33,7 @@ export interface IPersonInput {
   note: string | null;
 }
 
-/** «Ana» + «Pérez Ruiz» → «Ana Pérez Ruiz». */
-export const fullName = (person: { firstName: string; lastName: string | null }): string =>
-  person.lastName ? `${person.firstName} ${person.lastName}` : person.firstName;
+/** «Ana» + «Pérez» + «Ruiz» → «Ana Pérez Ruiz». Sin apellidos, solo los nombres. */
+export const fullName = (person: IPersonName): string =>
+  [person.firstName, person.paternalLastName, person.maternalLastName].filter(Boolean).join(" ");
 

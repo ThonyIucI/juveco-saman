@@ -53,7 +53,7 @@ describe("/activities/:id/teams", () => {
   const createPerson = async (firstName: string) => {
     const response = await postJson(
       "/api/v1/users",
-      { firstName, lastName: "Prueba", neighborhoodId: NEIGHBORHOOD_IDS.EL_PATIO },
+      { firstName, paternalLastName: "Prueba", neighborhoodId: NEIGHBORHOOD_IDS.EL_PATIO },
       { cookie },
     );
     return (await dataOf<{ id: string }>(response)).id;

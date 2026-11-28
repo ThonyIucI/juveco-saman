@@ -7,5 +7,6 @@ export * from "./activity-items";
 export * from "./activity-teams";
 export * from "./auth";
 export * from "./neighborhoods";
+export * from "./user-profiles";
 export * from "./projects";
 export * from "./users";

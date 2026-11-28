@@ -17,7 +17,8 @@ export const meRoutes = new Hono<TAppEnv>()
     return ok(context, {
       id: user.id,
       firstName: user.firstName,
-      lastName: user.lastName,
+      paternalLastName: user.paternalLastName,
+      maternalLastName: user.maternalLastName,
       neighborhood: neighborhoodOf(user.neighborhoodId),
       role: user.role,
       email: authUser.email,

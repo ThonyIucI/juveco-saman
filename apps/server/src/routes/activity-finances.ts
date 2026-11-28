@@ -107,12 +107,24 @@ interface IPrizeRow {
   winner: typeof users.$inferSelect | null;
 }
 
+const toPersonName = (person: {
+  id: string;
+  firstName: string;
+  paternalLastName: string | null;
+  maternalLastName: string | null;
+}) => ({
+  id: person.id,
+  firstName: person.firstName,
+  paternalLastName: person.paternalLastName,
+  maternalLastName: person.maternalLastName,
+});
+
 export const toPrizeResource = ({ prize, donor, winningItem, winner }: IPrizeRow): IActivityPrizeResource => ({
   id: prize.id,
   activityId: prize.activityId,
   name: prize.name,
   origin: prize.origin,
-  donor: donor ? { id: donor.id, firstName: donor.firstName, lastName: donor.lastName } : null,
+  donor: donor ? toPersonName(donor) : null,
   cost: prize.cost,
   note: prize.note,
   winner:
@@ -120,7 +132,7 @@ export const toPrizeResource = ({ prize, donor, winningItem, winner }: IPrizeRow
       ? {
           itemId: winningItem.id,
           serial: winningItem.serial,
-          buyer: { id: winner.id, firstName: winner.firstName, lastName: winner.lastName },
+          buyer: toPersonName(winner),
         }
       : null,
   createdAt: prize.createdAt.toISOString(),

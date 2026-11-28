@@ -26,6 +26,7 @@ import UserFormModal from "@/modules/users/components/user-form-modal";
 import UserMobileList from "@/modules/users/components/user-mobile-list";
 import UserTable from "@/modules/users/components/user-table";
 import { useDeleteUser } from "@/modules/users/hooks/use-delete-user";
+import { useDocumentLookup } from "@/modules/users/hooks/use-document-lookup";
 import { useListUsers } from "@/modules/users/hooks/use-list-users";
 import {
   EMPTY_USER_FILTERS,
@@ -94,8 +95,13 @@ function UsersPage() {
   const openUser = users.find((item) => item.id === search.usuario) ?? null;
 
   const normalizedTerm = term.trim().toLowerCase();
+  /* La lista no trae el DNI: uno completo se busca en el servidor. */
+  const documentUserIds = useDocumentLookup(term);
   const visible = users
-    .filter((user) => !normalizedTerm || matchesUserSearch(user, normalizedTerm))
+    .filter(
+      (user) =>
+        !normalizedTerm || documentUserIds.includes(user.id) || matchesUserSearch(user, normalizedTerm),
+    )
     .filter((user) => matchesUserFilters(user, filters))
     .sort(compareByRoleThenName);
   const activeFilterCount = countActiveUserFilters(filters);
@@ -160,7 +166,7 @@ function UsersPage() {
   const searchInput = (
     <SearchInput
       placeholder="Buscar usuario…"
-      aria-label="Buscar usuario por nombre, barrio, número, usuario o nota"
+      aria-label="Buscar usuario por nombre, barrio, número, usuario, DNI o nota"
       value={term}
       onChange={handleSearchChange}
     />

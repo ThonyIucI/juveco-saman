@@ -32,6 +32,27 @@ export const assertPhoneAvailable = async ({
   }
 };
 
+type TFindByDocument = (documentNumber: string) => Promise<IPersonMatch | undefined>;
+
+/** El DNI no se repite: responde con quién ya lo tiene. */
+export const assertDocumentAvailable = async ({
+  documentNumber,
+  findByDocument,
+  exceptId,
+}: {
+  documentNumber: string | null | undefined;
+  findByDocument: TFindByDocument;
+  exceptId?: string;
+}) => {
+  if (!documentNumber) {
+    return;
+  }
+  const existing = await findByDocument(documentNumber);
+  if (existing && existing.id !== exceptId) {
+    throw conflict(`«${existing.label}» ya tiene ese DNI.`);
+  }
+};
+
 export const assertUsernameAvailable = async ({
   username,
   findByUsername,

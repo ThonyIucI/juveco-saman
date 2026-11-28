@@ -5,11 +5,17 @@ import { Textarea } from "@juveco/ui/components/textarea";
 import { USER_MIN_PASSWORD_LENGTH, type IUserResource } from "@juveco/shared/users";
 import { EUserRole, userRoleLabels } from "@juveco/shared/roles";
 import { NEIGHBORHOODS } from "@juveco/shared/neighborhoods";
-import { PERSON_NAME_MAX_LENGTH, PERSON_NOTE_MAX_LENGTH } from "@juveco/shared/people";
+import { PERSON_NAME_MAX_LENGTH, PERSON_NOTE_MAX_LENGTH, fullName } from "@juveco/shared/people";
+import {
+  CONDITION_NOTE_MAX_LENGTH,
+  DOCUMENT_NUMBER_LENGTH,
+  genderLabels,
+} from "@juveco/shared/user-profiles";
 import { useForm, useStore } from "@tanstack/react-form";
-import { useRouteContext } from "@tanstack/react-router";
-import { AtSign, Phone } from "lucide-react";
+import { useNavigate, useRouteContext } from "@tanstack/react-router";
+import { AtSign, Phone, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import z from "zod";
 
 import FieldError from "@/common/components/field-error";
@@ -24,18 +30,29 @@ import {
   type IPersonInitialValues,
   type TWhatsAppMode,
   USERNAME_INPUT_MAX_LENGTH,
+  buildDetailsDefaults,
   buildPersonDefaults,
+  formatWrittenDateInput,
+  hasDetailsData,
   initialWhatsAppMode,
   personFormSchema,
   readLastNeighborhood,
   rememberNeighborhood,
+  toDetailsPayload,
   toPersonPayload,
+  writtenDateToIso,
 } from "@/common/utils/person-form";
 import { useCreateUser } from "@/modules/users/hooks/use-create-user";
+import { useGetUser } from "@/modules/users/hooks/use-get-user";
+import { usePersonMatches } from "@/modules/users/hooks/use-person-matches";
 import { useUpdateUser } from "@/modules/users/hooks/use-update-user";
 import type { IEditAccessPayload, IGrantAccessPayload } from "@/modules/users/services/user.service";
 
+import ConditionChips from "./condition-chips";
+
 const FORM_ID = "user-form";
+const CONDITIONS_LABEL_ID = "person-conditions-label";
+const BIRTH_DATE_INPUT_LENGTH = 10;
 
 /* Hoy el único rol que se puede dar al crear es administrador; el superadmin es solo Thony. */
 const ASSIGNABLE_ROLES = [EUserRole.ADMIN] as const;
@@ -101,6 +118,8 @@ const WHATSAPP_LABELS: Record<TWhatsAppMode, string> = {
 /* El campo que corresponde a cada modo, para saber a cuál saltar si tiene un error. */
 const WHATSAPP_FIELD_BY_MODE = { phone: "phone", username: "whatsappUsername" } as const;
 
+const GENDER_OPTIONS: IOption[] = Object.entries(genderLabels).map(([value, label]) => ({ value, label }));
+
 /* Los barrios salen de las constantes, nunca de una petición. */
 const NEIGHBORHOOD_OPTIONS: IOption[] = NEIGHBORHOODS.map(({ id, name }) => ({ value: id, label: name }));
 
@@ -139,6 +158,10 @@ export default function UserFormModal({
   const hasLogin = Boolean(user?.email);
   const CreateUser = useCreateUser();
   const UpdateUser = useUpdateUser();
+  const GetUser = useGetUser();
+  const navigate = useNavigate();
+  /* Al editar, los datos del censo llegan aparte: hasta entonces no se mandan (no se pisan). */
+  const [areDetailsLoaded, setAreDetailsLoaded] = useState(false);
   const [whatsappMode, setWhatsappMode] = useState<TWhatsAppMode>("phone");
   /* El administrador con sesión: el último barrio se recuerda por cada uno. */
   const { user: sessionUser } = useRouteContext({ from: "/_app" });
@@ -160,11 +183,28 @@ export default function UserFormModal({
     setWhatsappMode(initialWhatsAppMode(defaults));
   };
 
+  /* Pide los datos del censo de quien se edita y los pone en el formulario sin pisar lo escrito. */
+  const loadDetails = async (id: string, signal: AbortSignal) => {
+    const detailed = await GetUser.handler(id, signal);
+    if (signal.aborted || !detailed) {
+      return;
+    }
+    form.reset({ ...form.state.values, ...buildDetailsDefaults(detailed.details) });
+    setAreDetailsLoaded(true);
+  };
+
   const form = useForm({
     defaultValues: { ...buildPersonDefaults(user), ...buildAccessDefaults(user) },
     validators: { onSubmit: buildFormSchema(hasLogin) },
     onSubmit: async ({ value }) => {
+      /* Un DNI repetido no se guarda: el aviso ya está en el campo y acá se repite. */
+      if (documentMatch) {
+        toast.error(`«${fullName(documentMatch)}» ya tiene ese DNI.`);
+        return;
+      }
       const payload = toPersonPayload(value);
+      const shouldSendDetails = isEdit ? areDetailsLoaded : hasDetailsData(value);
+      const details = shouldSendDetails ? toDetailsPayload(value) : undefined;
       const access: IGrantAccessPayload | undefined =
         canShowAccess && value.hasAccess
           ? { role: EUserRole.ADMIN, email: value.email.trim().toLowerCase(), password: value.password }
@@ -172,9 +212,10 @@ export default function UserFormModal({
       const saved = user
         ? await UpdateUser.handler(user.id, {
             ...payload,
+            details,
             ...(canShowAccess && { access: toEditAccess(value, user) }),
           })
-        : await CreateUser.handler({ ...payload, access });
+        : await CreateUser.handler({ ...payload, details, access });
 
       if (!saved) {
         return;
@@ -203,13 +244,38 @@ export default function UserFormModal({
   });
 
   const isDirty = useStore(form.store, (state) => state.isDirty);
+  const documentNumber = useStore(form.store, (state) => state.values.documentNumber);
+  const firstName = useStore(form.store, (state) => state.values.firstName);
+  const paternalLastName = useStore(form.store, (state) => state.values.paternalLastName);
+  const birthDate = useStore(form.store, (state) => state.values.birthDate);
+  const { documentMatch, nameMatches } = usePersonMatches({
+    documentNumber,
+    firstName,
+    paternalLastName,
+    birthDateIso: writtenDateToIso(birthDate),
+    exceptId: user?.id,
+  });
 
   useEffect(() => {
-    if (open) {
-      resetForm(user ? undefined : buildCreateValues());
+    if (!open) {
+      return;
     }
+    resetForm(user ? undefined : buildCreateValues());
+    setAreDetailsLoaded(false);
+    if (!user) {
+      return;
+    }
+    const controller = new AbortController();
+    loadDetails(user.id, controller.signal);
+    return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
+
+  /* «Ver persona»: lleva a su registro en Usuarios. */
+  const viewMatch = (id: string) => {
+    onClose();
+    navigate({ to: "/usuarios", search: { usuario: id } });
+  };
 
   return (
     <Modal
@@ -252,15 +318,31 @@ export default function UserFormModal({
         }}
         className="space-y-4"
       >
+        <form.Field name="firstName">
+          {(field) => (
+            <TextField
+              id={field.name}
+              label="Nombres"
+              autoCapitalize="words"
+              maxLength={PERSON_NAME_MAX_LENGTH}
+              placeholder="Ingresa los nombres"
+              value={field.state.value}
+              errors={field.state.meta.errors}
+              onBlur={field.handleBlur}
+              onValueChange={field.handleChange}
+            />
+          )}
+        </form.Field>
+
         <div className="grid gap-4 sm:grid-cols-2">
-          <form.Field name="firstName">
+          <form.Field name="paternalLastName">
             {(field) => (
               <TextField
                 id={field.name}
-                label="Nombres"
+                label="Apellido paterno (opcional)"
                 autoCapitalize="words"
                 maxLength={PERSON_NAME_MAX_LENGTH}
-                placeholder="Ingresa los nombres"
+                placeholder="Ingresa el apellido paterno"
                 value={field.state.value}
                 errors={field.state.meta.errors}
                 onBlur={field.handleBlur}
@@ -269,14 +351,14 @@ export default function UserFormModal({
             )}
           </form.Field>
 
-          <form.Field name="lastName">
+          <form.Field name="maternalLastName">
             {(field) => (
               <TextField
                 id={field.name}
-                label="Apellidos (opcional)"
+                label="Apellido materno (opcional)"
                 autoCapitalize="words"
                 maxLength={PERSON_NAME_MAX_LENGTH}
-                placeholder="Ingresa los apellidos"
+                placeholder="Ingresa el apellido materno"
                 value={field.state.value}
                 errors={field.state.meta.errors}
                 onBlur={field.handleBlur}
@@ -372,6 +454,124 @@ export default function UserFormModal({
               </div>
             )}
           </form.Subscribe>
+        </div>
+
+        {/* Datos del censo: todos opcionales. Separados por una línea fina, como el acceso. */}
+        <div className="space-y-4 border-t border-border pt-4">
+          <p className="text-sm font-semibold text-foreground">Datos del censo (opcional)</p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <form.Field name="documentNumber">
+              {(field) => (
+                <div className="space-y-2">
+                  <TextField
+                    id={field.name}
+                    label="DNI"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    maxLength={DOCUMENT_NUMBER_LENGTH}
+                    placeholder="Ingresa el DNI"
+                    value={field.state.value}
+                    errors={field.state.meta.errors}
+                    onBlur={field.handleBlur}
+                    onValueChange={(value) => field.handleChange(value.replace(/\D/g, ""))}
+                  />
+                  {documentMatch && (
+                    <p role="alert" className="text-sm font-semibold text-destructive">
+                      «{fullName(documentMatch)}» ya tiene este DNI.{" "}
+                      <button
+                        type="button"
+                        onClick={() => viewMatch(documentMatch.id)}
+                        className="cursor-pointer underline underline-offset-2"
+                      >
+                        Ver persona
+                      </button>
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
+
+            <form.Field name="birthDate">
+              {(field) => (
+                <TextField
+                  id={field.name}
+                  label="Fecha de nacimiento (día/mes/año)"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={BIRTH_DATE_INPUT_LENGTH}
+                  placeholder="Ingresa la fecha"
+                  value={field.state.value}
+                  errors={field.state.meta.errors}
+                  onBlur={field.handleBlur}
+                  onValueChange={(value) => field.handleChange(formatWrittenDateInput(value))}
+                />
+              )}
+            </form.Field>
+          </div>
+
+          {/* Se deja guardar igual: solo se avisa (mismo tono que la serie repetida). */}
+          {nameMatches.length > 0 && (
+            <p role="status" className="flex items-start gap-1.5 text-sm font-medium text-yellow">
+              <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+              Ya hay alguien con ese nombre y fecha de nacimiento: {nameMatches.map((match) => fullName(match)).join(", ")}.
+              Puedes guardar igual.
+            </p>
+          )}
+
+          <form.Field name="gender">
+            {(field) => (
+              <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]">
+                <Label htmlFor={field.name}>Género (opcional)</Label>
+                <Select
+                  inputId={field.name}
+                  options={GENDER_OPTIONS}
+                  placeholder="Elige el género"
+                  isClearable
+                  isSearchable={false}
+                  isInvalid={field.state.meta.errors.length > 0}
+                  value={GENDER_OPTIONS.find((option) => option.value === field.state.value) ?? null}
+                  onBlur={field.handleBlur}
+                  onChange={(option) => field.handleChange(option?.value ?? "")}
+                />
+                <FieldError errors={field.state.meta.errors} />
+              </div>
+            )}
+          </form.Field>
+
+          <form.Field name="conditions">
+            {(field) => (
+              <div className="space-y-2">
+                <Label id={CONDITIONS_LABEL_ID}>Condiciones de prioridad (opcional)</Label>
+                <ConditionChips
+                  labelledBy={CONDITIONS_LABEL_ID}
+                  value={field.state.value}
+                  onChange={field.handleChange}
+                />
+              </div>
+            )}
+          </form.Field>
+
+          <form.Field name="conditionNote">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor={field.name}>Detalle de las condiciones (opcional)</Label>
+                <Textarea
+                  id={field.name}
+                  name={field.name}
+                  rows={2}
+                  maxLength={CONDITION_NOTE_MAX_LENGTH}
+                  placeholder="Ingresa el detalle"
+                  aria-invalid={field.state.meta.errors.length > 0}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  className="min-h-20 rounded-lg border border-field-border bg-field px-4 py-3 dark:bg-field text-sm font-medium focus-visible:ring-4 focus-visible:ring-ring/30 md:text-sm"
+                />
+                <FieldError errors={field.state.meta.errors} />
+              </div>
+            )}
+          </form.Field>
         </div>
 
         {canShowAccess && (

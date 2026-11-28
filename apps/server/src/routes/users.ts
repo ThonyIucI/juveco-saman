@@ -2,11 +2,18 @@ import { createDb } from "@juveco/db";
 import { authUsers } from "@juveco/db/schema/auth";
 import { activityItems } from "@juveco/db/schema/activity-items";
 import { activityPrizes } from "@juveco/db/schema/activity-prizes";
+import { userProfiles } from "@juveco/db/schema/user-profiles";
 import { users } from "@juveco/db/schema/users";
+import { isIsoDate } from "@juveco/shared/dates";
 import { neighborhoodOf } from "@juveco/shared/neighborhoods";
 import { fullName } from "@juveco/shared/people";
+import {
+  DOCUMENT_NUMBER_INVALID_MESSAGE,
+  type IPersonMatchResource,
+  isValidDocumentNumber,
+} from "@juveco/shared/user-profiles";
 import { EUserRole, type TUserRole } from "@juveco/shared/roles";
-import type { IUserResource } from "@juveco/shared/users";
+import type { IUserDetailResource, IUserResource } from "@juveco/shared/users";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -14,7 +21,9 @@ import { z } from "zod";
 import type { TAppEnv } from "../lib/app-env";
 import { badRequest, conflict, forbidden, notFound } from "../lib/errors";
 import { newId } from "../lib/ids";
-import { assertPhoneAvailable, assertUsernameAvailable } from "../lib/person-guards";
+import { findUserByDocument, loadUserProfile, saveUserProfile } from "../lib/user-profiles";
+import { userProfileSchema } from "../lib/user-profile-input";
+import { assertDocumentAvailable, assertPhoneAvailable, assertUsernameAvailable } from "../lib/person-guards";
 import { firstNameSchema, personExtraFields } from "../lib/person-input";
 import { type TPhoneInput, toPhoneColumns, toPhoneResource } from "../lib/phone-input";
 import { ok } from "../lib/response";
@@ -31,23 +40,34 @@ import { requireAuth, requireSuperadmin } from "../middleware/require-role";
 
 export const USER_ROUTES = {
   USERS: "/users",
+  /* Antes de `USER`: «matches» no es un id. */
+  MATCHES: "/users/matches",
   USER: "/users/:id",
   USER_ACCESS: "/users/:id/access",
 } as const;
 
 const USER_NOT_FOUND = "No encontramos ese usuario.";
 const NO_CHANGES_MESSAGE = "No hay cambios para guardar.";
+const MATCHES_QUERY_MESSAGE = "Indica el DNI, o los nombres, el apellido paterno y la fecha de nacimiento.";
+const MAX_MATCHES = 5;
 
 /* `access` es opcional: con él, la persona se crea ya con su login (solo el superadmin). */
 const createUserSchema = z.object({
   firstName: firstNameSchema,
   ...personExtraFields,
+  /* Datos del censo: opcionales. */
+  details: userProfileSchema.optional(),
   access: grantAccessSchema.optional(),
 });
 
 /* `access` solo lo manda el superadmin: `null` quita el acceso; con correo lo da o lo cambia. */
 const updateUserSchema = z
-  .object({ firstName: firstNameSchema.optional(), ...personExtraFields, access: editAccessSchema })
+  .object({
+    firstName: firstNameSchema.optional(),
+    ...personExtraFields,
+    details: userProfileSchema.optional(),
+    access: editAccessSchema,
+  })
   .refine((body) => Object.values(body).some((value) => value !== undefined), {
     message: NO_CHANGES_MESSAGE,
   });
@@ -73,7 +93,8 @@ type TUserRow = typeof users.$inferSelect;
 const toUserResource = (row: TUserRow, email: string | null): IUserResource => ({
   id: row.id,
   firstName: row.firstName,
-  lastName: row.lastName,
+  paternalLastName: row.paternalLastName,
+  maternalLastName: row.maternalLastName,
   neighborhood: neighborhoodOf(row.neighborhoodId),
   phone: toPhoneResource(row),
   whatsappUsername: row.whatsappUsername,
@@ -97,6 +118,13 @@ const findUser = async (db: TDb, id: string) => {
   return row;
 };
 
+const toMatchResource = (row: TUserRow): IPersonMatchResource => ({
+  id: row.id,
+  firstName: row.firstName,
+  paternalLastName: row.paternalLastName,
+  maternalLastName: row.maternalLastName,
+});
+
 const toMatch = (row: TUserRow | undefined) => (row ? { id: row.id, label: fullName(row) } : undefined);
 
 const findByPhone = (db: TDb) => async (phone: NonNullable<TPhoneInput>) => {
@@ -106,6 +134,43 @@ const findByPhone = (db: TDb) => async (phone: NonNullable<TPhoneInput>) => {
     .where(and(eq(users.countryPrefix, phone.countryPrefix), eq(users.phone, phone.number)))
     .get();
   return toMatch(row);
+};
+
+const findByDocument = (db: TDb) => async (documentNumber: string) => {
+  const row = await findUserByDocument(db, documentNumber);
+  return toMatch(row?.user);
+};
+
+const collapseSpaces = (value: string | undefined) => (value ?? "").trim().replace(/\s+/g, " ");
+
+/* Quién ya tiene ese DNI: a lo sumo uno. */
+const matchesByDocument = async (db: TDb, documentNumber: string, exceptId?: string) => {
+  const row = await findUserByDocument(db, documentNumber);
+  return row && row.user.id !== exceptId ? [toMatchResource(row.user)] : [];
+};
+
+/* Quiénes tienen los mismos nombres, apellido paterno y fecha de nacimiento (sin importar mayúsculas). */
+const matchesByNameAndBirthDate = async (
+  db: TDb,
+  person: { firstName: string; paternalLastName: string; birthDate: string },
+  exceptId?: string,
+) => {
+  const rows = await db
+    .select({ user: users })
+    .from(userProfiles)
+    .innerJoin(users, eq(users.id, userProfiles.userId))
+    .where(
+      and(
+        eq(userProfiles.birthDate, person.birthDate),
+        sql`lower(${users.firstName}) = ${person.firstName.toLowerCase()}`,
+        sql`lower(${users.paternalLastName}) = ${person.paternalLastName.toLowerCase()}`,
+      ),
+    )
+    .limit(MAX_MATCHES + 1);
+  return rows
+    .filter((row) => row.user.id !== exceptId)
+    .slice(0, MAX_MATCHES)
+    .map((row) => toMatchResource(row.user));
 };
 
 /* Con la misma expresión del índice único. */
@@ -135,13 +200,45 @@ export const userRoutes = new Hono<TAppEnv>()
     );
   })
 
+  /*
+    Duplicados en el servidor: por `documentNumber`, o por `firstName` + `paternalLastName` +
+    `birthDate`. `exceptId` excluye a la persona que se está editando.
+  */
+  .get(USER_ROUTES.MATCHES, requireAuth, async (context) => {
+    const db = createDb();
+    const query = context.req.query();
+    const exceptId = query.exceptId || undefined;
+
+    const documentNumber = collapseSpaces(query.documentNumber);
+    if (documentNumber) {
+      if (!isValidDocumentNumber(documentNumber)) {
+        throw badRequest(DOCUMENT_NUMBER_INVALID_MESSAGE);
+      }
+      return ok(context, await matchesByDocument(db, documentNumber, exceptId));
+    }
+
+    const firstName = collapseSpaces(query.firstName);
+    const paternalLastName = collapseSpaces(query.paternalLastName);
+    const birthDate = collapseSpaces(query.birthDate);
+    if (!firstName || !paternalLastName || !isIsoDate(birthDate)) {
+      throw badRequest(MATCHES_QUERY_MESSAGE);
+    }
+    return ok(context, await matchesByNameAndBirthDate(db, { firstName, paternalLastName, birthDate }, exceptId));
+  })
+
   .get(USER_ROUTES.USER, requireAuth, async (context) => {
-    const row = await findUser(createDb(), context.req.param("id"));
-    return ok(context, toUserResource(row.user, row.email));
+    const db = createDb();
+    const id = context.req.param("id");
+    const row = await findUser(db, id);
+    const resource: IUserDetailResource = {
+      ...toUserResource(row.user, row.email),
+      details: await loadUserProfile(db, id),
+    };
+    return ok(context, resource);
   })
 
   .post(USER_ROUTES.USERS, requireAuth, validateJson(createUserSchema), async (context) => {
-    const { access, ...body } = context.req.valid("json");
+    const { access, details, ...body } = context.req.valid("json");
     const phone = body.phone ?? null;
     const whatsappUsername = body.whatsappUsername ?? null;
     const db = createDb();
@@ -151,6 +248,7 @@ export const userRoutes = new Hono<TAppEnv>()
     }
     await assertPhoneAvailable({ phone, findByPhone: findByPhone(db) });
     await assertUsernameAvailable({ username: whatsappUsername, findByUsername: findByUsername(db) });
+    await assertDocumentAvailable({ documentNumber: details?.documentNumber, findByDocument: findByDocument(db) });
     if (access) {
       await assertEmailAvailable(db, access.email);
     }
@@ -160,13 +258,24 @@ export const userRoutes = new Hono<TAppEnv>()
       .values({
         id: newId(),
         firstName: body.firstName,
-        lastName: body.lastName ?? null,
+        paternalLastName: body.paternalLastName ?? null,
+        maternalLastName: body.maternalLastName ?? null,
         neighborhoodId: body.neighborhoodId ?? null,
         ...toPhoneColumns(phone),
         whatsappUsername,
         note: body.note ?? null,
       })
       .returning();
+
+    /* Sin sus datos del censo la persona no debe quedar a medias: si falla, se deshace el alta. */
+    if (details) {
+      try {
+        await saveUserProfile(db, created!.id, details);
+      } catch (error) {
+        await db.delete(users).where(eq(users.id, created!.id));
+        throw error;
+      }
+    }
 
     if (!access) {
       return ok(context, toUserResource(created!, null), 201);
@@ -184,7 +293,7 @@ export const userRoutes = new Hono<TAppEnv>()
 
   .patch(USER_ROUTES.USER, requireAuth, validateJson(updateUserSchema), async (context) => {
     const id = context.req.param("id");
-    const { access, ...body } = context.req.valid("json");
+    const { access, details, ...body } = context.req.valid("json");
     const db = createDb();
 
     const current = await findUser(db, id);
@@ -192,6 +301,11 @@ export const userRoutes = new Hono<TAppEnv>()
     await assertUsernameAvailable({
       username: body.whatsappUsername,
       findByUsername: findByUsername(db),
+      exceptId: id,
+    });
+    await assertDocumentAvailable({
+      documentNumber: details?.documentNumber,
+      findByDocument: findByDocument(db),
       exceptId: id,
     });
     if (access !== undefined) {
@@ -206,7 +320,8 @@ export const userRoutes = new Hono<TAppEnv>()
 
     const personChanges = {
       ...(body.firstName !== undefined && { firstName: body.firstName }),
-      ...(body.lastName !== undefined && { lastName: body.lastName }),
+      ...(body.paternalLastName !== undefined && { paternalLastName: body.paternalLastName }),
+      ...(body.maternalLastName !== undefined && { maternalLastName: body.maternalLastName }),
       ...(body.neighborhoodId !== undefined && { neighborhoodId: body.neighborhoodId }),
       ...(body.phone !== undefined && toPhoneColumns(body.phone)),
       ...(body.whatsappUsername !== undefined && { whatsappUsername: body.whatsappUsername }),
@@ -217,6 +332,9 @@ export const userRoutes = new Hono<TAppEnv>()
       Object.keys(personChanges).length > 0
         ? await db.update(users).set(personChanges).where(eq(users.id, id)).returning()
         : [current.user];
+    if (details) {
+      await saveUserProfile(db, id, details);
+    }
 
     if (access === undefined) {
       return ok(context, toUserResource(person!, current.email));
