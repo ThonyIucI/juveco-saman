@@ -1,9 +1,10 @@
 import { cn } from "@juveco/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { Menu, X } from "lucide-react";
+import { LogIn, Menu, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 
+import { useSessionRole } from "@/common/hooks/use-session-role";
 import { SITE, SITE_SECTIONS } from "@/modules/public/data/site";
 import { useActiveSection } from "@/modules/public/hooks/use-active-section";
 import { useNavbarHidden } from "@/modules/public/hooks/use-navbar-hidden";
@@ -30,6 +31,7 @@ export default function SiteNavbar({ isHome = false, isContentReady = false, has
   const isReduced = useReducedMotion() ?? false;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isHidden = useNavbarHidden(isMenuOpen);
+  const hasSession = useSessionRole() !== null;
   const sections = SITE_SECTIONS.filter((section) => hasEvent || section.id !== "evento");
 
   /* Escape cierra el menú móvil. */
@@ -96,15 +98,27 @@ export default function SiteNavbar({ isHome = false, isContentReady = false, has
           ))}
         </ul>
 
-        <button
-          type="button"
-          aria-label={isMenuOpen ? "Cerrar menú" : "Abrir menú"}
-          aria-expanded={isMenuOpen}
-          onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
-          className="flex size-11 cursor-pointer items-center justify-center rounded-md text-foreground transition-colors hover:bg-muted lg:hidden"
-        >
-          {isMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Acceso al panel: antes solo estaba en el pie y no se encontraba. */}
+          <Link
+            to={hasSession ? "/dashboard" : "/login"}
+            aria-label={hasSession ? "Ir al panel" : "Ingresar al panel"}
+            className="flex size-11 items-center justify-center gap-1.5 rounded-md border border-border text-sm font-medium text-foreground transition-colors hover:bg-muted lg:h-10 lg:w-auto lg:px-3"
+          >
+            <LogIn className="size-4" />
+            <span className="hidden lg:inline">{hasSession ? "Ir al panel" : "Ingresar"}</span>
+          </Link>
+
+          <button
+            type="button"
+            aria-label={isMenuOpen ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={isMenuOpen}
+            onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+            className="flex size-11 cursor-pointer items-center justify-center rounded-md text-foreground transition-colors hover:bg-muted lg:hidden"
+          >
+            {isMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+          </button>
+        </div>
       </nav>
 
       <AnimatePresence>

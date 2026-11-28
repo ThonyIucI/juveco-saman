@@ -9,10 +9,9 @@ export const SITE = {
   shortName: "Juveco Samán",
   fullName: "Junta Vecinal Comunal Samán",
   term: "Gestión 2026 – 2028",
-  tagline: "Trabajamos juntos por nuestro barrio",
-  intro: "Vecinos que nos organizamos para sacar adelante obras, actividades y proyectos para Samán.",
+  intro: "Nos organizamos para sacar adelante obras, actividades y proyectos para Samán.",
   about: [
-    "La Juveco es la junta vecinal comunal de Samán: la elegimos los vecinos para que nos represente y para organizar juntos lo que el barrio necesita.",
+    "La Juveco es la junta vecinal comunal de Samán: es elegida por los pobladores para que los represente y busque dar solución a las necesidades del pueblo con apoyo de todos.",
     "Gestionamos obras y servicios ante las autoridades, cuidamos la seguridad de nuestras calles y organizamos actividades para reunir fondos y compartir en comunidad.",
   ],
   /** Usuario de WhatsApp de contacto, sin «@». `null`: el footer va sin contacto. Pendiente (Thony). */
@@ -71,10 +70,10 @@ const PREVIOUS_TERM_TAG = "Gestión anterior";
  * hechas. Pendiente (Thony): descripción y estado de las demás.
  */
 export const PROJECTS: ISiteProject[] = [
-  { id: "mural", name: "Mural", description: null, image: "/portada/proyectos/mural.webp", status: null },
+  { id: "mural", name: "Mural de bienvenida", description: null, image: "/portada/proyectos/mural.webp", status: null },
   {
     id: "camaras",
-    name: "Cámaras de seguridad",
+    name: "Implementación de cámaras de seguridad",
     description: null,
     image: "/portada/proyectos/camaras.webp",
     objectPosition: "center 50%",
@@ -82,7 +81,7 @@ export const PROJECTS: ISiteProject[] = [
   },
   {
     id: "pozo",
-    name: "Pozo de agua en María Auxiliadora",
+    name: "Reactivación del pozo de agua en María Auxiliadora",
     description: null,
     image: "/portada/proyectos/pozo.webp",
     objectPosition: "center 30%",

@@ -76,12 +76,18 @@ export default function HeroCarousel({ hasEvent = true }: { hasEvent?: boolean }
         </AnimatePresence>
       </motion.div>
 
-      {/* Oscurece abajo para que el texto se lea sobre cualquier foto. */}
+      {/* Oscurece abajo y a la izquierda (donde va el texto) para que se lea sobre cualquier foto. */}
       {slide && (
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 bg-linear-to-t from-[#0b1330]/90 via-[#0b1330]/65 to-[#0b1330]/10"
-        />
+        <>
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 bg-linear-to-t from-[#0b1330]/90 via-[#0b1330]/65 to-[#0b1330]/10"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 bg-linear-to-r from-[#0b1330]/70 via-[#0b1330]/30 to-transparent"
+          />
+        </>
       )}
 
       <div className={cn("mx-auto w-full max-w-6xl px-4 pt-20 md:px-6", hasEvent ? "pb-24 md:pb-28" : "pb-12 md:pb-16")}>
@@ -91,8 +97,8 @@ export default function HeroCarousel({ hasEvent = true }: { hasEvent?: boolean }
           transition={{ duration: 0.8, ease: EASE_OUT }}
           className="max-w-xl text-white"
         >
-          <p className="mb-2 text-xs font-semibold tracking-widest text-gold uppercase">{SITE.fullName}</p>
-          <h1 className="font-heading text-2xl leading-tight font-semibold tracking-tight">{SITE.tagline}</h1>
+          {/* El nombre es el título (Thony, 2026-11-28): blanco, 700, 24px. El dorado suelto se perdía en fotos claras. */}
+          <h1 className="font-heading text-2xl leading-tight font-bold uppercase">{SITE.fullName}</h1>
           <p className="mt-3 text-base text-white/85">{SITE.intro}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             {hasEvent && (
@@ -139,7 +145,12 @@ export default function HeroCarousel({ hasEvent = true }: { hasEvent?: boolean }
                 </button>
               ))}
             </div>
-            <span aria-live={isPaused ? "polite" : "off"}>{slide.caption}</span>
+            <span
+              aria-live={isPaused ? "polite" : "off"}
+              className="rounded-full bg-black/55 px-3 py-1 font-medium text-white backdrop-blur-sm"
+            >
+              {slide.caption}
+            </span>
           </div>
         )}
       </div>

@@ -7,7 +7,7 @@ import SiteSection from "./site-section";
 /** Nosotros: qué es la Juveco, qué hace y quiénes forman la directiva (tras «Ver directiva»). Todo en filas compactas. */
 export default function AboutSection() {
   return (
-    <SiteSection id="nosotros" eyebrow="Nosotros" title="Somos la junta de vecinos de Samán">
+    <SiteSection id="nosotros" eyebrow="Nosotros" title="Somos la Junta Vecinal Comunal de Samán">
       <div className="grid gap-6 md:gap-10 lg:grid-cols-2 lg:gap-16">
         <Reveal className="space-y-4 text-base leading-relaxed text-foreground">
           {SITE.about.map((paragraph) => (
